@@ -125,7 +125,7 @@ REASONS = [
         ],
         "ships": "Ships today: AX0501 with call chains, uses/needs in the outline. Specified, not yet enforced: "
                  "unforgeable handles. Today's checker still lets user code construct standard handles such "
-                 "as `File(n)`; closing that comes before we claim “by construction”.",
+                 "as `File(descriptor)`; closing that comes before we claim “by construction”.",
         "unlike": "In Python, TypeScript, Go and Rust any imported module can open files or sockets on ambient "
                   "process authority. Confinement comes from outside the type system (containers, seccomp, "
                   "Deno's or Node's process-wide flags, the third-party cap-std crate for Rust). None checks per function, at "
@@ -195,13 +195,13 @@ def summarize(transfer email: tainted String) -> Prompt:
         "sample": ("draconyx", """capability Monoid:
     def add(transfer self: Self, transfer other: Self) -> Self
     def zero() -> Self
-    law associative: add(self = add(self = a, other = b), other = c)
-        == add(self = a, other = add(self = b, other = c))
-    law identity: add(self = a, other = zero()) == a
+    law associative: add(self = add(self = left, other = middle), other = right)
+        == add(self = left, other = add(self = middle, other = right))
+    law identity: add(self = value, other = zero()) == value
 
-def median(xs: List<Float>) -> Float:
+def median(values: List<Float>) -> Float:
     todo()  // verdict UNIMPLEMENTED, not a failure
-example median(xs = [1.0, 3.0, 2.0]) == 2.0""", "Checked with the compiler."),
+example median(values = [1.0, 3.0, 2.0]) == 2.0""", "Checked with the compiler."),
         "cites": ["13-law-verification:4-97", "13-law-verification:319-345", "13-law-verification:400-409", "10-capabilities:88-101"],
     },
     {
@@ -218,19 +218,19 @@ example median(xs = [1.0, 3.0, 2.0]) == 2.0""", "Checked with the compiler."),
             "from the call alone.",
         ],
         "ships": "Ships today: all three diagnostics.",
-        "unlike": "TypeScript, Rust and Go have no named arguments, so `resize(h, w)` compiles and looks right. "
+        "unlike": "TypeScript, Rust and Go have no named arguments, so `resize(height, width)` compiles and looks right. "
                   "Python's keywords are optional unless the author opts in. Rust marks `&mut` but not a move, and method calls auto-borrow "
                   "their receiver unmarked. Go passes slices, maps and pointers unmarked while the callee "
                   "mutates through them.",
         "sample": ("draconyx", """def open(url: String, timeout: Duration) -> Result<Connection>
-def close(transfer c: Connection) -> Unit
-def send(borrow c: Connection, request: Request) -> Result<Unit>
+def close(transfer conn: Connection) -> Unit
+def send(borrow conn: Connection, request: Request) -> Result<Unit>
 
-def ping_once(addr: String, ping: Request) -> Result<Unit>:
-    let c = open(url = addr, timeout = seconds(5))?
-    send(borrow c, request = ping)?  // mutation is spelled here
-    close(transfer c)  // consumption is spelled here
-    close(transfer c)  // AX0312: use of moved value `c`
+def ping_once(address: String, ping: Request) -> Result<Unit>:
+    let conn = open(url = address, timeout = seconds(5))?
+    send(borrow conn, request = ping)?  // mutation is spelled here
+    close(transfer conn)  // consumption is spelled here
+    close(transfer conn)  // AX0312: use of moved value `conn`
     Ok(unit)""", "Checked with the compiler."),
         "cites": ["05-syntax-conventions:3-4", "04-core-language:251-272", "04-core-language:1624-1640", "07-memory-model:253-285"],
     },
@@ -257,8 +257,8 @@ def ping_once(addr: String, ping: Request) -> Result<Unit>:
     Captured(Money)
     Refunded(reason: String, amount: Money)
 
-def label(s: PaymentState) -> String:
-    match s:
+def label(payment_state: PaymentState) -> String:
+    match payment_state:
         Pending       -> "pending"
         Authorized(_) -> "authorized"
         Captured(_)   -> "captured"
@@ -275,7 +275,7 @@ def label(s: PaymentState) -> String:
             "verify cut short by its time budget, and the response says so. Lists paginate deterministically "
             "and are never silently truncated, and errors carry a stable kind that code can branch on.",
             "Each definition is hashed over its typed core: comments, layout and local variable names leave the "
-            "hash unchanged, while `n * 2` becoming `2 * n` moves it. The daemon holds no ambient authority, and "
+            "hash unchanged, while `count * 2` becoming `2 * count` moves it. The daemon holds no ambient authority, and "
             "its handshake lists everything it can reach.",
         ],
         "ships": "Ships today.",
@@ -414,7 +414,7 @@ VERSUS_NOTES = {
     ],
     'Rust': [
         'Every error has a code and an explain entry: Many rustc errors carry stable E-codes with `rustc --explain`, and `--error-format=json` emits suggestions marked MachineApplicable, which `cargo fix` / `cargo clippy --fix` apply. Not every diagnostic has a code: many errors and all lints lack E-codes.',
-        'Mutation and moves spelled at the call site: `&mut x` is written at the call site for free-function args. Moves are not marked, and method calls auto-borrow `&mut self` without a marker.',
+        'Mutation and moves spelled at the call site: `&mut buffer` is written at the call site for free-function args. Moves are not marked, and method calls auto-borrow `&mut self` without a marker.',
         'Missing and redundant match arms both rejected: A non-exhaustive match is a hard error (E0004) on every match. Unreachable or redundant arms only trigger the warn-by-default `unreachable_patterns` lint (an error only with deny/-D warnings).',
         "Ownership and borrows checked at compile time: Use-after-move and aliased &mut are rejected statically, with no tracing GC. But Rust has lifetime annotation syntax ('a), so it meets two of the three conditions.",
     ],
@@ -431,7 +431,7 @@ VERSUS_NOTES = {
     ],
     'Mojo': [
         "Named arguments required at every multi-argument call of a declared function: Mojo supports Python-style keyword-only parameters (after `*` in the signature), so an author can opt in to required labels, as in Python. The default is optional. The rule's draft lists Mojo as no, but scoring it the same as Python means part.",
-        'Mutation and moves spelled at the call site: Ownership transfer is written `x^` at the call site, but passing to a `mut` parameter is unmarked.',
+        'Mutation and moves spelled at the call site: Ownership transfer is written `buffer^` at the call site, but passing to a `mut` parameter is unmarked.',
         "Ownership and borrows checked at compile time: Static move and borrow checking (use-after-move, argument exclusivity, and reference-invalidation diagnostics in 1.0), ASAP destruction with no tracing GC, but explicit origin parameters (Mojo's lifetimes) exist. That is two of three.",
     ],
 }
