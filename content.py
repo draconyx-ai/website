@@ -9,8 +9,8 @@ change a claim only together with its citation.
 AS_OF = "18 October 2026"
 CONTACT = "info@draconyx.ai"
 # Set to the listmonk list UUID once the public "Draconyx updates" list exists; None keeps the form disabled.
-LISTMONK_LIST_UUID = None
-LISTMONK_FORM_URL = "https://lists.biomorphic.llc/subscription/form"
+LISTMONK_LIST_UUID = "240235c8-27a5-472b-b775-904925a1ceb6"
+LISTMONK_FORM_URL = "https://lists.draconyx.ai/subscription/form"
 SPEC_PDF = None  # "/draconyx-spec.pdf" once the renamed spec is published
 
 HERO = {
@@ -459,6 +459,13 @@ STATUS = [
     ("Release", "Pre-release research project, first commit 20 July 2026. The first public release comes when the first compiler written entirely in Draconyx is ready."),
 ]
 
+
+SIGNUP_TITLE = "Stay tuned"
+SIGNUP_LEAD = (
+    "The dragon is hatching. Be first to know when Draconyx launches, and hear about every new feature "
+    "the moment it lands. Updates only, straight from the source. One click to leave."
+)
+SIGNUP_FINE = "We send a confirmation link first. Nothing arrives until you click it."
 
 INVOLVED = (
     "Want in early? For design discussion, collaboration, or to train or evaluate models on Draconyx, write to "

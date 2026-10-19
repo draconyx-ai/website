@@ -188,7 +188,7 @@ dl.status{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px 28px;m
 dl.status dt{font-weight:750}dl.status dd{margin:0;color:var(--muted)}
 @media (max-width:720px){dl.status{grid-template-columns:minmax(0,1fr)}dl.status dd{margin-bottom:10px}}
 .cta{background:var(--ink);color:#f3ecda;border-top:0}
-.cta h2{color:#fff3c9}.cta a{color:#ffb08f}.cta a:hover{color:#ffd0bd}.cta .note{color:#c9c0a8}
+.cta h2,.cta h3{color:#fff3c9}.cta h3{margin-top:38px}.cta .lead{font-size:19px;max-width:60ch}.cta a{color:#ffb08f}.cta a:hover{color:#ffd0bd}.cta .note{color:#c9c0a8}
 form.signup{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 8px}
 form.signup input[type=email]{flex:1 1 260px;min-width:0;padding:11px 14px;clip-path:var(--chip-cut);border:1px solid #8c8470;background:#1f1d17;color:#f3ecda;font-family:inherit;font-size:16px}
 form.signup button{padding:11px 20px;clip-path:var(--chip-cut);border:0;background:var(--ember2);color:#1a0c05;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
@@ -243,9 +243,10 @@ def build_html():
     if uuid:
         form = (f'<form class="signup" method="post" action="{e(C.LISTMONK_FORM_URL)}">'
                 f'<input type="hidden" name="l" value="{e(uuid)}">'
-                f'<label class="vh" for="em">Email for release updates</label>'
+                f'<label class="vh" for="em">Your email address</label>'
                 f'<input id="em" type="email" name="email" required placeholder="you@example.com" autocomplete="email">'
-                f'<button type="submit">Get updates</button></form>')
+                f'<button type="submit">Keep me posted</button></form>'
+                f'<p class="note">{e(C.SIGNUP_FINE)}</p>')
     else:
         form = '<p class="note">An update list opens at launch.</p>'
     spec = f'<a class="btn" href="{e(C.SPEC_PDF)}">Read the spec (PDF)</a>' if C.SPEC_PDF else ""
@@ -281,7 +282,7 @@ def build_html():
 <p class="eyebrow">{e(C.HERO['eyebrow'])}</p>
 <h1>{e(C.HERO['headline'])}</h1>
 <p class="sub">{e(C.HERO['subhead'])}</p>
-<div class="btns"><a class="btn primary" href="#versus">See it beat the rest</a>{spec}<a class="btn" href="/llms.txt">For AI agents: llms.txt</a></div>
+<div class="btns"><a class="btn primary" href="#versus">See it beat the rest</a>{spec}<a class="btn" href="#updates">Get launch updates</a><a class="btn" href="/llms.txt">For AI agents: llms.txt</a></div>
 </div></div>
 
 <div class="stats" aria-label="Project in numbers"><ul>{stats}</ul></div>
@@ -339,9 +340,11 @@ def build_html():
 </div></section>
 
 <section id="involved" class="cta"><div class="wrap prose">
-<h2>Get in early</h2>
-<p>{involved}</p>
+<h2 id="updates">{e(C.SIGNUP_TITLE)}</h2>
+<p class="lead">{e(C.SIGNUP_LEAD)}</p>
 {form}
+<h3>Get in early</h3>
+<p>{involved}</p>
 </div></section>
 </main>
 <footer><div class="wrap">
@@ -382,7 +385,8 @@ def build_md():
     lines += ["## Dragon claw, written law", ""] + [p + "\n" for p in C.NAME]
     lines += [f"Source: [{C.NAME_SOURCE[0]}]({C.NAME_SOURCE[1]})", "", f"## Where it stands (as of {C.AS_OF})", ""]
     lines += [f"- **{k}:** {v}" for k, v in C.STATUS]
-    lines += ["", "## Get in early", "", C.INVOLVED, ""]
+    lines += ["", f"## {C.SIGNUP_TITLE}", "", C.SIGNUP_LEAD, "", f"Subscribe: {C.LISTMONK_FORM_URL}", ""]
+    lines += ["## Get in early", "", C.INVOLVED, ""]
     return "\n".join(lines)
 
 
@@ -402,7 +406,8 @@ def build_llms():
         out += [f"- [{n}]({SITE}/#language): {pt} ({g}; {names[st]})" for n, pt, st in items]
     out += ["", "## Docs", "", f"- [Full page as Markdown]({SITE}/index.md): every mechanism with samples and status",
             f"- [Why the name]({SITE}/#name): Draconyx, Draco's written laws and the axones",
-            f"- [Contact](mailto:{C.CONTACT}): design discussion, collaboration, model training or evaluation", ""]
+            f"- [Contact](mailto:{C.CONTACT}): design discussion, collaboration, model training or evaluation",
+            f"- [Launch updates]({C.LISTMONK_FORM_URL}): mailing list for the launch and new features (double opt-in)", ""]
     return "\n".join(out)
 
 
