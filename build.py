@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Build draconyx.org into site/dist from content.py: index.html, index.md, llms.txt, assets, favicon.svg,
+"""Build draconyx.ai into dist/ from content.py: index.html, index.md, llms.txt, assets, favicon.svg,
 robots.txt, sitemap.xml. No external requests at runtime: no web fonts, scripts or trackers.
 
-    python3 site/build.py            # writes site/dist/
+    python3 build.py            # writes dist/
 """
 import html
 import os
@@ -15,7 +15,7 @@ import content as C  # noqa: E402
 
 HERE = os.path.dirname(__file__)
 OUT = os.path.join(HERE, "dist")
-SITE = "https://draconyx.org"
+SITE = "https://draconyx.ai"
 MECH_LEDE = "Real mechanisms in a real compiler. Every sample on this page was run through it."
 e = html.escape
 
