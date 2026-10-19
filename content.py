@@ -7,7 +7,7 @@ change a claim only together with its citation.
 """
 
 AS_OF = "18 October 2026"
-CONTACT = "info@draconyx.org"
+CONTACT = "info@draconyx.ai"
 # Set to the listmonk list UUID once the public "Draconyx updates" list exists; None keeps the form disabled.
 LISTMONK_LIST_UUID = None
 LISTMONK_FORM_URL = "https://lists.biomorphic.llc/subscription/form"
