@@ -127,16 +127,16 @@ h2{font-size:clamp(28px,3.8vw,42px);margin:0 0 16px}
 .loop b{display:block;font-size:17px;margin:6px 0 4px}.loop span{font-size:15px;color:var(--muted)}
 @media (max-width:860px){.loop{grid-template-columns:minmax(0,1fr);gap:30px}.loop .arr{right:auto;left:50%;top:auto;bottom:-22px;transform:translateX(-50%) rotate(135deg)}}
 .vwrap{overflow-x:auto;contain:paint;margin-top:30px;border-radius:2px;border:2px solid var(--shadow);border-bottom-width:6px;background:var(--card)}
-table.versus{width:100%;border-collapse:collapse;min-width:860px;font-size:14.5px}
-.versus tbody th{position:sticky;left:0;background:var(--card);z-index:1;min-width:210px}
-@media (max-width:600px){.versus tbody th{min-width:150px;max-width:170px;font-size:13px}table.versus{font-size:13px}.versus th,.versus td{padding:10px 8px}}
+table.versus{width:100%;table-layout:fixed;border-collapse:collapse;min-width:926px;font-size:14.5px}.versus col.cap{width:260px}@media (max-width:1100px){.versus col.cap{width:200px}}
+.versus tbody th{position:sticky;left:0;background:var(--card);z-index:1}
+@media (max-width:600px){.versus col.cap{width:150px}.versus tbody th{font-size:13px}table.versus{font-size:13px;min-width:876px}.versus th,.versus td{padding:10px 4px}}
 .versus thead th:first-child{position:sticky;left:0;z-index:2}
-.versus th,.versus td{padding:13px 8px;border-bottom:1px solid var(--line);text-align:center}
+.versus th,.versus td{padding:13px 4px;border-bottom:1px solid var(--line);text-align:center}
 .versus tbody tr:last-child th,.versus tbody tr:last-child td{border-bottom:0}
-.versus thead th{font-size:14px;letter-spacing:.03em;color:var(--muted);font-weight:750;background:var(--bg2)}
-.versus tbody th{text-align:left;font-weight:600;max-width:340px;padding-left:16px}
+.versus thead th{font-size:13px;letter-spacing:0;line-height:1.25;padding-left:2px;padding-right:2px;color:var(--muted);font-weight:750;background:var(--bg2)}
+.versus tbody th{text-align:left;font-weight:600;padding-left:16px;padding-right:10px}
 .versus .us{background:color-mix(in srgb,var(--olive) 14%,transparent)}
-.versus thead .us{background:var(--olive);color:#fff;font-size:13px;letter-spacing:.04em;text-transform:uppercase;padding-left:10px;padding-right:10px}
+.versus thead .us{background:var(--olive);color:#fff}
 .m{display:inline-grid;place-items:center;width:28px;height:28px;clip-path:var(--pebble);font-weight:900;font-size:15px}
 .m.yes{background:var(--olive);color:#fff}.m.part{background:var(--gap-bg);color:var(--gap)}.m.no{color:var(--muted);opacity:.7}
 .vnote{margin-top:14px;max-width:90ch}
@@ -220,7 +220,9 @@ def build_html():
     marks = {"yes": ('<span class="m yes" aria-hidden="true">&#10003;</span>', "built in"),
              "part": ('<span class="m part" aria-hidden="true">&#9680;</span>', "partly or via an add-on"),
              "no": ('<span class="m no" aria-hidden="true">&#10005;</span>', "no")}
-    vhead = "".join(f'<th scope="col"{" class=\"us\"" if i == 0 else ""}>{e(l)}</th>' for i, l in enumerate(C.VERSUS_LANGS))
+    # <wbr> lets a long name break inside its equal-width column on narrow screens
+    vhead = "".join(f'<th scope="col"{" class=\"us\"" if i == 0 else ""}>{e(l).replace("Script", "<wbr>Script")}</th>'
+                    for i, l in enumerate(C.VERSUS_LANGS))
     vrows = "".join(
         "<tr><th scope=\"row\">" + e(row) + "</th>" + "".join(
             f'<td{" class=\"us\"" if i == 0 else ""}>{marks[v][0]}<span class="vh">{marks[v][1]}</span></td>'
@@ -305,7 +307,7 @@ def build_html():
 <p class="kicker">Head to head</p>
 <h2>Draconyx vs. the languages your agents write today</h2>
 <p class="lede">Built in, not bolted on.</p>
-<div class="vwrap" tabindex="0" role="region" aria-label="Comparison table"><table class="versus">
+<div class="vwrap" tabindex="0" role="region" aria-label="Comparison table"><table class="versus"><colgroup><col class="cap"></colgroup>
 <thead><tr><th scope="col"><span class="vh">Capability</span></th>{vhead}</tr></thead>
 <tbody>{vrows}</tbody></table></div>
 {vnote}

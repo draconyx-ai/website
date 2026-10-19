@@ -375,28 +375,24 @@ FEATURE_GROUPS = [
 ]
 
 # Head-to-head: only rows where Draconyx ships today. Cells verified per language (2026-10-18).
-VERSUS_LANGS = ['Draconyx', 'Python', 'TypeScript', 'Java', 'C#', 'C++', 'Rust', 'Go', 'Swift', 'Zig', 'Elixir', 'Mojo']
+VERSUS_LANGS = ['Draconyx', 'Python', 'Java', 'C#', 'C++', 'Rust', 'Go', 'Swift', 'Zig', 'Elixir', 'Mojo']
 VERSUS = [
-    ('Every error has a code and an explain entry, with JSON repair edits from the compiler itself', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'no', 'no', 'no']),
-    ("Edits addressed by definition name, type-checked before they're written", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Compiler-computed map of the services each function reaches, through the whole call chain', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Model output typed untrusted at its standard-library source', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ("Algebraic laws property-tested by default by the compiler's own test command", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Named arguments required at every multi-argument call of a declared function', ['yes', 'part', 'no', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'no', 'part']),
-    ('Mutation and moves spelled at the call site', ['yes', 'no', 'no', 'no', 'part', 'part', 'part', 'no', 'part', 'part', 'no', 'part']),
-    ('Missing and redundant match arms both rejected, on every match', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'yes', 'no', 'no']),
-    ('Deterministic agent protocol: same source tree, byte-identical answers', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Ownership and borrows checked at compile time, with no tracing garbage collector and no lifetime annotations', ['yes', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'part', 'no', 'no', 'part']),
-    ('Generic code dispatches on the algebraic laws a type satisfies, with arm totality checked', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Every error has a code and an explain entry, with JSON repair edits from the compiler itself', ['yes', 'no', 'part', 'part', 'part', 'part', 'no', 'part', 'no', 'no', 'no']),
+    ("Edits addressed by definition name, type-checked before they're written", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Compiler-computed map of the services each function reaches, through the whole call chain', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Model output typed untrusted at its standard-library source', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ("Algebraic laws property-tested by default by the compiler's own test command", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Named arguments required at every multi-argument call of a declared function', ['yes', 'part', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'no', 'part']),
+    ('Mutation and moves spelled at the call site', ['yes', 'no', 'no', 'part', 'part', 'part', 'no', 'part', 'part', 'no', 'part']),
+    ('Missing and redundant match arms both rejected, on every match', ['yes', 'no', 'part', 'part', 'part', 'part', 'no', 'part', 'yes', 'no', 'no']),
+    ('Deterministic agent protocol: same source tree, byte-identical answers', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Ownership and borrows checked at compile time, with no tracing garbage collector and no lifetime annotations', ['yes', 'no', 'no', 'no', 'no', 'part', 'no', 'part', 'no', 'no', 'part']),
+    ('Generic code dispatches on the algebraic laws a type satisfies, with arm totality checked', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
 ]
 # The fine print for every "part"/"yes" a competitor gets, so nobody has to take our word for it.
 VERSUS_NOTES = {
     'Python': [
         'Named arguments required at every multi-argument call of a declared function: The author can opt in with keyword-only parameters after a bare `*` (PEP 3102), and calling them positionally is then a TypeError. But that is opt-in, and the error comes at run time, not compile time.',
-    ],
-    'TypeScript': [
-        'Every error has a code and an explain entry: Every tsc diagnostic carries a stable TSnnnn code, and the language service (tsserver getCodeFixes) supplies quick fixes for many of them. There is no built-in explain command, and tsc has no CLI mode that emits JSON fixes.',
-        'Missing and redundant match arms both rejected: Exhaustiveness is checked only through an opt-in idiom (a never assertion in default, or a return type with strictNullChecks/noImplicitReturns). A case label outside the union is an error (TS2678), but a duplicate or already-handled case is not rejected.',
     ],
     'Java': [
         'Every error has a code and an explain entry: javac has stable internal diagnostic keys (e.g. compiler.err.cant.resolve), shown with -XDrawDiagnostics, but has no explain command and no machine-readable fixes. Quick-fixes come from IDEs (Eclipse JDT problem IDs, IntelliJ).',
