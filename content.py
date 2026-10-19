@@ -130,7 +130,7 @@ REASONS = [
                   "the third-party cap-std crate for Rust). None checks per function, at "
                   "compile time, what a function can reach.",
         "sample": ("draconyx", """provide locally:
-    FileSystem = scope_to(fs = borrow system.filesystem, root = Path("/tmp/agent-sandbox"))
+    FileSystem = scope_to(filesystem = borrow system.filesystem, root = Path("/tmp/agent-sandbox"))
     Clock      = system.clock
 in:
     run_generated_plan()
