@@ -338,7 +338,7 @@ def build_html():
 </div></section>
 </main>
 <footer><div class="wrap">
-<span>{CLAW}Draconyx, a language designed by Filippo Fadda with AI collaborators.</span>
+<span>{CLAW}Draconyx, a language designed by <a href="https://www.linkedin.com/in/filippofadda/" rel="author">Filippo F. Fadda</a>.</span>
 <span><a href="/index.md">This page as Markdown</a> &middot; <a href="/llms.txt">llms.txt</a></span>
 </div></footer>
 </body>
