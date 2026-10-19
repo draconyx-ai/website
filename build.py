@@ -127,13 +127,13 @@ h2{font-size:clamp(28px,3.8vw,42px);margin:0 0 16px}
 .loop b{display:block;font-size:17px;margin:6px 0 4px}.loop span{font-size:15px;color:var(--muted)}
 @media (max-width:860px){.loop{grid-template-columns:minmax(0,1fr);gap:30px}.loop .arr{right:auto;left:50%;top:auto;bottom:-22px;transform:translateX(-50%) rotate(135deg)}}
 .vwrap{overflow-x:auto;contain:paint;margin-top:30px;border-radius:2px;border:2px solid var(--shadow);border-bottom-width:6px;background:var(--card)}
-table.versus{width:100%;table-layout:fixed;border-collapse:collapse;min-width:926px;font-size:14.5px}.versus col.cap{width:260px}@media (max-width:1100px){.versus col.cap{width:200px}}
+table.versus{width:100%;table-layout:fixed;border-collapse:collapse;min-width:@VMIN_MID@px;font-size:14.5px}.versus col.cap{width:220px}@media (max-width:1100px){.versus col.cap{width:180px}}
 .versus tbody th{position:sticky;left:0;background:var(--card);z-index:1}
-@media (max-width:600px){.versus col.cap{width:150px}.versus tbody th{font-size:13px}table.versus{font-size:13px;min-width:876px}.versus th,.versus td{padding:10px 4px}}
+@media (max-width:600px){.versus col.cap{width:150px}.versus tbody th{font-size:13px}table.versus{font-size:13px;min-width:@VMIN_PHONE@px}.versus th,.versus td{padding:10px 4px}}
 .versus thead th:first-child{position:sticky;left:0;z-index:2}
 .versus th,.versus td{padding:13px 4px;border-bottom:1px solid var(--line);text-align:center}
 .versus tbody tr:last-child th,.versus tbody tr:last-child td{border-bottom:0}
-.versus thead th{font-size:13px;letter-spacing:0;line-height:1.25;padding-left:2px;padding-right:2px;color:var(--muted);font-weight:750;background:var(--bg2)}
+.versus thead th{font-size:12.5px;letter-spacing:0;line-height:1.25;padding-left:2px;padding-right:2px;color:var(--muted);font-weight:750;background:var(--bg2)}
 .versus tbody th{text-align:left;font-weight:600;padding-left:16px;padding-right:10px}
 .versus .us{background:color-mix(in srgb,var(--olive) 14%,transparent)}
 .versus thead .us{background:var(--olive);color:#fff}
@@ -199,6 +199,11 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-bet
 footer .claw{fill:#a6b85a;width:22px;height:22px;vertical-align:-5px;margin-right:6px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 """
+# Language columns share the width equally and never shrink below VCOL px (the widest header,
+# "Draconyx" in bold, needs about that); below it the table scrolls inside its box instead.
+VCOL = 62
+CSS = (CSS.replace("@VMIN_MID@", str(180 + VCOL * len(C.VERSUS_LANGS)))
+          .replace("@VMIN_PHONE@", str(150 + VCOL * len(C.VERSUS_LANGS))))
 
 
 def build_html():
