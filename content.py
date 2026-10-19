@@ -374,19 +374,19 @@ FEATURE_GROUPS = [
 ]
 
 # Head-to-head: only rows where Draconyx ships today. Cells verified per language (2026-10-18).
-VERSUS_LANGS = ['Draconyx', 'Python', 'Java', 'C#', 'C++', 'Rust', 'Go', 'Swift', 'Zig', 'Elixir', 'Mojo']
+VERSUS_LANGS = ['Draconyx', 'Python', 'Java', 'Kotlin', 'C#', 'C++', 'Rust', 'Go', 'Swift', 'Zig', 'Elixir', 'Haskell', 'Mojo']
 VERSUS = [
-    ('Every error has a code and an explain entry, with JSON repair edits from the compiler itself', ['yes', 'no', 'part', 'part', 'part', 'part', 'no', 'part', 'no', 'no', 'no']),
-    ("Edits addressed by definition name, type-checked before they're written", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Compiler-computed map of the services each function reaches, through the whole call chain', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Model output typed untrusted at its standard-library source', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ("Algebraic laws property-tested by default by the compiler's own test command", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Named arguments required at every multi-argument call of a declared function', ['yes', 'part', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'no', 'part']),
-    ('Mutation and moves spelled at the call site', ['yes', 'no', 'no', 'part', 'part', 'part', 'no', 'part', 'part', 'no', 'part']),
-    ('Missing and redundant match arms both rejected, on every match', ['yes', 'no', 'part', 'part', 'part', 'part', 'no', 'part', 'yes', 'no', 'no']),
-    ('Deterministic agent protocol: same source tree, byte-identical answers', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Ownership and borrows checked at compile time, with no tracing garbage collector and no lifetime annotations', ['yes', 'no', 'no', 'no', 'no', 'part', 'no', 'part', 'no', 'no', 'part']),
-    ('Generic code dispatches on the algebraic laws a type satisfies, with arm totality checked', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Every error has a code and an explain entry, with JSON repair edits from the compiler itself', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'no', 'no', 'part', 'no']),
+    ("Edits addressed by definition name, type-checked before they're written", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Compiler-computed map of the services each function reaches, through the whole call chain', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Model output typed untrusted at its standard-library source', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ("Algebraic laws property-tested by default by the compiler's own test command", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Named arguments required at every multi-argument call of a declared function', ['yes', 'part', 'no', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'no', 'no', 'part']),
+    ('Mutation and moves spelled at the call site', ['yes', 'no', 'no', 'no', 'part', 'part', 'part', 'no', 'part', 'part', 'no', 'no', 'part']),
+    ('Missing and redundant match arms both rejected, on every match', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'yes', 'no', 'part', 'no']),
+    ('Deterministic agent protocol: same source tree, byte-identical answers', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Ownership and borrows checked at compile time, with no tracing garbage collector and no lifetime annotations', ['yes', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'part', 'no', 'no', 'no', 'part']),
+    ('Generic code dispatches on the algebraic laws a type satisfies, with arm totality checked', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
 ]
 # The fine print for every "part"/"yes" a competitor gets, so nobody has to take our word for it.
 VERSUS_NOTES = {
@@ -396,6 +396,10 @@ VERSUS_NOTES = {
     'Java': [
         'Every error has a code and an explain entry: javac has stable internal diagnostic keys (e.g. compiler.err.cant.resolve), shown with -XDrawDiagnostics, but has no explain command and no machine-readable fixes. Quick-fixes come from IDEs (Eclipse JDT problem IDs, IntelliJ).',
         'Missing and redundant match arms both rejected: Switch expressions and pattern switches must be exhaustive over enums and sealed types (compile error). Dominated case labels and duplicate constants are compile errors too.',
+    ],
+    'Kotlin': [
+        'Every error has a code and an explain entry: K2 diagnostics have internal names such as UNRESOLVED_REFERENCE. The documented -Xrender-internal-diagnostic-names flag prints them alongside warnings, and @Suppress and -Xwarning-level accept warning names. kotlinc has no explain command and no machine-readable repair edits; quick-fixes come from the IDE, not the compiler.',
+        'Missing and redundant match arms both rejected: A when used as an expression must be exhaustive on any subject (a compile error otherwise), and since Kotlin 1.7 a when statement on an enum, sealed or Boolean subject must be too. A when statement on other subjects, such as Int or String, can leave cases out. Duplicate conditions and a redundant else only get warnings.',
     ],
     'C#': [
         'Every error has a code and an explain entry: Every Roslyn diagnostic has a stable CSxxxx ID, and analyzers/code fixes ship in the SDK (dotnet format applies them). There is no built-in explain command; explanations live in the docs on learn.microsoft.com.',
@@ -423,6 +427,10 @@ VERSUS_NOTES = {
     'Zig': [
         "Mutation and moves spelled at the call site: This goes against the rule's 'no' on purpose. Zig parameters are immutable, so a caller has to write &x at the call site to let a callee mutate a local, much like Rust's &mut. Method receivers auto-take the address, an already-held pointer passes unmarked, and moves don't exist.",
         'Missing and redundant match arms both rejected: On an enum or tagged-union switch, a missing prong is a compile error, so is a duplicate prong, and so is an else prong once every case is handled. (Integer switches need an else.)',
+    ],
+    'Haskell': [
+        "Every error has a code and an explain entry: Since 9.6, GHC tags most diagnostics with [GHC-nnnnn] codes, and -fdiagnostics-as-json emits them, but GHC ships no explain command. The Haskell Foundation's separate error index documents only about 141 codes, and the JSON hints are prose strings, not machine-applicable repair edits.",
+        'Missing and redundant match arms both rejected: -Woverlapping-patterns (redundant arms) is on by default and -Wincomplete-patterns (missing arms) comes with -W or -Wall, but both are warnings; rejecting a match takes -Werror or -Werror=incomplete-patterns.',
     ],
     'Mojo': [
         "Named arguments required at every multi-argument call of a declared function: Mojo supports Python-style keyword-only parameters (after `*` in the signature), so an author can opt in to required labels, as in Python. The default is optional. The rule's draft lists Mojo as no, but scoring it the same as Python means part.",
