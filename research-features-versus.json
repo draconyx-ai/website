@@ -1,0 +1,1531 @@
+{
+ "features": [
+  {
+   "name": "Capabilities: named, but never declared",
+   "pitch": "Write the functions and the type conforms. No impl blocks, and no two modules can give one type two meanings.",
+   "detail": "A capability is a named set of operations, and a type conforms as soon as its defs supply every one. The compiler infers the conformance, so there is no `impl` boilerplate for a model to forget or get wrong. Coherence is fixed by law: a (type, capability) pair has exactly one origin in the whole program, a second `extend` is a compile error, and a conformance the checker cannot decide within entailment depth 12 is rejected, never accepted. So whether code compiles never depends on import order, and an agent's edit cannot quietly change which implementation a call reaches.",
+   "status": "ships",
+   "status_evidence": "draconyx-types: solve.rs does structural matching, conditional conformance by entailment chaining with ENTAILMENT_DEPTH = 12, and the occurs guard. lib.rs codes AX0420 missing conformance, AX0421 bound not satisfied, AX0422 two origins, AX0423 asserts without conformance, AX0424 not object-safe, AX0425 undecided. Covered by tests/reject cond_conformance_*, asserts_without_conformance*. One gap: per-ownership conformance (`share T : C` as a separate judgement, plus the `when transfer/share/remote` arms) is listed under 'Not implemented' in draconyx-types/src/lib.rs, so leave it out of this claim.",
+   "cites": [
+    "sections/10-capabilities.tex:6",
+    "sections/10-capabilities.tex:153",
+    "sections/10-capabilities.tex:190",
+    "sections/11-type-system.tex:577"
+   ],
+   "sample": "capability Add:\n    def add(transfer self: Self, transfer other: Self) -> Self\n\nstruct Tensor:\n    data: List<Float>\n\ndef add(transfer self: Tensor, transfer other: Tensor) -> Tensor"
+  },
+  {
+   "name": "Algebraic laws as code, checked at build time",
+   "pitch": "In C++ and Rust, associativity is a line in the docs. In Draconyx it is a `law` line, and a false one fails the build with a shrunk counter-example.",
+   "detail": "A capability can carry laws such as associative, identity or commutative. A type has to assert them explicitly, because laws are never inferred from names. A `checked` law, the default mode, becomes a property test: inputs come from Arbitrary, the first failure is shrunk, and the witness is saved to a regression file that later runs replay first. The `proven` mode (SMT or proof term) is specified but not built, so today the guarantee is property-tested, not proved.",
+   "status": "partial",
+   "status_evidence": "Built: draconyx-eval/src/harness.rs and arbitrary.rs run `drx test` / `drx verify` (draconyx-cli main.rs). That covers checked laws as property tests with greedy shrinking and replayed regression files, conditional laws with a vacuity guard, in-expectation laws and witness examples, reported as AX0701 law violation and AX0704 vacuous law. Not built: the `proven` mode. harness.rs says a proven law is 'not discharged: no solver in v0', and draconyx-types lib.rs lists 'law verification itself... nothing is tested or proved' only for the typechecker crate. There is no SMT backend anywhere.",
+   "cites": [
+    "sections/10-capabilities.tex:25",
+    "sections/10-capabilities.tex:50",
+    "sections/13-law-verification.tex:13",
+    "sections/13-law-verification.tex:19",
+    "sections/13-law-verification.tex:209"
+   ],
+   "sample": "capability Monoid:\n    def add(transfer self: Self, transfer other: Self) -> Self\n    def zero() -> Self\n    law associative: add(self = add(self = a, other = b), other = c)\n                     == add(self = a, other = add(self = b, other = c))\n    law identity:    add(self = a, other = zero()) == a"
+  },
+  {
+   "name": "Dispatch on algebra",
+   "pitch": "Write the parallel reduction once. The compiler picks it only for types that assert the laws that make it correct.",
+   "detail": "A generic def can branch on which laws its type argument asserts, not just on which capability it has. The arms are tried in order from most demanding to least, and the checker enforces totality and flags redundant arms. A model can write the fast path and the safe fallback side by side, and the type system decides which one is legal for each type. Arms are chosen on asserted laws, and the law harness is what checks those assertions.",
+   "status": "ships",
+   "status_evidence": "draconyx-types checks law-qualified bounds (decision 19, `over_same_ops`), plus `when` totality and redundancy in the AX06xx band (tests/reject when_total, when_non_total, when_redundant, when_unreachable). At run time, draconyx-eval interp.rs `Machine::holds` picks the arm, and the native image reaches it through draconyx-runtime (index.rs WhenArm, `ax_when_arm`). Decision 236 memoizes the arm under the full question, pinned by units3/c36-when-cap-args.",
+   "cites": [
+    "sections/10-capabilities.tex:88",
+    "sections/11-type-system.tex:445"
+   ],
+   "sample": "def reduce<T>(xs: List<T>) -> T where T : Add\n    when T : Add associative + commutative -> parallel_tree_reduce(xs)\n    when T : Add associative                -> sequential_left_fold(xs)\n    when T : Add commutative                -> unordered_fold(xs)\n    when T : Add                            -> sequential_left_fold(xs)"
+  },
+  {
+   "name": "Generics that infer the hard parts",
+   "pitch": "Variance, associated types and const-generic shapes are worked out by the compiler, not annotated by the model.",
+   "detail": "Generics use angle brackets. Variance is inferred from field positions, so there are no +T/-T annotations. Associated types are solved from the conformer's defs, `some C`/`any C` existentials give opaque results and heterogeneous, dynamically dispatched collections, and const generics make `Vec<Float, 3>` and `Vec<Float, 4>` different types. Dimension equality (`N + M` is `M + N`) and literal bounds (`head` of a `Vec<T, 0>`) are checked in every build. Refinement types such as `{ x: Int | x > 0 }` are only partly built: the checker discharges literals and facts from `if` guards, and the SMT discharge the spec calls for, also needed for symbolic value-parameter bounds, does not exist yet.",
+   "status": "partial",
+   "status_evidence": "Built in draconyx-types: variance.rs (decision 24, field positions to a fixpoint), associated types and object safety (decision 22, tests/reject assoc_equality*), existential subsumption (exist_subsumption / exist_no_subsumption), with `Ty::Exist` evaluated in draconyx-eval interp.rs. Const generics are equal by normalization, literal bounds give AX1021 (decision 29, tests const_generics_ok, const_mismatch, const_bound_violated). Partial: refinements are 'refinement-lite' in pred.rs, with syntactic discharge only from literals and if-guard facts and the purity rule AX1018. An undischarged predicate or a symbolic value-parameter bound is only a note (AX1009 REFINEMENT_NOT_CHECKED). lib.rs lists 'symbolic value-parameter entailment' under Not implemented, and there is no SMT backend.",
+   "cites": [
+    "sections/11-type-system.tex:17",
+    "sections/11-type-system.tex:185",
+    "sections/11-type-system.tex:835",
+    "sections/11-type-system.tex:948",
+    "sections/11-type-system.tex:1090",
+    "sections/11-type-system.tex:1194"
+   ],
+   "sample": "struct Vec<T, const N: Int>:\n    data: Array<T>            // a vector of exactly N elements\n\ndef dot<T, const N: Int>(a: Vec<T, N>, b: Vec<T, N>) -> T\n    where T : Ring"
+  },
+  {
+   "name": "Ownership spelled at both ends",
+   "pitch": "Every handover is written where the value is given and again where it is taken, so a model never has to guess who owns what.",
+   "detail": "Four authorities: owned (consumed with `transfer`), `borrow` (exclusive), readonly borrow (the unmarked default), and `share`/`observe` for co-owning and non-owning handles. The spec's words are owned/borrow/share/observe, not Owned/Borrow/Shared/Weak. The verb is part of the published signature and must be repeated at the call site (the mirror principle), so a mismatch is a compile error that names both halves instead of a silent aliasing bug. Generated code shows its data flow in the text an agent reads, with no inference needed.",
+   "status": "ships",
+   "status_evidence": "compiler/crates/draconyx-own (check.rs, model.rs) checks each argument's verb against the parameter or field verb at every call and construction site, function types included. It runs on `drx check` (draconyx-cli/src/main.rs:476), on `drx run`/`drx build` through draconyx-eval/src/load.rs:255, and in the daemon. An implicit deep copy of a heap value is AX0321.",
+   "cites": [
+    "sections/06-ownership-signatures.tex:5",
+    "sections/06-ownership-signatures.tex:8",
+    "sections/06-ownership-signatures.tex:17",
+    "sections/07-memory-model.tex:255"
+   ],
+   "sample": "start_engine(vehicle: Vehicle)             // readonly borrow: the default\ntune(borrow engine: Engine)                // exclusive, mutable borrow\nmount_wheels(transfer car: Vehicle,\n             transfer wheel1: Wheel, ...)  // consumed: spelled at both ends"
+  },
+  {
+   "name": "Borrow checking with zero lifetime syntax",
+   "pitch": "Rust-grade memory safety without a single `'a`: you never write a lifetime, and the compiler works out every one.",
+   "detail": "A borrow lasts until its last use (non-lexical lifetimes), not until the end of its scope. The law of exclusivity holds: one exclusive borrow or any number of readonly ones at a time. Owned values are linear, so a use after move is a compile error. The spec has no lifetime parameters at all, which removes the annotation puzzles that models most often get wrong in Rust, while still rejecting dangling borrows, use-after-free and aliased mutation.",
+   "status": "ships",
+   "status_evidence": "draconyx-own enforces linearity (AX0312 use-after-move, AX0303 move out of a borrow), exclusivity through field paths, and NLL liveness (live.rs). The checker calls itself 'NLL-lite': liveness follows structured control flow, and break/continue/return are treated conservatively, so it can reject code the spec accepts but never accepts unsafe code. The spec allows exactly this ('incomplete rather than incorrect', sections/07:75-82).",
+   "cites": [
+    "sections/07-memory-model.tex:29",
+    "sections/07-memory-model.tex:38",
+    "sections/07-memory-model.tex:103",
+    "sections/07-memory-model.tex:217",
+    "sections/07-memory-model.tex:255"
+   ],
+   "sample": "let car: Vehicle = build_vehicle()\n\nlet view: borrow Vehicle = borrow car   // exclusive borrow begins\nprint(view.engine.rpm)                  // last use of `view`\n                                        // borrow ends HERE, not at block end\n\ntransfer_ownership(transfer car)        // OK: `view` is already dead"
+  },
+  {
+   "name": "Views inferred, not annotated",
+   "pitch": "Put a borrow in a struct and it becomes a safe view on its own: no keyword, no lifetime parameter.",
+   "detail": "A struct or enum with a `borrow` field or payload, directly or through generics, is a view struct. The checker treats the whole value as one borrow of what it points into. View-ness is worked out from the structure, so `Option<borrow T>` and slice-like windows need no annotation. The checker also refuses to let a view escape a function unless every borrow it holds comes from a parameter.",
+   "status": "ships",
+   "status_evidence": "draconyx-own/src/lib.rs (views): a value whose type carries a borrow inherits the borrows it was built from. A borrow or view may leave a def only when it derives from a parameter (AX0305), and a view type may not define `drop` (AX0309). Closure capture modes are inferred the same way.",
+   "cites": [
+    "sections/07-memory-model.tex:399",
+    "sections/07-memory-model.tex:431"
+   ],
+   "sample": "struct Slice<T>:\n    data:  borrow List<T>   // a borrow field -> Slice is a VIEW\n    start: Int\n    end:   Int"
+  },
+  {
+   "name": "No garbage collector, deterministic drops",
+   "pitch": "No tracing GC and no pauses: each value is freed the moment its last owner lets go.",
+   "detail": "The spec fixes what each authority compiles to. Owned values and borrows carry no runtime bookkeeping. `share` uses precise reference counting inserted by the compiler (Perceus-style), reuses memory in place when a value has a single owner, and makes counts atomic only when analysis shows a value crosses threads. `observe` is a generational reference checked at `upgrade`. Today's runtime already gives deterministic, pause-free freeing and drop order; the zero-cost and Perceus parts of that design are not built yet.",
+   "status": "partial",
+   "status_evidence": "Built: draconyx-runtime (val.rs) and draconyx-eval keep every heap value in a Rust `Rc`, and `observe` is an `Rc` weak handle (interp.rs:1376, `upgrade` in intrinsics.rs:493). `drop` witnesses run when the last owner dies (interp.rs drop_value/sole_owner). There is no tracing collector anywhere. Not built: owned values are refcounted too instead of having zero bookkeeping, and there is no Perceus dup/drop placement or reuse analysis, no analysis that selects atomic counts, and no generational references. Cycles of `share` leak, as the spec states.",
+   "cites": [
+    "sections/07-memory-model.tex:631",
+    "sections/07-memory-model.tex:647",
+    "sections/07-memory-model.tex:692",
+    "sections/07-memory-model.tex:703",
+    "sections/07-memory-model.tex:729",
+    "sections/07-memory-model.tex:779"
+   ],
+   "sample": "let cache: share Cache = share empty()       // refcount = 1\n\nlet worker = share cache                     // compiler inserts dup -> count = 2\nspawn(() -> process(worker))                // worker handed off"
+  },
+  {
+   "name": "Remote values that cannot hide failure",
+   "pitch": "In Draconyx a network call never looks like a local call: `remote` is in the type, and every way it can fail is a value you have to match on.",
+   "detail": "`remote T` is a type qualifier, and the standard `RemoteError` sum gives four reasons for failure: Unreachable, Timeout, Partitioned and NodeGone. Code generated by a model therefore has to say what happens on a slow link and what happens on a dead node. It cannot be written as if the network were always up. Sharing (`share`) and observing (`observe`) a remote value are compile errors because they would need distributed refcounting, which cannot be made correct.",
+   "status": "partial",
+   "status_evidence": "The checker handles this part. draconyx-types carries `remote` as a qualifier (ty.rs:90). A send to a remote actor handle is typed `Result<Unit, RemoteError>` (expr.rs:1320). An `isolated` extern call is typed `Result<T, RemoteError>` (call.rs:1086). draconyx-own rejects `share remote` and `observe remote` with AX0308 (check.rs:305-318, tested in own.rs:638-650). The std prelude declares `RemoteError` with all four variants (draconyx-corpus/src/stdlib.rs:195). Nothing runs remotely: the interpreter never takes a `remote` arm (interp.rs:2513), and the native backend refuses remote forms with AX1105 (codegen emit.rs:442,485). The rule that every remote operation is fallible is enforced only for sends and isolated externs, not in general.",
+   "cites": [
+    "sections/19-remote.tex:14",
+    "sections/19-remote.tex:30",
+    "sections/19-remote.tex:46",
+    "sections/19-remote.tex:126",
+    "sections/19-remote.tex:144"
+   ],
+   "sample": "def read_temperature(sensor: remote Sensor) -> Result<Float>\n\nmatch read_temperature(sensor):\n    Ok(celsius)        -> record(celsius)\n    Err(Timeout)       -> use_last_known()\n    Err(NodeGone)      -> deassign(sensor)\n    Err(Unreachable)   -> retry_with_backoff()\n    Err(Partitioned)   -> enter_readonly_mode()"
+  },
+  {
+   "name": "Bundled distributed runtime",
+   "pitch": "Cluster membership, Raft consensus and CRDTs are meant to live in every binary as ordinary types, with no Zookeeper, Consul or sidecar.",
+   "detail": "The spec puts the runtime inside every binary as a statically linked library. It holds a scheduler, a network stack, SWIM membership, gossip, failure detection, Raft (`Replicated<T> by quorum N`, which refuses a write without quorum: CP) and CRDT replication through a `Mergeable` capability, whose commutative, associative and idempotent laws are declared like any other law (AP). A node is a region, so a crash takes down its values together. Orphaned remote values are reclaimed by lease. Choosing consistency or availability means choosing a type, so an agent cannot hide the CAP trade-off.",
+   "status": "specified",
+   "status_evidence": "None of it exists in the compiler. draconyx-runtime (7.2k lines: codec, image, rt, val) is the native backend's value and call support. It has no networking, membership, consensus, storage drivers or scheduler. `Replicated`, `Sharded` and `ExitReason` are placeholder structs (`raw: Int`) in draconyx-corpus/src/stdlib.rs:436-447. `Mergeable` and `Replicated` exist only as names in the resolver's std inventory (draconyx-resolve/src/std_items.rs:162-163).",
+   "cites": [
+    "sections/20-runtime.tex:4",
+    "sections/20-runtime.tex:17",
+    "sections/20-runtime.tex:34",
+    "sections/20-runtime.tex:37",
+    "sections/19-remote.tex:63",
+    "sections/19-remote.tex:91",
+    "sections/19-remote.tex:165",
+    "sections/19-remote.tex:177",
+    "sections/01-vision.tex:21"
+   ],
+   "sample": "capability Mergeable:\n    def merge(self: Self, other: Self) -> Self\n    law commutative: merge(self = a, other = b) == merge(self = b, other = a)\n    law associative: merge(self = merge(self = a, other = b), other = c)\n                     == merge(self = a, other = merge(self = b, other = c))\n    law idempotent:  merge(self = a, other = a) == a"
+  },
+  {
+   "name": "Native binaries today; unikernel and Wasm next",
+   "pitch": "`drx build` produces a native executable today, and the spec has the same source compiling to a unikernel that needs no OS underneath, or to a WebAssembly module.",
+   "detail": "Draconyx compiles ahead of time to machine code: no VM, no interpreter and no in-process code generation. The program's meaning lives in one place, so a built binary and `drx run` agree by construction. The spec defines three deployment shapes (hosted binary, unikernel, Wasm module) with one compiler and different runtime components linked per shape. Only the hosted shape is built today.",
+   "status": "partial",
+   "status_evidence": "The hosted shape ships. `drx build` (draconyx-cli main.rs:324) uses draconyx-codegen, a Cranelift backend that writes per-package objects and links them with the system `cc` (emit.rs:526). It delegates leaf semantics to draconyx-eval through draconyx-runtime (codegen lib.rs:1-10). That backend still refuses nurseries, `select`, comptime statements, quasi-quotation, placement, kernels, actor sends and remote forms (AX1101-AX1106, emit.rs:437-443). The unikernel and Wasm shapes have no code anywhere in the crates (grep finds nothing for 'unikernel' or 'wasm'). There is no LLVM/MLIR release backend either.",
+   "cites": [
+    "sections/20-runtime.tex:11",
+    "sections/20-runtime.tex:56",
+    "sections/20-runtime.tex:62",
+    "sections/20-runtime.tex:68",
+    "sections/21-compilation.tex:14",
+    "sections/21-compilation.tex:23"
+   ],
+   "sample": ""
+  },
+  {
+   "name": "Hot code swap with checked state migration",
+   "pitch": "Erlang-style hot swap for compiled code: the swap point is proven safe, state is handed over as a linear move, and migrations are functions the compiler checks.",
+   "detail": "A dev host loads a new module version beside the old one, as Erlang does with two versions. Each actor swaps at its message boundary, where the borrow rules prove that no borrow into its state is live. A computed swap-compatibility verdict covers signatures, conformance fingerprints, laws, service requirements and message types. When state layout changes, the host tries each step in order: move, then a typed `migrate` handler, then event-log replay, then supervised restart. For an agent this means edit, swap and observe with state kept warm, within a 250 ms budget.",
+   "status": "specified",
+   "status_evidence": "Only the syntax exists. draconyx-parse accepts an actor's `migrate(...) -> State:` block (item.rs:1359-1368), and draconyx-resolve and draconyx-fmt handle it. No crate type-checks or runs `migrate`: draconyx-types, draconyx-own and draconyx-eval have no references to it. There is no `drx dev` command (the CLI verbs are check/fmt/outline/get-def/test/verify/serve/rpc/run/build plus dumps). Actor sends are unsupported in the interpreter (draconyx-eval/src/compile.rs:1023). Nothing loads modules, computes a swap verdict or uses layout hashes for swapping.",
+   "cites": [
+    "sections/23-live-code.tex:13",
+    "sections/23-live-code.tex:21",
+    "sections/23-live-code.tex:38",
+    "sections/23-live-code.tex:45",
+    "sections/23-live-code.tex:82",
+    "sections/23-live-code.tex:131",
+    "sections/21-compilation.tex:90"
+   ],
+   "sample": "actor Accumulator:\n    state:\n        total: Int\n        count: Int\n\n    migrate(transfer old: prev.State) -> State:\n        State(total = old.total, count = 0)\n\n    on Add(amount: Int):\n        .total = .total + amount\n        .count = .count + 1"
+  },
+  {
+   "name": "Data-race freedom by construction",
+   "pitch": "No Send, no Sync, no annotations: the ownership authorities you already write decide what may cross a task boundary.",
+   "detail": "Sendability is derived from authority, not declared with a marker. A transferred owned value, a readonly borrow or a remote handle may cross; an exclusive borrow or a mutable `share` interior may not. Shared mutable state has to go through a `Mutex`/`RwLock`/atomic bundle. The spec states a Data-Race Freedom theorem for well-typed safe code, so an AI can't write a race that compiles. Today the ownership checker enforces one piece: AX0311 rejects a free-standing `spawn` whose closure captures an exclusive borrow. Bare `share` interiors, channel element types and actor message payloads are not checked yet.",
+   "status": "partial",
+   "status_evidence": "draconyx-own/src/check.rs:2826-2840 emits AX0311 NOT_SENDABLE for an exclusive-borrow capture into a free-standing spawn (test crates/draconyx-own/tests/reject/spawn_not_sendable.ax). draconyx-own/src/lib.rs:364-366 lists what is not implemented: sendability of `share` interiors, channels and actor messages. A `Sendable` capability with field-wise derivation and `trust conformance` exists in draconyx-types/src/solve.rs. There is no multithreaded runtime yet: draconyx-eval/src/intrinsics.rs:355 says spawn runs at once in a single-threaded model.",
+   "cites": [
+    "sections/18-concurrency.tex:11",
+    "sections/18-concurrency.tex:30",
+    "sections/18-concurrency.tex:58",
+    "sections/18-concurrency.tex:66",
+    "sections/18-concurrency.tex:77"
+   ],
+   "sample": "// NOT sendable: a bare mutable share interior would race\nlet bad: share Counter = share Counter(value = 0)\n\n// sendable: the Mutex bundle re-establishes exclusivity at run time\nlet good: share Mutex<Counter> = share new_mutex(Counter(value = 0))"
+  },
+  {
+   "name": "Structured concurrency with `with nursery`",
+   "pitch": "Tasks can't leak, and child tasks may mutably borrow the parent's data with no locks.",
+   "detail": "A nursery is a `with` target. The block can't exit until every child has finished, a failing child cancels its siblings and the error comes out at block exit, and cancellation is plain scope-exit `Drop`, not an effect or an exception. Because no child outlives the block, children may take exclusive borrows from the enclosing scope, which Rust's `thread::spawn` and Go's goroutines can't offer. For generated code this means no forgotten `join`s and no orphaned goroutines.",
+   "status": "partial",
+   "status_evidence": "The parser, formatter and typechecker accept `with nursery` (draconyx-types/src/stmt.rs, draconyx-fmt/src/render.rs). The ownership checker declares the nursery target (draconyx-own/src/check.rs:3806-3811), and AX0311's help suggests `nursery |> spawn(..)` as the fix. Execution is missing: draconyx-eval/src/compile.rs:528 lowers it to \"`with nursery` (structured concurrency) is not supported by the v0 interpreter\", and the native backend reports it as AX1101 (draconyx-codegen/src/emit.rs:438).",
+   "cites": [
+    "sections/18-concurrency.tex:121",
+    "sections/18-concurrency.tex:137",
+    "sections/18-concurrency.tex:141",
+    "sections/18-concurrency.tex:144"
+   ],
+   "sample": "with nursery:\n    nursery |> spawn(() -> fetch(transfer url_a))\n    nursery |> spawn(() -> fetch(transfer url_b))\n    nursery |> spawn(() -> fetch(transfer url_c))\n// control does not pass this line until all three children finish"
+  },
+  {
+   "name": "Move-only channels and a fair, replayable `select`",
+   "pitch": "Every message exists in exactly one place at a time, and `select` timeouts run on a Clock you can fast-forward in tests.",
+   "detail": "Channels are typed sender/receiver pairs. `send` transfers the value, so the producer keeps no alias. `recv` returns ordinary `Err` once the channel is closed and drained, so there is no channel exception. `select` registers on several receivers without consuming anything, picks uniformly at random among ready arms (Go's rule), and consumes only the chosen arm's message. Its `after` timer is driven by the `Clock` service in scope, so tests and replays get deterministic timeouts. Arm-shape rules are compile-time errors.",
+   "status": "partial",
+   "status_evidence": "The `select` statement is parsed and typechecked, and its shape rules are enforced: AX1020 SELECT_SHAPE in draconyx-types/src/stmt.rs:575-629, tests crates/draconyx-types/tests/reject/select_shape.ax and select_ok.ax. The interpreter cannot run `select` (draconyx-eval/src/compile.rs:592 marks it unsupported; codegen reports AX1102). std.task spawn/join/channel/send/recv/try_recv run only in a single-threaded interpreter model (draconyx-eval/src/intrinsics.rs:355-361; recv on an empty channel returns Err because no other task can send).",
+   "cites": [
+    "sections/18-concurrency.tex:169",
+    "sections/18-concurrency.tex:179",
+    "sections/18-concurrency.tex:237",
+    "sections/18-concurrency.tex:240",
+    "sections/18-concurrency.tex:247",
+    "sections/18-concurrency.tex:261"
+   ],
+   "sample": "loop:\n    select:\n        job = recv(borrow work_rx) ->\n            match job:\n                Ok(j)  -> dispatch(transfer j)\n                Err(_) -> break\n        _ = recv(borrow shutdown_rx) -> break\n        after seconds(30) -> escalate_idle()"
+  },
+  {
+   "name": "Actors and OTP supervision without exceptions",
+   "pitch": "Erlang-style let-it-crash supervision trees, with errors staying plain Ok/Err data.",
+   "detail": "An actor owns its state exclusively, processes its mailbox one message at a time, and receives messages through the non-blocking `!` operator. Supervisors declare children and an OTP restart strategy (one_for_one, rest_for_one, one_for_all). Crashes reach a supervisor as exit messages, never as thrown values. Restart-to-clean is sound because no peer shares the crashed actor's state. The same parts make up an LLM agent: the actor's state is the transcript, and tools are plain defs. A remote actor (`remote Actor<T>`, fallible `!`) is the language's unit of distribution, and it exists only in the spec.",
+   "status": "partial",
+   "status_evidence": "`actor` and `supervisor` declarations are parsed (draconyx-parse/src/item.rs), resolved (draconyx-resolve/src/collect.rs) and typechecked: check_actor/check_supervisor in draconyx-types/src/check.rs:1745-2010 type handler bodies against the state receiver. `spawn_actor` is in the std surface (draconyx-resolve/src/std_items.rs:511). Nothing runs: the actor send `!` is unsupported in the interpreter (draconyx-eval/src/compile.rs:1023) and reported as AX1105 by codegen. There is no mailbox, scheduler, supervisor runtime or remote transport. Actor state across handlers is not ownership-checked (draconyx-own/src/lib.rs:367).",
+   "cites": [
+    "sections/18-concurrency.tex:270",
+    "sections/18-concurrency.tex:287",
+    "sections/18-concurrency.tex:309",
+    "sections/18-concurrency.tex:335",
+    "sections/18-concurrency.tex:362",
+    "sections/18-concurrency.tex:385",
+    "sections/18-concurrency.tex:398"
+   ],
+   "sample": "supervisor IngestPipeline:\n    strategy: one_for_one\n    restart:  transient\n    child fetcher: Fetcher = Fetcher()\n    child parser:  Parser  = Parser()\n    on Crashed(who: ChildId, reason: ExitReason):\n        match reason:\n            Panicked(_) -> restart(who)\n            _           -> escalate(reason)"
+  },
+  {
+   "name": "Services and dependency injection",
+   "pitch": "Declare a service, `provide` it once in main, and every function underneath can use it. You get no constructor plumbing, no effect rows, and a compile error if a provider is missing.",
+   "detail": "A `service` is an injectable interface called as `Name.op(...)`. `provide` binds it for the rest of a scope, and `provide locally ... in:` swaps it for a single block, which is how a test substitutes a fake without rewriting the code under test. The compiler infers each def's set of required services, so the one static check (AX0501 Missing provider) names the chain of calls that needs the provider. An optional `requires` clause caps that set (AX0502), and per-parameter bounds on higher-order defs are checked at each call (AX0503). For AI-written code, this means the model never threads a logger through twelve signatures, and it can never reach a service nobody configured.",
+   "status": "ships",
+   "status_evidence": "Verified end to end today. A scratch package with `provide Greeter = Loud(...)` followed by `provide locally: Greeter = Quiet(...) in:` printed both results under `drx run` (interpreter) and from a `drx build` native binary. Leaving out `provide Console` produced AX0501 with the 'required by main' chain. The codes live in draconyx-types/src/lib.rs:2400-2402 and are emitted at lib.rs:2910/2952/2985, with tests in draconyx-types/tests/types.rs:438-474. One caveat: the check that a provider's value has the service's shape is still only a note ('AX0504 ... not enforced in v0'), which the spec allows (12:77).",
+   "cites": [
+    "sections/12-services-di-permissions.tex:26",
+    "sections/12-services-di-permissions.tex:58",
+    "sections/12-services-di-permissions.tex:84",
+    "sections/12-services-di-permissions.tex:109"
+   ],
+   "sample": "def main(transfer system: System) -> Result<Unit>:\n    provide Database = postgres.connect(network = system.network, url = DB_URL)\n    provide Logger   = new_json_logger(to = system.console)\n    serve_requests()\n\nprovide locally:\n    Database = new_in_memory_database()\n    Logger   = NullLogger\nin:\n    let user = fetch_user(id = UserId(7))"
+  },
+  {
+   "name": "Object-capability permissions (no ambient authority)",
+   "pitch": "No global `open` and no importable `Network`: the only way code gets authority is to be handed it. Starting from main's `System` powerbox, it can only be narrowed, never widened.",
+   "detail": "Network, FileSystem, Clock, Random, Console, Environment, the GPU and Model are permission values that descend from the single `System` powerbox passed to `main`. They can be attenuated, for example `scope_to(fs, root)`, and a permission is forbidden to embed another permission, so narrowed authority cannot be read back out. That makes generated code safe to run by construction: hand it a filesystem scoped to a scratch directory and it has nothing else. The spec also adds per-dependency permission budgets in the manifest as a supply-chain defense.",
+   "status": "partial",
+   "status_evidence": "Works today: the powerbox is minted in draconyx-eval/src/intrinsics.rs:2084. Console and the other services must be provided or you get AX0501 (verified). AX0510 'a permission may not hold a permission' is raised by draconyx-types/src/check.rs:1810 (verified on `strict struct ScopedFs: inner: FileSystem`). `scope_to` reaches the live host filesystem under `drx run`, rooted at the attenuation (intrinsics.rs:3225 n_fs_scope_to; ruling 110). Not built: Network is an inert native, and `scope_to_port` is an identity function (intrinsics.rs:332). Per-dependency permission budgets and `drx add` do not exist, since only path dependencies load and there is no registry. Defect: `def forge() -> FileSystem: FileSystem(live = true)` passes `drx check` with 0 errors. It only traps at run time as 'unresolved name ... not supported', so the spec's statically enforced unforgeability (12:299) is not yet a compile-time check for the std permission services. User `strict` structs are protected (AX0241).",
+   "cites": [
+    "sections/12-services-di-permissions.tex:220",
+    "sections/12-services-di-permissions.tex:230",
+    "sections/12-services-di-permissions.tex:236",
+    "sections/12-services-di-permissions.tex:299",
+    "sections/12-services-di-permissions.tex:316",
+    "sections/12-services-di-permissions.tex:329",
+    "sections/12-services-di-permissions.tex:373",
+    "sections/12-services-di-permissions.tex:397",
+    "sections/09-modules.tex:322"
+   ],
+   "sample": "provide locally:\n    FileSystem = scope_to(fs = system.filesystem, root = \"/tmp/agent-sandbox\")\n    Network    = new_recording_mock_network()\n    Clock      = system.clock\nin:\n    run_generated_plan()        // cannot touch anything else, by construction"
+  },
+  {
+   "name": "`tainted`: a typed defense against prompt injection",
+   "pitch": "Model output, console input and the command line are born `tainted`. Passing one to an unmarked parameter, or to a prompt's instruction slot, is compile error AX1022.",
+   "detail": "`tainted T` is a distinct type. A plain T converts into it implicitly, and the only way back is `endorse(value, rationale)`, which demands a stated reason. The std source signatures carry the taint: `Console.read_line`, `System.args`, and `Model` completions. The `Prompt` constructor takes instructions as unmarked `String` and data as `List<tainted String>`, so a program cannot put wire bytes into a model's instruction segment without endorsing them. Its sibling `secret` (AX1023, escaped with `declassify`) stops data from flowing out. This targets the injection path that LLM agents open.",
+   "status": "partial",
+   "status_evidence": "The barrier is a single funnel, `Checker::coerce` -> `taint_barrier`, in draconyx-types/src/check.rs:250-300 (rulings 124 and 165). The std signatures are tainted (types.rs test `the_worlds_input_arrives_tainted`, lines 2318-2340). Verified with `drx check`: passing a tainted String to a String parameter gives AX1022, `std.ai.prompt(instruction = t, ...)` gives AX1022, and propagation through `t ++ \"x\"` gives AX1022. Hole: string interpolation launders taint. `let u = \"hello {t}\"` passed to a String parameter produces no diagnostic, which contradicts 12:472 ('an interpolated string with one tainted segment included'). Fix that before claiming taint 'cannot be laundered'.",
+   "cites": [
+    "sections/12-services-di-permissions.tex:461",
+    "sections/12-services-di-permissions.tex:463",
+    "sections/12-services-di-permissions.tex:472",
+    "sections/12-services-di-permissions.tex:474",
+    "sections/12-services-di-permissions.tex:498",
+    "sections/12-services-di-permissions.tex:517"
+   ],
+   "sample": "def triage(email: tainted String) -> tainted Result<Action, Error>:\n    let p = prompt(\n        instruction = \"Classify the message as spam, urgent, or routine.\",\n        data        = [email])        // data part: tainted welcome\n    let reply = Model.complete(prompt = p)?  // model output: born tainted\n    action_of(label = reply.text)\n\ndef hijacked(email: tainted String) -> Prompt:\n    prompt(instruction = email, data = [])   // COMPILE ERROR"
+  },
+  {
+   "name": "`trust` blocks: unsafe code that names its reason",
+   "pitch": "Draconyx has no `unsafe`. It has `trust \"why this holds\":`, where every unchecked call site carries a mandatory written rationale an auditor can grep.",
+   "detail": "Code the compiler cannot verify is marked by its epistemic status, using the same `trust` keyword that marks unverified laws. A `trust` block admits exactly seven enumerated powers. Calling a `trust def` outside a block is an error (AX0801), and a trust construct without its rationale string is a parse error (AX0269), so every vouched call site states its obligation in prose. The spec pairs this with FFI to C/C++ in three per-library modes (sandboxed in Wasm by default, isolated, in_process) and with Wasm in both directions. Extern calls outside trust are typed `Result<T, Trapped>`.",
+   "status": "partial",
+   "status_evidence": "The static trust tier ships. AX0801 is emitted in draconyx-types/src/call.rs:1065 and tested at types.rs:514 and selfhost/units4/68-trust-tier, which covers nested blocks, lambdas, pipelines and witness families. The mandatory rationale is AX0269. `extern \"C\" def ... from library` declarations type-check with the sandboxed `Result<T, Trapped>` proxy (units4/55-extern-modes). Not built: actually calling foreign code. `drx run` on `extern \"C\" def abs(x: Int) -> Int from library \"c\"` exits 2 with '`ffi.main.abs` has no body'. No crate depends on libloading, dlopen, wasmtime or wasmer, and the [native] modes, the Wasm sandbox and Wasm export are spec-only.",
+   "cites": [
+    "sections/24-ffi.tex:30",
+    "sections/24-ffi.tex:122",
+    "sections/24-ffi.tex:359",
+    "sections/24-ffi.tex:829",
+    "sections/24-ffi.tex:916"
+   ],
+   "sample": "trust def raw(n: Int) -> Int\n    requires \"n is a valid slot index\"\n\ndef good(n: Int) -> Int:\n    trust \"n was range-checked by the caller\": raw(n = n)\n\ndef bad(n: Int) -> Int:\n    raw(n = n)      // AX0801: call to trust def outside a trust block"
+  },
+  {
+   "name": "With blocks: one keyword for receiver, destructuring and scoped release",
+   "pitch": "One `with` covers Python's context managers, Rust's RAII and multi-value destructuring, even at the end of a pipeline.",
+   "detail": "A `with` block fixes a target in a scope and exposes its parts under bare names: `.field` against an implicit receiver, a destructured tuple from a multi-return call, or an owned `Drop` value released when the scope is done. An agent gets one uniform construct to generate where other languages need three idioms. A `|> with (mean, sd):` stage destructures the result of a pipeline without tuple-splatting.",
+   "status": "ships",
+   "status_evidence": "draconyx-parse parses all forms (Stmt::With, Expr::WithStage). draconyx-eval/src/compile.rs:507-535 lowers the implicit-receiver and destructuring forms, and :1832 lowers the piped `|> with` stage. draconyx-eval/src/interp.rs:727 runs them, and draconyx-codegen/src/lower.rs handles St::With natively. Drop runs in reverse declaration order under ruling 158 (interp.rs:1430), but the release happens at frame exit under refcount ownership, so 'released exactly at the block's end' was not verified. Two forms are unsupported and return AX1101/AX1103: `with nursery` (concurrency) and a bare `with` stage outside a pipeline.",
+   "cites": [
+    "sections/15-with-block.tex:4",
+    "sections/15-with-block.tex:6",
+    "sections/15-with-block.tex:20",
+    "sections/15-with-block.tex:35",
+    "sections/15-with-block.tex:48"
+   ],
+   "sample": "with (mean, sd, var) = calculate_stats(data):\n    print(\"mu={mean}, sigma={sd}, var={var}\")\n\ndata\n|> filter(is_finite)\n|> calculate_stats\n|> with (mean, sd, var):\n       print(\"mu={mean}, sigma={sd}, var={var}\")"
+  },
+  {
+   "name": "Shapes and named axes in the type",
+   "pitch": "A tensor's dtype, axis names and sizes belong to its type, so a mismatched matmul is meant to fail at compile time, before any array is allocated.",
+   "detail": "`Tensor<F32; batch: B, feature: D>` puts named axes and size variables into the type. matmul's contract becomes a type equation over the shared inner size, and a transposed argument becomes a type error rather than silently wrong numbers, which is the classic bug in AI-written numerical code. Library signatures bind axis names generically while user signatures keep them literal, so a shared library still catches a caller's transpose mistakes.",
+   "status": "partial",
+   "status_evidence": "This edition checks the dtype and nothing more. compiler/std/src/tensor.ax:14 declares `struct Tensor<dtype>`, and its comment says this edition 'carries the DTYPE and not the axes'. In draconyx-types/src/unify.rs (TENSOR_FQN), a Tensor written with no axis segment unifies with every `Tensor<dt; ...>`. draconyx-types/src/lib.rs:280 says 'Tensor axis segments stay opaque text' and lists 'tensor named-axis algebra (opaque by text)' under Not implemented. Axis segments are parsed, carried as `cuts` (decision 222) and hashed, but the spec's compile error for a shape mismatch is not emitted today. Mixing dtypes (F32 vs I8, quantize/dequantize) is caught.",
+   "cites": [
+    "sections/14-numerical-core.tex:34",
+    "sections/14-numerical-core.tex:46",
+    "sections/14-numerical-core.tex:91",
+    "sections/14-numerical-core.tex:102"
+   ],
+   "sample": "def matmul(\n    a: Tensor<F32; i: I, k: K>,\n    b: Tensor<F32; k: K, j: J>\n) -> Tensor<F32; i: I, j: J>\n\nlet a: Tensor<F32; i: 128, k: 64>\nlet b: Tensor<F32; k: 32,  j: 10>\nlet c = matmul(a = a, b = b)                 // COMPILE ERROR"
+  },
+  {
+   "name": "grad, vmap, jit as typed function transforms, with schedules certified by laws",
+   "pitch": "Autodiff, auto-batching and fusion are plain functions over functions, and schedule rewrites are gated by laws instead of being trusted.",
+   "detail": "Following JAX, `grad`, `jvp`, `vmap`, `pmap` and `jit` each take a function and return a function. They compose by ordinary application (`grad(grad(loss))`, `jit(grad(f))`), and a path through a non-differentiable operation is a compile error. Following Halide, a schedule (`@tile`, `@fuse`, `@vectorize`, `@on`) is a separate block from the algorithm. The spec's addition is that a directive compiles only if the laws it relies on hold at the build's verification level, while XLA, TVM and Halide trust their transformations.",
+   "status": "specified",
+   "status_evidence": "compiler/std/src/tensor.ax:207-260 declares grad, jvp, vjp, jacfwd, jacrev, jit, compile and with_precision as signatures with no bodies. vmap and pmap forward to a `trust def vmap_raw` that has no implementation. Because the signatures exist, calls to them type-check, but nothing differentiates, batches or fuses, and draconyx-eval has no tensor intrinsics. draconyx-parse/src/item.rs:215 parses `schedule` blocks, and draconyx-resolve/src/lib.rs:94-97 treats schedule directives as opaque. Law gating of directives is not implemented.",
+   "cites": [
+    "sections/14-numerical-core.tex:256",
+    "sections/14-numerical-core.tex:289",
+    "sections/14-numerical-core.tex:428",
+    "sections/14-numerical-core.tex:722",
+    "sections/14-numerical-core.tex:784",
+    "sections/14-numerical-core.tex:853"
+   ],
+   "sample": "let dloss        = grad(loss)                 // dloss : same shape as w\nlet hessian_diag = grad(grad(loss))\nlet batched_loss = vmap(f = example_loss, over = {x: batch, y: batch})\n\nschedule blur as tiled_fused:\n    @tile(y, x, by = (32, 32))\n    @fuse(by, blur)\n    @vectorize(x, width = 8)\n    @parallel(y)"
+  },
+  {
+   "name": "Hygienic, typed dialects (macros, elab, comptime)",
+   "pitch": "Dialects extend the syntax with Racket-grade hygiene and type-directed elaboration, without textual macros.",
+   "detail": "Extensions use Racket's set-of-scopes hygiene, so identifiers a dialect generates cannot capture the user's identifiers, and deliberate capture goes through syntax parameters. There are two type-blind tiers (declarative `pattern => template`, and `lower`) and two typed hooks (`elab` synthesizes code from the expected type, `typecheck` can only veto), all written in `comptime` Draconyx. Generated code keeps source provenance, so diagnostics point at what the agent actually wrote.",
+   "status": "specified",
+   "status_evidence": "The surface is parsed: draconyx-parse handles comptime `emit:` quasi-quotes and `require`. draconyx-resolve/src/lib.rs:924 checks the `use extension` activation DAG for cycles (a resolver check), and draconyx-resolve/src/lib.rs:94-97 resolves comptime bodies leniently and treats macro patterns and quasi-quotes as opaque. No macro expansion or hygiene engine exists. draconyx-types/src/check.rs:1757 skips extensions with COMPTIME_SKIPPED, draconyx-eval/src/compile.rs:601 reports 'comptime statements are not supported by the v0 interpreter', and codegen refuses them as AX1103/AX1104. The proof sub-language (sections/16) is in the same state: tactics are parsed and formatted, and draconyx-types/src/lib.rs lists 'Proofs' as not implemented.",
+   "cites": [
+    "sections/17-extensions.tex:67",
+    "sections/17-extensions.tex:127",
+    "sections/17-extensions.tex:189",
+    "sections/17-extensions.tex:547",
+    "sections/17-extensions.tex:953",
+    "sections/16-proof-sublanguage.tex:4"
+   ],
+   "sample": ""
+  }
+ ],
+ "rows": [
+  {
+   "key": "error_codes",
+   "label": "Every error has a stable code, an explain entry and JSON repairs, from the compiler itself",
+   "draconyx": "ships",
+   "judging_rule": "yes = the reference compiler gives every diagnostic a stable code, has a built-in explain command, AND emits machine-readable fixes. part = stable codes on most errors plus some built-in fixes or explain text (Rust E-codes + rustc --explain + cargo fix, C# CSxxxx + Roslyn code fixes, Swift/Java/TS codes with partial fix-its). no = free-text errors (Python, Go, Elixir, Zig, Mojo)."
+  },
+  {
+   "key": "edit_by_name",
+   "label": "Edits addressed by definition name, type-checked before they're written",
+   "draconyx": "ships",
+   "judging_rule": "yes = the compiler's own toolchain takes an edit by definition name and type-checks it before writing to disk. An IDE/LSP rename refactor does not count. All eleven others: no."
+  },
+  {
+   "key": "service_map",
+   "label": "Compiler-computed map of the services each function reaches, through the whole call chain",
+   "draconyx": "ships",
+   "judging_rule": "yes = the compiler infers and reports, per function, the external services/effects reached transitively. Java checked exceptions or Swift `throws` are not service maps. All eleven others: no."
+  },
+  {
+   "key": "tainted_source",
+   "label": "Model output typed untrusted at its standard-library source",
+   "draconyx": "ships",
+   "judging_rule": "yes = the std library's input/model APIs return a distinct untrusted type, and passing it where a trusted value is expected is a compile error. All eleven others: no. (Internal note: string interpolation currently launders taint. The row says 'typed at its source', which is true. Don't upgrade the copy to 'cannot be laundered' until that is fixed.)"
+  },
+  {
+   "key": "laws_tested",
+   "label": "Algebraic laws property-tested by default, required to pass for release",
+   "draconyx": "partial",
+   "judging_rule": "yes = laws are declared in the language on interfaces and the default test command property-tests them, AND a release/publish step refuses to proceed while one fails. part = laws are tested by default but there is no release gate. no = only third-party property-test libraries (Hypothesis, jqwik, proptest, StreamData...) on tests the user writes by hand. All eleven others: no. Draconyx is part: `drx test`/`drx verify` property-test checked laws, but no release gate exists (no registry or publish step) and `proven` laws are unbuilt. Mark it partial, or drop 'required to pass for release' from the label to make it ships."
+  },
+  {
+   "key": "named_args",
+   "label": "Named arguments required at every multi-argument call of a declared function",
+   "draconyx": "ships",
+   "judging_rule": "yes = the compiler rejects an unlabelled argument at every call of a declared function with 2+ parameters, and the author has no opt-out. part = labels are required by default but the author can opt out (Swift `_`), or the author can opt in (Python keyword-only `*`). no = TS, Java, C#, C++, Rust, Go, Zig, Elixir, Mojo, where named args are optional or don't exist."
+  },
+  {
+   "key": "callsite_effects",
+   "label": "Mutation and moves spelled at the call site",
+   "draconyx": "ships",
+   "judging_rule": "yes = both mutation and ownership transfer must be written at every call site, receivers included. part = only one is marked, or only some calls (Rust `&mut` but moves and method auto-borrow unmarked; Swift `&` for inout plus optional `consume`; C# `ref`/`out` but mutation through references unmarked; Mojo `^` for transfer but mutation unmarked). no = Python, TS, Java, C++, Go, Zig, Elixir."
+  },
+  {
+   "key": "match_arms",
+   "label": "Missing and redundant match arms both rejected, on every match",
+   "draconyx": "ships",
+   "judging_rule": "yes = on every match/switch over a closed type, both a missing case and an unreachable/redundant case are compile ERRORS. part = exhaustiveness is enforced but redundancy is only a warning, or the check covers only some match forms (Rust and Swift warn on unreachable patterns; Java checks pattern/expression switches but not legacy statement switches; TS needs a `never` idiom; C# warns on non-exhaustive). Zig is yes on enum/union switch (missing prong error, duplicate prong error, unreachable else error). no = Python, Go, Elixir, C++ (warnings only), Mojo (no match)."
+  },
+  {
+   "key": "agent_protocol",
+   "label": "Deterministic agent protocol: same source tree, byte-identical answers",
+   "draconyx": "ships",
+   "judging_rule": "yes = the compiler ships a query protocol for agents whose answers are specified to be byte-identical for the same source tree. An LSP server does not count. All eleven others: no."
+  },
+  {
+   "key": "ownership_no_gc",
+   "label": "Ownership and borrows checked at compile time, with no tracing garbage collector and no lifetime annotations",
+   "draconyx": "ships",
+   "judging_rule": "yes = use-after-move and aliasing of mutable borrows are rejected statically, the runtime has no tracing GC, AND the language has no lifetime/origin annotation syntax. part = two of the three (Rust: static and no GC, but lifetime syntax; Swift: ARC and no lifetimes, but exclusivity is partly a run-time trap and copies are implicit; Mojo: static ownership and ASAP destruction, but origin parameters). no = Python, TS, Java, C#, Go, Elixir (tracing GC), C++ and Zig (no static check). Draconyx: the checker ships, and the runtime is reference-counted (Rc), not traced. Don't claim zero-overhead or Perceus-style reuse."
+  },
+  {
+   "key": "law_dispatch",
+   "label": "Generic code dispatches on the algebraic laws a type satisfies, with arm totality checked",
+   "draconyx": "ships",
+   "judging_rule": "yes = a bound or dispatch arm can require that a type satisfies named laws (not just signatures), and the compiler checks the arms for totality and redundancy. C++ concepts, Rust traits, Swift protocols, Java/C# interfaces and Go constraints are signature-only: no. All eleven others: no."
+  },
+  {
+   "key": "remote_failure",
+   "label": "Remote values in the type: partial failure typed, remote references can't be shared, distributed runtime bundled",
+   "draconyx": "specified",
+   "judging_rule": "yes = the type system marks remote values and makes remote operations return a typed failure, AND the standard runtime runs them across nodes. part = only one half: Elixir (BEAM distribution and supervision built in, failure untyped) or Java RMI (checked RemoteException, but remote objects are a library). no = Python, TS, C#, C++, Rust, Go, Swift, Zig, Mojo. Draconyx = specified: the checker types sends and isolated externs as Result<_, RemoteError> and rejects `share remote` (AX0308), but nothing runs remotely, the native backend refuses remote forms (AX1105), and there is no distributed runtime."
+  },
+  {
+   "key": "concurrency",
+   "label": "Structured concurrency (nurseries) with data races rejected at compile time",
+   "draconyx": "specified",
+   "judging_rule": "yes = the language ships scoped task groups that can't outlive their scope, AND data races are compile errors in safe code. part = only one of the two (Rust: Send/Sync race freedom, but scoped tasks are library-level; Elixir: no shared memory, but no structured scopes; Java 21+ StructuredTaskScope (preview), but no race checking; Mojo: neither fully). Swift 6 = yes (task groups + strict concurrency checking). no = Python, TS, C#, C++, Go, Zig. Draconyx = specified: `with nursery` and `select` type-check and AX0311 rejects some unsendable captures, but neither engine executes nurseries or select (AX1101/AX1102), and the runtime is single-threaded."
+  },
+  {
+   "key": "tensor_lang",
+   "label": "Tensor shapes checked at compile time and grad/vmap as typed language transforms",
+   "draconyx": "specified",
+   "judging_rule": "yes = the compiler rejects a tensor shape/named-axis mismatch AND differentiation/vectorization are typed transforms of the language or its std. part = one of the two in the language, or both through a dominant add-on (Python via JAX/PyTorch; C++ via libraries; Mojo: compile-time layouts but no built-in autodiff; Swift: experimental `@differentiable`). no = TS, Java, C#, Rust, Go, Zig, Elixir (Nx is runtime-checked: no, or part if you count add-ons consistently with Python). Draconyx = specified: dtype mixing is caught, axes are opaque, and grad/jit/vmap are bodiless signatures."
+  }
+ ],
+ "columns": [
+  {
+   "lang": "Python",
+   "cells": [
+    {
+     "key": "error_codes",
+     "value": "no",
+     "note": "CPython reports free-text exceptions and tracebacks with no stable codes, no explain command and no machine-readable fixes. 3.12+ adds 'Did you mean' hints, but those are prose. Ruff, mypy and pyright have rule codes and some autofixes, but they are separate third-party tools.",
+     "evidence": "CPython SyntaxError/TypeError messages are uncoded prose; judging rule lists Python as no"
+    },
+    {
+     "key": "edit_by_name",
+     "value": "no",
+     "note": "Neither CPython nor the standard toolchain has a definition-addressed, type-checked edit command. Rope and LSP renames do not count under the rule.",
+     "evidence": "No such facility in CPython, pip or the stdlib"
+    },
+    {
+     "key": "service_map",
+     "value": "no",
+     "note": "No effect or service inference exists. Python has no effect system.",
+     "evidence": "Python language reference has no effect typing"
+    },
+    {
+     "key": "tainted_source",
+     "value": "no",
+     "note": "input() and stdlib I/O return plain str. PEP 675 LiteralString is the reverse idea: a checker-only type for trusted literals. It is not an untrusted type at the source, and the interpreter does not enforce it.",
+     "evidence": "PEP 675 (typing.LiteralString, 3.11) is enforced only by external type checkers"
+    },
+    {
+     "key": "laws_tested",
+     "value": "no",
+     "note": "There is no way to declare laws in the language. Property testing comes only from third-party Hypothesis, on tests the user writes by hand.",
+     "evidence": "Hypothesis is third-party; unittest has no property testing"
+    },
+    {
+     "key": "named_args",
+     "value": "part",
+     "note": "The author can opt in with keyword-only parameters after a bare `*` (PEP 3102), and calling them positionally is then a TypeError. But that is opt-in, and the error comes at run time, not compile time.",
+     "evidence": "PEP 3102 keyword-only arguments: def f(*, a, b)"
+    },
+    {
+     "key": "callsite_effects",
+     "value": "no",
+     "note": "Neither mutation nor transfer is marked at the call site. All arguments are shared references.",
+     "evidence": "Python call semantics: pass object references, no call-site annotations"
+    },
+    {
+     "key": "match_arms",
+     "value": "no",
+     "note": "The interpreter does not check `match` (3.10+) for exhaustiveness. It only rejects an irrefutable case placed before others. Pyright can opt in with reportMatchNotExhaustive, and mypy can do it via assert_never, but both are external and opt-in.",
+     "evidence": "PEP 634; pyright reportMatchNotExhaustive is off by default"
+    },
+    {
+     "key": "agent_protocol",
+     "value": "no",
+     "note": "No deterministic agent query protocol exists. Language servers are third-party and are excluded by the rule anyway.",
+     "evidence": "No such component in CPython"
+    },
+    {
+     "key": "ownership_no_gc",
+     "value": "no",
+     "note": "No static ownership or borrow checking. CPython uses reference counting plus a tracing cycle collector (the gc module).",
+     "evidence": "CPython gc module: generational cycle-detecting collector"
+    },
+    {
+     "key": "law_dispatch",
+     "value": "no",
+     "note": "Protocols and ABCs dispatch on signatures only, and singledispatch dispatches on type. Nothing dispatches on laws.",
+     "evidence": "typing.Protocol, functools.singledispatch"
+    },
+    {
+     "key": "remote_failure",
+     "value": "no",
+     "note": "The type system does not mark remote values. multiprocessing.managers and xmlrpc are untyped libraries.",
+     "evidence": "stdlib multiprocessing/xmlrpc have no typed remote failure"
+    },
+    {
+     "key": "concurrency",
+     "value": "part",
+     "note": "Fairness override: the rule lists Python as no, but asyncio.TaskGroup (3.11+) is a built-in scoped task group (nursery-style; child tasks cannot outlive the `async with`), which fits the rule's 'part = one of the two'. There is no static race checking, and free-threaded 3.13/3.14 races are unchecked. 'no' is defensible only if you require race freedom.",
+     "evidence": "asyncio.TaskGroup added in Python 3.11 (structured concurrency, modeled on Trio nurseries)"
+    },
+    {
+     "key": "tensor_lang",
+     "value": "part",
+     "note": "Both halves exist only through dominant add-ons: JAX (grad/vmap/jit as transforms, shape errors at trace time) and PyTorch (torch.func). Shape annotations come from jaxtyping plus a checker. The language and stdlib have neither.",
+     "evidence": "JAX jax.grad/jax.vmap; torch.func; judging rule assigns Python part"
+    }
+   ]
+  },
+  {
+   "lang": "TypeScript",
+   "cells": [
+    {
+     "key": "error_codes",
+     "value": "part",
+     "note": "Every tsc diagnostic carries a stable TSnnnn code, and the language service (tsserver getCodeFixes) supplies quick fixes for many of them. There is no built-in explain command, and tsc has no CLI mode that emits JSON fixes.",
+     "evidence": "tsc output 'error TS2322: ...'; TypeScript language service API getCodeFixesAtPosition / codefix registry in src/services/codefixes; no 'tsc --explain' exists"
+    },
+    {
+     "key": "edit_by_name",
+     "value": "no",
+     "note": "Edits only happen through IDE/LSP rename and refactors, which the judging rule excludes.",
+     "evidence": "tsserver offers rename and refactor only; tsc has no edit-by-definition command"
+    },
+    {
+     "key": "service_map",
+     "value": "no",
+     "note": "No effect system and no transitive effect or service inference.",
+     "evidence": "The TypeScript type system has no effect tracking"
+    },
+    {
+     "key": "tailted_source_placeholder",
+     "value": "no",
+     "note": "Placeholder removed",
+     "evidence": "n/a"
+    },
+    {
+     "key": "tainted_source",
+     "value": "no",
+     "note": "lib.d.ts input APIs return plain string or any. There is no built-in untrusted type. Branded types are a user idiom only.",
+     "evidence": "lib.dom.d.ts / @types/node return string; no taint type in the standard library"
+    },
+    {
+     "key": "laws_tested",
+     "value": "no",
+     "note": "No law declarations, and no built-in test runner in tsc. Property testing comes only from third-party fast-check.",
+     "evidence": "fast-check is a third-party library; tsc has no test command"
+    },
+    {
+     "key": "named_args",
+     "value": "no",
+     "note": "Arguments are positional. Object-parameter destructuring is a convention the compiler does not enforce.",
+     "evidence": "The TS function call syntax has no labels"
+    },
+    {
+     "key": "callsite_effects",
+     "value": "no",
+     "note": "Call sites mark neither mutation nor moves.",
+     "evidence": "TS has no ref/inout/move syntax"
+    },
+    {
+     "key": "match_arms",
+     "value": "part",
+     "note": "Exhaustiveness is checked only through an opt-in idiom (a never assertion in default, or a return type with strictNullChecks/noImplicitReturns). A case label outside the union is an error (TS2678), but a duplicate or already-handled case is not rejected.",
+     "evidence": "Handbook 'Exhaustiveness checking' with never; TS2678 'Type X is not comparable to type Y'; no duplicate-case error"
+    },
+    {
+     "key": "agent_protocol",
+     "value": "no",
+     "note": "tsserver/LSP is the only query interface, which the judging rule excludes. No determinism is specified.",
+     "evidence": "tsserver protocol only"
+    },
+    {
+     "key": "ownership_no_gc",
+     "value": "no",
+     "note": "Runs on a tracing-GC JS runtime with no ownership checking.",
+     "evidence": "V8/JSC garbage collection; no borrow checker"
+    },
+    {
+     "key": "law_dispatch",
+     "value": "no",
+     "note": "Types are structural and signature-only, with no law-based dispatch.",
+     "evidence": "Interfaces/conditional types check shapes only"
+    },
+    {
+     "key": "remote_failure",
+     "value": "no",
+     "note": "No remote types and no distributed runtime.",
+     "evidence": "n/a"
+    },
+    {
+     "key": "concurrency",
+     "value": "no",
+     "note": "Async/await and Promise.all are unstructured, and there is no compile-time race checking (SharedArrayBuffer is unchecked).",
+     "evidence": "No task-group or nursery construct in the language"
+    },
+    {
+     "key": "tensor_lang",
+     "value": "no",
+     "note": "No shape checking and no autodiff in the language. TensorFlow.js is a runtime library.",
+     "evidence": "n/a"
+    }
+   ]
+  },
+  {
+   "lang": "Java",
+   "cells": [
+    {
+     "key": "error_codes",
+     "value": "part",
+     "note": "javac has stable internal diagnostic keys (e.g. compiler.err.cant.resolve), shown with -XDrawDiagnostics, but has no explain command and no machine-readable fixes. Quick-fixes come from IDEs (Eclipse JDT problem IDs, IntelliJ). Marked part per the rule's own Java example, but it is a weak part.",
+     "evidence": "javac -XDrawDiagnostics prints keys like compiler.err.*; JDK ships no --explain flag or fix-it output"
+    },
+    {
+     "key": "edit_by_name",
+     "value": "no",
+     "note": "No JDK tool takes an edit addressed by definition name. Refactoring lives only in IDEs.",
+     "evidence": "The JDK toolchain (javac, jshell, jdeps, jlink) has no edit facility"
+    },
+    {
+     "key": "service_map",
+     "value": "no",
+     "note": "Checked exceptions are not an effect or service map, and the JDK computes no transitive reach. jdeps gives package and module dependencies, not per-function services.",
+     "evidence": "jdeps reports class, package and module dependencies only"
+    },
+    {
+     "key": "tainted_source",
+     "value": "no",
+     "note": "No untrusted type in java.*. Taint checking exists only through third-party Checker Framework annotations.",
+     "evidence": "Checker Framework Tainting Checker is third-party"
+    },
+    {
+     "key": "laws_tested",
+     "value": "no",
+     "note": "No law declarations in the language. Property testing only via third-party jqwik or junit-quickcheck on hand-written tests.",
+     "evidence": "jqwik/junit-quickcheck are third-party"
+    },
+    {
+     "key": "named_args",
+     "value": "no",
+     "note": "Java has no named arguments at all.",
+     "evidence": "JLS 15.12: arguments are positional only"
+    },
+    {
+     "key": "callsite_effects",
+     "value": "no",
+     "note": "Neither mutation nor transfer is marked at call sites. Every object is passed by reference value, with no ref/inout marker.",
+     "evidence": "JLS method invocation has no call-site mode annotations"
+    },
+    {
+     "key": "match_arms",
+     "value": "part",
+     "note": "Switch expressions and pattern switches must be exhaustive over enums and sealed types (compile error). Dominated case labels and duplicate constants are compile errors too. But a legacy statement switch over an enum without patterns is not exhaustiveness-checked, so the check does not cover every switch.",
+     "evidence": "JLS 14.11.1 (exhaustive switch blocks, dominance errors), JEP 441 (Java 21) pattern matching for switch"
+    },
+    {
+     "key": "agent_protocol",
+     "value": "no",
+     "note": "No deterministic agent query protocol. The only option is LSP servers (Eclipse JDT LS), which do not count.",
+     "evidence": "The JDK ships no query protocol for agents"
+    },
+    {
+     "key": "ownership_no_gc",
+     "value": "no",
+     "note": "Tracing GC (G1/ZGC). No static move or borrow checking.",
+     "evidence": "HotSpot GCs are tracing collectors"
+    },
+    {
+     "key": "law_dispatch",
+     "value": "no",
+     "note": "Interfaces and generic bounds are signature-only. No dispatch on laws.",
+     "evidence": "JLS 4.4 type-variable bounds are types only"
+    },
+    {
+     "key": "remote_failure",
+     "value": "part",
+     "note": "java.rmi ships in the JDK in 2026 (java.rmi module). Remote interfaces must declare the checked RemoteException, so failure is typed. But remote objects are a library API, not part of the type system, and there is no bundled cluster runtime.",
+     "evidence": "java.rmi.Remote / RemoteException in the java.rmi module (RMI Activation was removed in JDK 17; core RMI remains)"
+    },
+    {
+     "key": "concurrency",
+     "value": "part",
+     "note": "StructuredTaskScope is still a preview API in 2026 (JEP 505 fifth preview in JDK 25, JEP 525 sixth preview in JDK 26, needs --enable-preview). There is no compile-time data-race checking. Say 'preview' if this cell is footnoted.",
+     "evidence": "https://openjdk.org/jeps/525"
+    },
+    {
+     "key": "tensor_lang",
+     "value": "no",
+     "note": "No tensor shape types or autodiff. The incubating Vector API is SIMD only, and DJL and similar libraries are third-party with runtime-checked shapes.",
+     "evidence": "jdk.incubator.vector is SIMD lanes, not shaped tensors"
+    }
+   ]
+  },
+  {
+   "lang": "C#",
+   "cells": [
+    {
+     "key": "error_codes",
+     "value": "part",
+     "note": "Every Roslyn diagnostic has a stable CSxxxx ID, and analyzers/code fixes ship in the SDK (dotnet format applies them). There is no built-in explain command; explanations live in the docs on learn.microsoft.com.",
+     "evidence": "Roslyn diagnostic IDs (CS0103, CS8509...), Microsoft.CodeAnalysis CodeFixProvider, `dotnet format` applies fixes; no `csc --explain`"
+    },
+    {
+     "key": "edit_by_name",
+     "value": "no",
+     "note": "Roslyn rename/refactor works only through the IDE/LSP. The csc/dotnet CLI has no edit-by-definition-name command that type-checks before writing.",
+     "evidence": "dotnet CLI has no such command"
+    },
+    {
+     "key": "service_map",
+     "value": "no",
+     "note": "C# has no effect system and no transitive service/effect inference.",
+     "evidence": "No effect tracking in C# 14"
+    },
+    {
+     "key": "tainted_source",
+     "value": "no",
+     "note": "The BCL has no untrusted type at its input sources. Taint analysis exists only in third-party/CodeQL analyzers.",
+     "evidence": "Console.ReadLine/HttpClient return plain string"
+    },
+    {
+     "key": "laws_tested",
+     "value": "no",
+     "note": "Interfaces cannot declare laws. Property testing needs third-party libraries such as FsCheck or CsCheck on hand-written tests.",
+     "evidence": "FsCheck/CsCheck are third-party"
+    },
+    {
+     "key": "named_args",
+     "value": "no",
+     "note": "Named arguments exist (since C# 4) but are always optional.",
+     "evidence": "C# named arguments optional"
+    },
+    {
+     "key": "callsite_effects",
+     "value": "part",
+     "note": "`ref`/`out` (and optionally `in`) must be written at the call site. Mutation through reference-type arguments and receivers is unmarked, and there is no move semantics.",
+     "evidence": "C# ref/out call-site modifiers required"
+    },
+    {
+     "key": "match_arms",
+     "value": "part",
+     "note": "A subsumed/unreachable arm is an error (CS8510 in switch expressions, CS8120 in switch statements). A non-exhaustive switch expression is only warning CS8509, switch statements get no exhaustiveness check, and there are no closed union types even in C# 14.",
+     "evidence": "CS8509 warning; CS8510/CS8120 errors"
+    },
+    {
+     "key": "agent_protocol",
+     "value": "no",
+     "note": "Only Roslyn LSP / OmniSharp exist; there is no deterministic agent query protocol.",
+     "evidence": "LSP excluded by rule"
+    },
+    {
+     "key": "ownership_no_gc",
+     "value": "no",
+     "note": "The .NET runtime uses a tracing GC. ref struct/scoped escape analysis is limited and is not an ownership/move checker.",
+     "evidence": "CLR tracing GC"
+    },
+    {
+     "key": "law_dispatch",
+     "value": "no",
+     "note": "Interfaces, including static abstract members and generic math, are signature-only.",
+     "evidence": "C# 11 static abstract interface members are signature-only"
+    },
+    {
+     "key": "remote_failure",
+     "value": "no",
+     "note": "Remote calls (gRPC, Orleans) are libraries. .NET Remoting was removed in .NET Core, and the type system has no remote marker.",
+     "evidence": "Orleans/gRPC are libraries"
+    },
+    {
+     "key": "concurrency",
+     "value": "no",
+     "note": "Task.WhenAll is not scoped and tasks can outlive their caller. The compiler does not check for data races.",
+     "evidence": "No structured task scopes or race checking in C#"
+    },
+    {
+     "key": "tensor_lang",
+     "value": "no",
+     "note": "System.Numerics.Tensors and TorchSharp/ML.NET check shapes at run time, and there is no built-in autodiff.",
+     "evidence": "Tensor<T> shapes are run-time values"
+    }
+   ]
+  },
+  {
+   "lang": "C++",
+   "cells": [
+    {
+     "key": "error_codes",
+     "value": "part",
+     "note": "There is no single reference compiler. MSVC gives errors stable codes (C2065, C2440...) with an online docs entry for each, but it has no built-in explain command. Clang and GCC emit machine-readable fix-its (clang -fdiagnostics-parseable-fixits; GCC -fdiagnostics-format=json/sarif), but GCC and Clang errors have no stable numeric codes. Each half exists in some compiler, never all three in one.",
+     "evidence": "MSVC error reference pages (learn.microsoft.com, Cxxxx); clang -fdiagnostics-parseable-fixits; GCC -fdiagnostics-format=sarif-file/json including fix-it hints"
+    },
+    {
+     "key": "edit_by_name",
+     "value": "no",
+     "note": "No C++ compiler takes an edit by definition name. clangd/IDE rename refactors and clang-tidy -fix don't count under the rule.",
+     "evidence": "General knowledge of GCC/Clang/MSVC toolchains"
+    },
+    {
+     "key": "service_map",
+     "value": "no",
+     "note": "The compiler infers no transitive effects. noexcept is a declared, signature-level property and doesn't infer what a function reaches.",
+     "evidence": "ISO C++ has no effect system"
+    },
+    {
+     "key": "tainted_source",
+     "value": "no",
+     "note": "The standard library has no untrusted or tainted type.",
+     "evidence": "ISO C++ standard library"
+    },
+    {
+     "key": "laws_tested",
+     "value": "no",
+     "note": "Concepts may carry semantic requirements in prose, but nothing checks or tests them. Property tests need third-party libraries such as RapidCheck.",
+     "evidence": "[concepts] semantic requirements are unchecked; RapidCheck is third-party"
+    },
+    {
+     "key": "named_args",
+     "value": "no",
+     "note": "C++ has no named arguments. C++20 designated initializers work only for aggregates and are optional.",
+     "evidence": "ISO C++20/23/26"
+    },
+    {
+     "key": "callsite_effects",
+     "value": "part",
+     "note": "To move from a named lvalue you must write std::move/std::forward at the call site. Moves of temporaries and return values are implicit, and std::move is only a cast, so a moved-from object stays usable. Mutation through a non-const reference parameter or a method receiver is not marked. Only one half is marked, on some calls, so this is part by the rule's 'only one is marked' clause. Calling it no would be easy to dispute, since std::move is C++'s equivalent of Mojo's ^.",
+     "evidence": "[expr.cast]/std::move yields an xvalue; an lvalue never binds to T&& implicitly"
+    },
+    {
+     "key": "match_arms",
+     "value": "part",
+     "note": "A duplicate case label in a switch is always a compile ERROR. A missing enumerator in an enum switch is a warning (-Wswitch, on in -Wall) and becomes an error only by opt-in (-Werror=switch). It goes undetected when a default is present, unless you enable -Wswitch-enum. std::visit on a std::variant is a compile error if an alternative is unhandled, but that is a library check and doesn't catch redundancy. Pattern matching did not make C++26. This is part (opt-in, some forms). If the site keeps a strict 'warnings only' line, describe it as no for missing arms with an error for duplicate labels.",
+     "evidence": "[stmt.switch]: no two case constants may have the same value (ill-formed); GCC/Clang -Wswitch, -Werror=switch, -Wswitch-enum; pattern matching P2688 not in C++26"
+    },
+    {
+     "key": "agent_protocol",
+     "value": "no",
+     "note": "C++ has only clangd/LSP servers, which don't count.",
+     "evidence": "clangd is LSP"
+    },
+    {
+     "key": "ownership_no_gc",
+     "value": "no",
+     "note": "C++ meets only one of the three: it has no tracing GC (C++23 removed the GC support API). The standard has no static use-after-move or borrow check. clang-tidy bugprone-use-after-move, the MSVC lifetime checker and [[clang::lifetimebound]] are partial, separate or vendor-only tools. The Safe C++ borrow-checking proposal (P3390) was not adopted.",
+     "evidence": "P2186 removed GC support in C++23; P3390 Safe C++ not adopted; clang-tidy bugprone-use-after-move"
+    },
+    {
+     "key": "law_dispatch",
+     "value": "no",
+     "note": "Concepts check syntax only. Semantic requirements are not checked, and overload resolution can't select on laws.",
+     "evidence": "[concepts.equality] semantic requirements are not checked"
+    },
+    {
+     "key": "remote_failure",
+     "value": "no",
+     "note": "The standard has no remote types and no distributed runtime. Those exist only as libraries (gRPC, HPX).",
+     "evidence": "ISO C++"
+    },
+    {
+     "key": "concurrency",
+     "value": "part",
+     "note": "C++26 standardizes std::execution (senders and receivers) and counting_scope (P3149) for structured async scopes. Shipping toolchain support in 2026 is still thin, and NVIDIA stdexec is the reference implementation. Data races are undefined behaviour, not compile errors (ThreadSanitizer finds them at run time). Only the structured half exists, comparable to Java StructuredTaskScope, so part. If the rule demands that compilers ship it by default, it is borderline no, but marking it no invites a 'C++26 has structured concurrency' rebuttal.",
+     "evidence": "P2300 std::execution and P3149 async_scope adopted into C++26; NVIDIA stdexec README calls itself the reference implementation of std::execution; data race = UB per [intro.races]"
+    },
+    {
+     "key": "tensor_lang",
+     "value": "part",
+     "note": "Only through libraries, as the rule allows. C++23 std::mdspan with static extents and Eigen fixed-size matrices turn shape mismatches into compile errors. Autodiff comes from add-ons such as Enzyme, Clad, autodiff or LibTorch autograd. Nothing is a typed language transform, and named axes are not checked.",
+     "evidence": "std::mdspan static extents (C++23); Eigen fixed-size static assertions; Clad/Enzyme Clang/LLVM plugins"
+    }
+   ]
+  },
+  {
+   "lang": "Rust",
+   "cells": [
+    {
+     "key": "error_codes",
+     "value": "part",
+     "note": "Many rustc errors carry stable E-codes with `rustc --explain`, and `--error-format=json` emits suggestions marked MachineApplicable, which `cargo fix` / `cargo clippy --fix` apply. Not every diagnostic has a code: many errors and all lints lack E-codes.",
+     "evidence": "rustc --explain E0382; rustc --error-format=json gives suggestion spans with applicability; cargo fix ships in the standard toolchain."
+    },
+    {
+     "key": "edit_by_name",
+     "value": "no",
+     "note": "rustc and cargo have no command that takes an edit by definition name. rust-analyzer renames are LSP refactors, which the rule excludes.",
+     "evidence": "cargo subcommands: build/check/fix/fmt/clippy. None edits a definition by name."
+    },
+    {
+     "key": "service_map",
+     "value": "no",
+     "note": "Rust has no effect system and no transitive report of which services a function reaches.",
+     "evidence": "There is no effect inference in rustc. Keyword-generics and effects work is still unstable and does not cover I/O or services."
+    },
+    {
+     "key": "tainted_source",
+     "value": "no",
+     "note": "std I/O returns plain String/Vec<u8>. Untrusted values can only be typed by user-written newtypes.",
+     "evidence": "std::io::Read::read_to_string returns String."
+    },
+    {
+     "key": "laws_tested",
+     "value": "no",
+     "note": "Traits cannot declare laws. Property testing is third-party only (proptest, quickcheck) on tests the user writes.",
+     "evidence": "There is no law syntax in traits, and cargo test runs only #[test] fns."
+    },
+    {
+     "key": "named_args",
+     "value": "no",
+     "note": "Rust has no named arguments at all.",
+     "evidence": "Function calls are positional only. There is no RFC for named args on stable."
+    },
+    {
+     "key": "callsite_effects",
+     "value": "part",
+     "note": "`&mut x` is written at the call site for free-function args. Moves are not marked, and method calls auto-borrow `&mut self` without a marker.",
+     "evidence": "`v.push(1)` mutates v with no marker at the call; `f(s)` moves s silently."
+    },
+    {
+     "key": "match_arms",
+     "value": "part",
+     "note": "A non-exhaustive match is a hard error (E0004) on every match. Unreachable or redundant arms only trigger the warn-by-default `unreachable_patterns` lint (an error only with deny/-D warnings).",
+     "evidence": "E0004 non-exhaustive patterns; lint unreachable_patterns, default level warn."
+    },
+    {
+     "key": "agent_protocol",
+     "value": "no",
+     "note": "Rust has only an LSP server (rust-analyzer) and no byte-identical agent query protocol. rustc JSON diagnostics are not a query protocol.",
+     "evidence": "rust-analyzer is LSP, which the rule excludes."
+    },
+    {
+     "key": "ownership_no_gc",
+     "value": "part",
+     "note": "Use-after-move and aliased &mut are rejected statically, with no tracing GC. But Rust has lifetime annotation syntax ('a), so it meets two of the three conditions.",
+     "evidence": "Borrow checker errors E0382/E0499; fn f<'a>(x: &'a str) -> &'a str."
+    },
+    {
+     "key": "law_dispatch",
+     "value": "no",
+     "note": "Trait bounds are signature-only, and trait laws (e.g. Ord's total order) live in docs only. Specialization is unstable and does not dispatch on laws either.",
+     "evidence": "std::cmp::Ord docs state the laws in prose; the compiler does not check them."
+    },
+    {
+     "key": "remote_failure",
+     "value": "no",
+     "note": "Rust has no remote types and no distributed runtime in the language or std.",
+     "evidence": "Remote calls happen through crates (tonic, etc.) only."
+    },
+    {
+     "key": "concurrency",
+     "value": "yes",
+     "note": "FLAG, against the row's default of 'part': std::thread::scope (stable since Rust 1.63, 2022) is a std nursery. Spawned threads cannot outlive the scope, which the borrow checker enforces, and Send/Sync make data races compile errors in safe code. That meets the literal yes rule. The caveat is that async has no std nursery (tokio JoinSet is a library). If the site keeps 'part', the note should say 'no structured async tasks in std', not 'scoped tasks are library-level', which is false for threads.",
+     "evidence": "std::thread::scope(|s| { s.spawn(|| ...); }) is in std since 1.63.0; data races are compile errors via the Send/Sync auto traits."
+    },
+    {
+     "key": "tensor_lang",
+     "value": "no",
+     "note": "Rust has no tensor types or autodiff in the language or std. Burn and candle are ordinary crates with mostly runtime shape checks, and none dominates the way JAX/PyTorch do for Python.",
+     "evidence": "std has no tensor module; autodiff (std::autodiff / Enzyme) is nightly-only and experimental."
+    }
+   ]
+  },
+  {
+   "lang": "Go",
+   "cells": [
+    {
+     "key": "error_codes",
+     "value": "no",
+     "note": "cmd/compile and go build print free-text errors. go/types has internal error codes (golang.org/x/tools typesinternal) that gopls shows with doc links, and go vet/go fix analyzers carry suggested fixes (go fix was rebuilt on the analysis framework in Go 1.26). But the compiler prints no codes and has no explain command, so this is no under the rule. If a reviewer pushes back, gopls is where Go comes closest.",
+     "evidence": "Go toolchain knowledge: cmd/compile output has no error IDs; internal/types/errors codes are exposed only via gopls"
+    },
+    {
+     "key": "edit_by_name",
+     "value": "no",
+     "note": "gopls rename and refactorings are LSP/IDE operations. gofmt -r rewrites by pattern, not by definition name, and does not type-check.",
+     "evidence": "gopls/gofmt documentation"
+    },
+    {
+     "key": "service_map",
+     "value": "no",
+     "note": "No effect or service inference. Third-party callgraph tools exist (x/tools callgraph), but nothing reports effects.",
+     "evidence": "Go spec has no effect system"
+    },
+    {
+     "key": "tainted_source",
+     "value": "no",
+     "note": "The standard library has no untrusted type. html/template's contextual escaping is runtime and is not a type distinction.",
+     "evidence": "Go stdlib"
+    },
+    {
+     "key": "laws_tested",
+     "value": "no",
+     "note": "Native fuzzing (go test -fuzz, since 1.18) and testing/quick are in the toolchain, but there are no declared laws on interfaces and no release gate.",
+     "evidence": "Go testing package"
+    },
+    {
+     "key": "named_args",
+     "value": "no",
+     "note": "Go has no named arguments. Struct literals with field names are optional, and go vet's composites check covers only imported struct types.",
+     "evidence": "Go spec"
+    },
+    {
+     "key": "callsite_effects",
+     "value": "no",
+     "note": "Passing &x is visible when a function takes a pointer, but method calls auto-take the address, slices and maps mutate without any mark, and there is no move semantics. That is no under the rule.",
+     "evidence": "Go spec: method calls x.m() auto-address addressable receivers"
+    },
+    {
+     "key": "match_arms",
+     "value": "no",
+     "note": "Duplicate constant cases in an expression switch and duplicate types in a type switch ARE compile errors, but a missing case is never an error (no closed enums; the exhaustive check is a third-party linter). Fair caveat: the redundancy half exists.",
+     "evidence": "Go spec: duplicate case constants are compile errors; no exhaustiveness checking"
+    },
+    {
+     "key": "agent_protocol",
+     "value": "no",
+     "note": "gopls (including its newer MCP mode) is an LSP-based server with no byte-identical determinism spec.",
+     "evidence": "gopls docs"
+    },
+    {
+     "key": "ownership_no_gc",
+     "value": "no",
+     "note": "Go uses a tracing concurrent garbage collector and does no static ownership or borrow checking.",
+     "evidence": "Go runtime GC"
+    },
+    {
+     "key": "law_dispatch",
+     "value": "no",
+     "note": "Type-parameter constraints check only signatures and type sets.",
+     "evidence": "Go generics (1.18+)"
+    },
+    {
+     "key": "remote_failure",
+     "value": "no",
+     "note": "net/rpc is a frozen library and gRPC is third-party. Remote values are not marked in the type system and there is no distributed runtime.",
+     "evidence": "Go stdlib net/rpc (frozen)"
+    },
+    {
+     "key": "concurrency",
+     "value": "no",
+     "note": "Goroutines are unscoped. errgroup lives in x/sync, and sync.WaitGroup.Go (1.25) does not stop goroutines from outliving the scope. Data races are caught only at run time by the -race detector, never at compile time.",
+     "evidence": "Go 1.25 release notes (WaitGroup.Go); race detector is runtime"
+    },
+    {
+     "key": "tensor_lang",
+     "value": "no",
+     "note": "No tensor types or autodiff in the language or its standard library. Gonum and Gorgonia are third-party and runtime-checked.",
+     "evidence": "Go stdlib"
+    }
+   ]
+  },
+  {
+   "lang": "Swift",
+   "cells": [
+    {
+     "key": "error_codes",
+     "value": "part",
+     "note": "Swift 6.1/6.2 diagnostic groups (e.g. [#StrictMemorySafety]) have names and documentation pages, but most errors have no code. Fix-its are built in and can be exported in machine-readable form (serialized diagnostics, -emit-fixits-path). There is no explain command that covers every diagnostic.",
+     "evidence": "swift.org/documentation/compiler/diagnostics; Swift 6.2 adds -Werror/-Wwarning <group>; SourceKit-LSP and swiftc both surface fix-its"
+    },
+    {
+     "key": "edit_by_name",
+     "value": "no",
+     "note": "Edits by definition name exist only as SourceKit-LSP rename/refactor actions in IDEs, which the rule excludes.",
+     "evidence": "SourceKit-LSP refactorings are IDE actions, not a compiler edit command"
+    },
+    {
+     "key": "service_map",
+     "value": "no",
+     "note": "throws, typed throws and async are effects declared in signatures. The compiler does not infer or report which services a function reaches.",
+     "evidence": "SE-0413 typed throws only types the error"
+    },
+    {
+     "key": "tainted_source",
+     "value": "no",
+     "note": "The standard library has no untrusted type.",
+     "evidence": "none"
+    },
+    {
+     "key": "laws_tested",
+     "value": "no",
+     "note": "Protocols cannot declare laws. Property testing needs third-party libraries (e.g. SwiftCheck).",
+     "evidence": "Swift Testing has no property-based laws"
+    },
+    {
+     "key": "named_args",
+     "value": "part",
+     "note": "Argument labels are required by default at every call, but the author can opt out per parameter with _.",
+     "evidence": "func f(_ x: Int, y: Int); first parameter of init/func label rules"
+    },
+    {
+     "key": "callsite_effects",
+     "value": "part",
+     "note": "& is required at the call site for inout. consume (SE-0366) is optional. Mutating method calls on receivers are not marked.",
+     "evidence": "SE-0366 consume operator; inout & syntax"
+    },
+    {
+     "key": "match_arms",
+     "value": "part",
+     "note": "A non-exhaustive switch is a compile error. A duplicate or unreachable case is only a warning ('case is already handled by previous patterns').",
+     "evidence": "swiftc: error 'switch must be exhaustive'; warning on already-handled cases"
+    },
+    {
+     "key": "agent_protocol",
+     "value": "no",
+     "note": "Agents get only SourceKit-LSP and sourcekitd, with no byte-identical guarantee.",
+     "evidence": "none"
+    },
+    {
+     "key": "ownership_no_gc",
+     "value": "part",
+     "note": "Swift uses ARC, not a tracing GC. It has no stable lifetime syntax (@lifetime for ~Escapable is still experimental). ~Copyable types reject use-after-consume statically. Copies are implicit by default, and exclusivity is checked at run time for class properties, globals and escaping closures.",
+     "evidence": "SE-0390 noncopyable types, SE-0176 exclusivity enforcement (dynamic for class/global), SE-0377 borrowing/consuming"
+    },
+    {
+     "key": "law_dispatch",
+     "value": "no",
+     "note": "Protocol conformance is checked on signatures only.",
+     "evidence": "none"
+    },
+    {
+     "key": "remote_failure",
+     "value": "part",
+     "note": "Do not mark this no. Since Swift 5.7 the language has distributed actors: a distributed actor is marked in the type, and every cross-actor distributed call is implicitly async and throws (untyped error). The Distributed module ships with the standard toolchain, but a multi-node runtime needs a separate actor system such as Apple's swift-distributed-actors ClusterSystem package. The bundled LocalTestingDistributedActorSystem runs in one process only.",
+     "evidence": "SE-0336 and SE-0344 distributed actors; apple/swift-distributed-actors"
+    },
+    {
+     "key": "concurrency",
+     "value": "yes",
+     "note": "Structured concurrency is built in (withTaskGroup, withThrowingTaskGroup, async let; child tasks cannot outlive their scope). The Swift 6 language mode makes data races compile errors through Sendable and actor isolation checking.",
+     "evidence": "SE-0304 structured concurrency; Swift 6 strict concurrency checking (SE-0337, SE-0414)"
+    },
+    {
+     "key": "tensor_lang",
+     "value": "part",
+     "note": "Weak part: autodiff is experimental only (@differentiable and gradient through import _Differentiation in open-source toolchains). Tensor shapes are not checked, and there is no vmap.",
+     "evidence": "Swift differentiable programming manifesto; _Differentiation module (experimental)"
+    }
+   ]
+  },
+  {
+   "lang": "Zig",
+   "cells": [
+    {
+     "key": "error_codes",
+     "value": "no",
+     "note": "Zig compile errors are free text with source notes; no stable codes, no explain command, no machine-readable fixes (zig fmt only reformats).",
+     "evidence": "Zig compiler output format 'file:line:col: error: <message>' with 'note:' lines; no error-code registry in the Zig docs or the 0.15 toolchain."
+    },
+    {
+     "key": "edit_by_name",
+     "value": "no",
+     "note": "No toolchain command edits by definition name; ZLS rename is an LSP refactor, which the rule excludes.",
+     "evidence": "zig CLI subcommands (build, run, test, fmt, ast-check, translate-c, etc.) have no edit facility."
+    },
+    {
+     "key": "service_map",
+     "value": "no",
+     "note": "No effect or service inference. Error sets are inferred transitively but they are error values, not services.",
+     "evidence": "Inferred error sets (!T) are the closest thing, comparable to the excluded 'throws' or checked exceptions."
+    },
+    {
+     "key": "tainted_source",
+     "value": "no",
+     "note": "std has no untrusted or tainted type.",
+     "evidence": "std.Io and std.fs readers return plain []u8 slices."
+    },
+    {
+     "key": "laws_tested",
+     "value": "no",
+     "note": "No laws in the language. zig test runs hand-written tests only; std.testing has no property testing built in.",
+     "evidence": "std.testing offers expect/expectEqual/fuzz input (0.14+ --fuzz is coverage-guided fuzzing on user-written tests, not laws)."
+    },
+    {
+     "key": "named_args",
+     "value": "no",
+     "note": "Zig has no named arguments. The struct-literal options idiom is optional and up to the author.",
+     "evidence": "Function calls are positional only; anonymous struct params (.{ .x = 1 }) are a convention."
+    },
+    {
+     "key": "callsite_effects",
+     "value": "part",
+     "note": "This goes against the rule's 'no' on purpose. Zig parameters are immutable, so a caller has to write &x at the call site to let a callee mutate a local, much like Rust's &mut. Method receivers auto-take the address, an already-held pointer passes unmarked, and moves don't exist. So mutation is marked only at some calls, and moves never are. If the site wants the rule's 'no', Zig's equal footing with Rust here is a fair rebuttal.",
+     "evidence": "Zig language reference: function parameters are immutable; pass-by-pointer requires explicit &; method call syntax auto-references the receiver."
+    },
+    {
+     "key": "match_arms",
+     "value": "yes",
+     "note": "On an enum or tagged-union switch, a missing prong is a compile error, so is a duplicate prong, and so is an else prong once every case is handled. (Integer switches need an else.)",
+     "evidence": "Compile errors 'switch must handle all possibilities', 'duplicate switch value', 'unreachable else prong; all cases already handled'."
+    },
+    {
+     "key": "agent_protocol",
+     "value": "no",
+     "note": "Only ZLS (LSP) and the compiler server protocol used by the build system; no specified deterministic agent query protocol.",
+     "evidence": "zig build --watch / compiler server is internal, not an agent protocol."
+    },
+    {
+     "key": "ownership_no_gc",
+     "value": "no",
+     "note": "No ownership or borrow checking at all: use-after-free and aliasing aren't checked statically. It has no GC and no lifetime syntax, which is technically two of three, but the row is about static ownership checking, so 'no' is the honest call, the same as C++.",
+     "evidence": "Manual memory via std.mem.Allocator; safety is runtime checks in Debug/ReleaseSafe only."
+    },
+    {
+     "key": "law_dispatch",
+     "value": "no",
+     "note": "comptime duck typing and @hasDecl reflection are signature- or structure-based, with no law bounds.",
+     "evidence": "anytype + comptime checks; no interfaces or laws in the language."
+    },
+    {
+     "key": "remote_failure",
+     "value": "no",
+     "note": "No remote types or distributed runtime.",
+     "evidence": "std.net is plain sockets."
+    },
+    {
+     "key": "concurrency",
+     "value": "no",
+     "note": "The async/await keywords were removed. The new std.Io interface (0.15/0.16 work) offers async and concurrent calls as a library API, but nothing at the type level stops a task group outliving its scope, and data races are not compile errors.",
+     "evidence": "std.Thread plus std.Io async API; no Send/Sync-style checking."
+    },
+    {
+     "key": "tensor_lang",
+     "value": "no",
+     "note": "@Vector gives fixed-length SIMD types, not tensors. No shape checking and no autodiff.",
+     "evidence": "Built-in @Vector(N, T) only; no grad/vmap in the language or std."
+    }
+   ]
+  },
+  {
+   "lang": "Elixir",
+   "cells": [
+    {
+     "key": "error_codes",
+     "value": "no",
+     "note": "Elixir compiler diagnostics (including the 1.17-1.19 type-checker warnings) are free text with file/line spans. There are no stable codes, no explain command and no machine-readable fixes. Expert/ElixirLS code actions belong to the LSP, not the compiler.",
+     "evidence": "The judging rule lists Elixir under no. Mix/elixirc diagnostics carry message, severity and position fields but no code field."
+    },
+    {
+     "key": "edit_by_name",
+     "value": "no",
+     "note": "Neither Mix nor elixirc applies type-checked edits by definition name.",
+     "evidence": "The judging rule says all eleven others are no."
+    },
+    {
+     "key": "service_map",
+     "value": "no",
+     "note": "Elixir does not infer a transitive effect or service map. xref (mix xref) gives a call or compile-dependency graph, not effects.",
+     "evidence": "The judging rule says all eleven others are no. mix xref graph reports module dependencies only."
+    },
+    {
+     "key": "tainted_source",
+     "value": "no",
+     "note": "The standard library has no untrusted type for input.",
+     "evidence": "The judging rule says all eleven others are no."
+    },
+    {
+     "key": "laws_tested",
+     "value": "no",
+     "note": "No laws are declared on protocols or behaviours. Property testing comes from StreamData/ExUnitProperties, a separate package that only runs tests the user writes.",
+     "evidence": "The judging rule names StreamData as no."
+    },
+    {
+     "key": "named_args",
+     "value": "no",
+     "note": "Keyword-list options are optional and positional arguments have no labels.",
+     "evidence": "The judging rule lists Elixir under no."
+    },
+    {
+     "key": "callsite_effects",
+     "value": "no",
+     "note": "Data is immutable and there is no ownership, so there is nothing to mark at call sites. Fairness: Elixir has no in-place mutation of values at all. Process state changes go through explicit send/GenServer.call.",
+     "evidence": "The judging rule lists Elixir under no. If the site wants to be fair, it could add a footnote that Elixir avoids the problem through immutability."
+    },
+    {
+     "key": "match_arms",
+     "value": "no",
+     "note": "A non-exhaustive case/fn raises CaseClauseError/FunctionClauseError at run time. The set-theoretic type checker (1.17-1.19) and the compiler can warn on some clauses that never match, but these are warnings, not errors, and exhaustiveness is not enforced.",
+     "evidence": "The judging rule lists Elixir under no. In 1.18/1.19 type-checker diagnostics are warnings."
+    },
+    {
+     "key": "agent_protocol",
+     "value": "no",
+     "note": "No deterministic agent query protocol exists, only LSP servers (ElixirLS, Expert).",
+     "evidence": "The judging rule says all eleven others are no."
+    },
+    {
+     "key": "ownership_no_gc",
+     "value": "no",
+     "note": "BEAM uses a per-process generational tracing (copying) GC and has no ownership or borrow checking.",
+     "evidence": "The judging rule lists Elixir under no (tracing GC)."
+    },
+    {
+     "key": "law_dispatch",
+     "value": "no",
+     "note": "Protocols and behaviours dispatch on signatures and types only.",
+     "evidence": "The judging rule says all eleven others are no."
+    },
+    {
+     "key": "remote_failure",
+     "value": "part",
+     "note": "BEAM distribution (Node.connect, remote PIDs, :rpc/:erpc), location-transparent send, and monitors/links/supervisors for partial failure are built into the shipped runtime. Remote values and failures are not typed: errors arrive as messages or exits ({:DOWN, ..., :noconnection}).",
+     "evidence": "The judging rule names Elixir as part (distribution and supervision built in, failure untyped)."
+    },
+    {
+     "key": "concurrency",
+     "value": "part",
+     "note": "Processes share no memory, so data races on memory cannot happen by construction (message races remain possible). There are no lexically scoped nurseries: Task.async links to and is awaited by its caller, and Task.Supervisor/async_stream help, but a task can outlive its scope.",
+     "evidence": "The judging rule names Elixir as part (no shared memory, but no structured scopes)."
+    },
+    {
+     "key": "tensor_lang",
+     "value": "part",
+     "note": "Counted the same way as Python via JAX. Nx (elixir-nx, the de-facto standard) provides defn numerical definitions with Nx.Defn.grad and Nx.vectorize as transforms, and checks shapes and named axes at defn trace/JIT time. That is not Elixir compile time, and it is an add-on, not core.",
+     "evidence": "The judging rule allows part if add-ons are counted consistently with Python, which gets part via JAX/PyTorch. If Python is downgraded, mark this no."
+    }
+   ]
+  },
+  {
+   "lang": "Mojo",
+   "cells": [
+    {
+     "key": "error_codes",
+     "value": "no",
+     "note": "Mojo's compiler errors are free text: no stable codes, no explain command and no machine-readable repairs. Mojo 1.0 (Aug 2026) improved the messages but added no code scheme.",
+     "evidence": "The judging rule lists Mojo as no. A search of Mojo 1.0 release coverage (Modular 26.5 blog, daily.dev summary) found no error-code or fix-it feature, only new reference-invalidation diagnostics."
+    },
+    {
+     "key": "edit_by_name",
+     "value": "no",
+     "note": "No edit-by-definition-name command in the Mojo toolchain. Only LSP refactors exist, which the rule excludes.",
+     "evidence": "Judging rule: all eleven others no. Mojo 1.0 lists a more stable LSP server, which does not count."
+    },
+    {
+     "key": "service_map",
+     "value": "no",
+     "note": "No transitive effect or service inference. `raises` is just an error marker.",
+     "evidence": "Judging rule: all eleven others no."
+    },
+    {
+     "key": "tainted_source",
+     "value": "no",
+     "note": "No untrusted type in the standard library.",
+     "evidence": "Judging rule: all eleven others no."
+    },
+    {
+     "key": "laws_tested",
+     "value": "no",
+     "note": "Traits are signature-only, and there are no declared laws or built-in property testing.",
+     "evidence": "Judging rule: all eleven others no."
+    },
+    {
+     "key": "named_args",
+     "value": "part",
+     "note": "Mojo supports Python-style keyword-only parameters (after `*` in the signature), so an author can opt in to required labels, as in Python. The default is optional. The rule's draft lists Mojo as no, but scoring it the same as Python means part.",
+     "evidence": "The Mojo manual's functions chapter documents positional-only (`/`) and keyword-only (`*`) arguments, which mirror Python. The rule says Python keyword-only `*` = part. Not re-checked by search: the release-notes search turned up nothing on keyword-only arguments either way, so check the Mojo manual before printing."
+    },
+    {
+     "key": "callsite_effects",
+     "value": "part",
+     "note": "Ownership transfer is written `x^` at the call site, but passing to a `mut` parameter is unmarked.",
+     "evidence": "The judging rule gives Mojo part (`^` for transfer, mutation unmarked). This matches Mojo's ownership docs, where `mut` and `owned`/`var` argument conventions are declared on the callee."
+    },
+    {
+     "key": "match_arms",
+     "value": "no",
+     "note": "Mojo 1.0 has no match statement. Pattern matching and unions are still on the roadmap.",
+     "evidence": "Coverage of Mojo 1.0 (released 2026-08-11) and Modular's announcement list pattern matching and unions as future priorities, not shipped (modular.com/blog/modular-26-5-mojo-1-0-is-here)."
+    },
+    {
+     "key": "agent_protocol",
+     "value": "no",
+     "note": "Only an LSP server, which the rule excludes.",
+     "evidence": "Judging rule: all eleven others no."
+    },
+    {
+     "key": "ownership_no_gc",
+     "value": "part",
+     "note": "Static move and borrow checking (use-after-move, argument exclusivity, and reference-invalidation diagnostics in 1.0), ASAP destruction with no tracing GC, but explicit origin parameters (Mojo's lifetimes) exist. That is two of three.",
+     "evidence": "The judging rule gives Mojo part. Mojo 1.0 notes add memory-safety diagnostics for reference invalidation, and origins are part of the language (`Pointer[T, origin]`, `ref [origin]`)."
+    },
+    {
+     "key": "law_dispatch",
+     "value": "no",
+     "note": "Traits and `where` clauses constrain on signatures and parameters, not on algebraic laws.",
+     "evidence": "Judging rule: all eleven others no."
+    },
+    {
+     "key": "remote_failure",
+     "value": "no",
+     "note": "No remote types and no distributed runtime in the language. MAX serving is a separate product, not a language feature.",
+     "evidence": "The judging rule lists Mojo as no."
+    },
+    {
+     "key": "concurrency",
+     "value": "no",
+     "note": "`runtime.asyncrt.TaskGroup` exists as a library container you can await, but tasks are not scope-bound by the compiler and data races are not rejected. Modular names a robust async model as post-1.0 work. If the site wants maximum charity, part on TaskGroup is defensible, but it is not structured in the nursery sense.",
+     "evidence": "The TaskGroup docs (mojolang.org/docs/std/runtime/asyncrt/TaskGroup) describe a coroutine container with create_task and __await__. Mojo 1.0 coverage lists the async programming model as a future priority. The 'Structured Async for Mojo' forum thread is a proposal, not shipped."
+    },
+    {
+     "key": "tensor_lang",
+     "value": "part",
+     "note": "Compile-time tensor layouts and shapes through parameters (LayoutTensor), but no built-in autodiff or vmap.",
+     "evidence": "The judging rule gives Mojo part (compile-time layouts, no built-in autodiff). LayoutTensor in the Mojo standard library and kernels library carries layout as a compile-time parameter."
+    }
+   ]
+  }
+ ],
+ "draconyx": [
+  {
+   "key": "error_codes",
+   "status": "ships",
+   "why": "Every diagnostic carries an AXnnnn code, and `drx explain` (main.rs:330) prints a catalogue entry for each one. compiler/crates/draconyx-cli/tests/explain.rs fails if any emitted code is missing from the catalogue. `drx check --json` emits `suggested_edits`. But only about 15 call sites attach an edit, against more than 130 error sites, so most errors carry no repair. 'Every error has ... JSON repairs' overstates. Also, draconyx-diag/src/lib.rs says fresh codes are provisional until first external publication; only codes the spec cites are permanent.",
+   "label_fix": "Every error has a code and an explain entry, with JSON repair edits from the compiler itself"
+  },
+  {
+   "key": "edit_by_name",
+   "status": "ships",
+   "why": "The daemon's write path (draconyx-daemon/src/write.rs: item_of by address, plan_of, speculate, new_errors) takes an edit addressed by definition name. It re-analyses the edited tree and reports new errors before the edit is written.",
+   "label_fix": ""
+  },
+  {
+   "key": "service_map",
+   "status": "ships",
+   "why": "draconyx-types/src/reqs.rs computes each def's service-requirement set transitively through calls and function values. It renders the set in the outline and can explain the chain by which a service reaches a def (reqs.rs:371).",
+   "label_fix": ""
+  },
+  {
+   "key": "tainted_source",
+   "status": "ships",
+   "why": "In std, `ai.infer` returns `Result<tainted T, _>`, and `sys.read_line`/`read_all`/`args` return `tainted String`. call.rs allows only T -> tainted T, never the reverse; only `endorse` removes the qualifier. Interpolation laundering is a known gap, so do not claim 'cannot be laundered'.",
+   "label_fix": ""
+  },
+  {
+   "key": "laws_tested",
+   "status": "partial",
+   "why": "`drx test` runs checked laws as obligations and `drx verify` runs the laws alone (main.rs:44-46, run_obligations). The CLI has no publish or release verb, so there is no release gate. `proven` (SMT) laws are not built.",
+   "label_fix": "Algebraic laws property-tested by default by the compiler's own test command"
+  },
+  {
+   "key": "named_args",
+   "status": "ships",
+   "why": "Ruling 205 is enforced in both the resolver (labels.rs) and the checker (call.rs:820ff). Any unlabelled argument in a call of 2+ arguments to a declared function is AX0256, with no opt-out. The one exception is punning: a bare name equal to the parameter's label stands for that label, so the label is still checked. Calls through function values are positional, because function types carry no labels, so 'declared function' in the label is accurate.",
+   "label_fix": ""
+  },
+  {
+   "key": "callsite_effects",
+   "status": "ships",
+   "why": "`borrow` and `transfer` are spelled at the call site and must match the parameter's mode. The ownership checker reports mismatches and unspelled moves (AX0321 and the mode-mismatch entry, catalog.rs:550/563). Receivers follow the parameter rule (sections/04:283).",
+   "label_fix": ""
+  },
+  {
+   "key": "match_arms",
+   "status": "ships",
+   "why": "In stmt.rs:1005-1033, both a non-exhaustive match (AX0601) and a redundant arm (AX0602) go through `self.error`, so both are errors, not warnings. The check runs on every match whose scrutinee type is known.",
+   "label_fix": ""
+  },
+  {
+   "key": "agent_protocol",
+   "status": "ships",
+   "why": "`drx serve`/`drx rpc` (the daemon) implement the agent interface. sections/26-agent-interface.tex:93 specifies byte-identical answers for the same query on the same tree.",
+   "label_fix": ""
+  },
+  {
+   "key": "ownership_no_gc",
+   "status": "ships",
+   "why": "draconyx-own checks moves and exclusivity statically. The runtime and evaluator use Rc reference counting, with no tracing GC. The spec has no lifetime syntax. Do not claim zero-overhead or reuse.",
+   "label_fix": ""
+  },
+  {
+   "key": "law_dispatch",
+   "status": "ships",
+   "why": "when-over-laws dispatch is type-checked: a redundant dispatch arm is rejected (check.rs:2376) and a non-total dispatch is AX0603 (check.rs:2448).",
+   "label_fix": ""
+  },
+  {
+   "key": "remote_failure",
+   "status": "specified",
+   "why": "AX0308 (share remote) is checked in draconyx-own. Codegen emits AX1105 to refuse remote forms. No distributed runtime exists.",
+   "label_fix": ""
+  },
+  {
+   "key": "concurrency",
+   "status": "specified",
+   "why": "AX0311 rejects some unsendable captures. Codegen and eval emit AX1101/AX1102 for nursery and select, so neither runs. The runtime is single-threaded.",
+   "label_fix": ""
+  },
+  {
+   "key": "tensor_lang",
+   "status": "specified",
+   "why": "grad/jit/vmap are bodiless signatures and axes are opaque. Only dtype mixing is caught.",
+   "label_fix": ""
+  }
+ ]
+}
