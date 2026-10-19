@@ -220,9 +220,7 @@ def build_html():
     marks = {"yes": ('<span class="m yes" aria-hidden="true">&#10003;</span>', "built in"),
              "part": ('<span class="m part" aria-hidden="true">&#9680;</span>', "partly or via an add-on"),
              "no": ('<span class="m no" aria-hidden="true">&#10005;</span>', "no")}
-    # <wbr> lets a long name break inside its equal-width column on narrow screens
-    vhead = "".join(f'<th scope="col"{" class=\"us\"" if i == 0 else ""}>{e(l).replace("Script", "<wbr>Script")}</th>'
-                    for i, l in enumerate(C.VERSUS_LANGS))
+    vhead = "".join(f'<th scope="col"{" class=\"us\"" if i == 0 else ""}>{e(l)}</th>' for i, l in enumerate(C.VERSUS_LANGS))
     vrows = "".join(
         "<tr><th scope=\"row\">" + e(row) + "</th>" + "".join(
             f'<td{" class=\"us\"" if i == 0 else ""}>{marks[v][0]}<span class="vh">{marks[v][1]}</span></td>'
