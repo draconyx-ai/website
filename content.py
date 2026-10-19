@@ -17,7 +17,7 @@ HERO = {
     "eyebrow": "The programming language for AI authors",
     "headline": "Built for the machines that write your code.",
     "subhead": (
-        "Python, TypeScript, Rust and Go were designed for a human at a keyboard. Draconyx was designed for the "
+        "Python, Rust and Go were designed for a human at a keyboard. Draconyx was designed for the "
         "model in the loop: errors that come back as data, edits addressed by name and checked before they land, "
         "laws no release build ships without passing, and every service a function uses printed in its outline."
     ),
@@ -27,7 +27,7 @@ PROBLEM = [
     "Models now write code by the million lines, and they don't work like people. In the spec's words, a "
     "model does not read the documentation first and then write correct code: it generates, observes and "
     "repairs, hundreds of times, unattended.",
-    "Python, TypeScript, Rust and Go hand that agent error text or half-structured JSON, make it patch files "
+    "Python, Rust and Go hand that agent error text or half-structured JSON, make it patch files "
     "by string match, route it through tooling built around an editor cursor, and run its code where any import "
     "can open a socket. Every fix for that lives outside the language: a flag, a server, a sandbox. In Draconyx, "
     "the agent's interface is in the spec.",
@@ -55,8 +55,7 @@ REASONS = [
         "ships": "Ships today: the JSON channel, the ownership checker's two-file edits with consequences, ranked candidates "
                  "(by edit distance so far), explain for all 129 catalogued codes.",
         "unlike": "rustc's JSON has applicability but no per-edit consequence, and many diagnostics have no "
-                  "code. TypeScript's codes come without fixes: tsc prints none, quick-fixes live in its language server, and “Did you "
-                  "mean” is prose, as in CPython. Go's compiler errors carry neither codes nor edits; fixes "
+                  "code. CPython's “Did you mean” is prose. Go's compiler errors carry neither codes nor edits; fixes "
                   "come from gopls.",
         "sample": ("json", """$ drx check pkg --json
 {"code": "AX0234", "severity": "error",
@@ -88,8 +87,8 @@ REASONS = [
         "ships": "Ships today in `drx serve` and `drx rpc`. Still owed: auto-import, canonical splicing "
                  "of nested members, a crash-atomic disk mirror, and re-reading the workspace before a write "
                  "(today `base` is checked against the daemon's in-memory tree, so edits made outside it are missed).",
-        "unlike": "Python, TypeScript, Rust and Go define no such write interface. Agents patch text by string "
-                  "match, diff hunks or range-keyed LSP edits. Codemod tools (LibCST, ts-morph, rust-analyzer "
+        "unlike": "Python, Rust and Go define no such write interface. Agents patch text by string "
+                  "match, diff hunks or range-keyed LSP edits. Codemod tools (LibCST, rust-analyzer "
                   "SSR) are add-ons with no tree-hash precondition, no type check before the bytes land and no "
                   "impact report.",
         "sample": ("shell", """$ drx rpc . put-def '{"address": "inventory.reprice",
@@ -126,9 +125,9 @@ REASONS = [
         "ships": "Ships today: AX0501 with call chains, uses/needs in the outline. Specified, not yet enforced: "
                  "unforgeable handles. Today's checker still lets user code construct standard handles such "
                  "as `File(descriptor)`; closing that comes before we claim “by construction”.",
-        "unlike": "In Python, TypeScript, Go and Rust any imported module can open files or sockets on ambient "
+        "unlike": "In Python, Go and Rust any imported module can open files or sockets on ambient "
                   "process authority. Confinement comes from outside the type system (containers, seccomp, "
-                  "Deno's or Node's process-wide flags, the third-party cap-std crate for Rust). None checks per function, at "
+                  "the third-party cap-std crate for Rust). None checks per function, at "
                   "compile time, what a function can reach.",
         "sample": ("draconyx", """provide locally:
     FileSystem = scope_to(fs = borrow system.filesystem, root = Path("/tmp/agent-sandbox"))
@@ -159,7 +158,7 @@ in:
         "ships": "Ships today: AX1022 at every argument, field, return, binding and collection element; taint "
                  "through field projection and generic code; the prompt-instruction barrier. Specified, not "
                  "yet built: the SQL and process-argument barriers, and taint through string interpolation.",
-        "unlike": "Python, TypeScript, Go and Rust treat model output as a plain string. A newtype can imitate "
+        "unlike": "Python, Go and Rust treat model output as a plain string. A newtype can imitate "
                   "a taint marker by convention, but the standard library never marks its sources and nothing "
                   "makes unwrapping state a reason. Real defences are runtime libraries or separate analysers "
                   "such as CodeQL and Semgrep.",
@@ -188,8 +187,8 @@ def summarize(transfer email: tainted String) -> Prompt:
         ],
         "ships": "Ships today in the v0 toolchain. Specified, not yet built: the violation report that lists "
                  "every site resting on the law and offers exactly two repairs.",
-        "unlike": "Python, TypeScript, Rust and Go state laws like Ord/Hash consistency only in documentation; "
-                  "the compiler never sees them. Property testing is a third-party library (Hypothesis, fast-check, "
+        "unlike": "Python, Rust and Go state laws like Ord/Hash consistency only in documentation; "
+                  "the compiler never sees them. Property testing is a third-party library (Hypothesis, "
                   "proptest) or, in Go, stdlib testing/quick and fuzzing, and someone must restate each law as a "
                   "test by hand.",
         "sample": ("draconyx", """capability Monoid:
@@ -218,7 +217,7 @@ example median(values = [1.0, 3.0, 2.0]) == 2.0""", "Checked with the compiler."
             "from the call alone.",
         ],
         "ships": "Ships today: all three diagnostics.",
-        "unlike": "TypeScript, Rust and Go have no named arguments, so `resize(height, width)` compiles and looks right. "
+        "unlike": "Rust and Go have no named arguments, so `resize(height, width)` compiles and looks right. "
                   "Python's keywords are optional unless the author opts in. Rust marks `&mut` but not a move, and method calls auto-borrow "
                   "their receiver unmarked. Go passes slices, maps and pointers unmarked while the callee "
                   "mutates through them.",
@@ -247,7 +246,7 @@ def ping_once(address: String, ping: Request) -> Result<Unit>:
             "recoverable failure in a call's type and gets an exact to-do list for any case it missed.",
         ],
         "ships": "Ships today: AX0601 and AX0602 as errors.",
-        "unlike": "In Python and TypeScript exceptions are invisible in signatures: you meet them in production. "
+        "unlike": "In Python and C++ exceptions are invisible in signatures: you meet them in production. "
                   "Go hands you `err` and hopes you check it. Rust comes closest, but `catch_unwind` can catch a panic "
                   "on the spot, and an unreachable arm is only a warn-by-default lint. In Draconyx a redundant arm is "
                   "a hard error.",
@@ -279,7 +278,7 @@ def label(payment_state: PaymentState) -> String:
             "its handshake lists everything it can reach.",
         ],
         "ships": "Ships today.",
-        "unlike": "pyright, TypeScript's language server, rust-analyzer and gopls speak LSP: definitions addressed by file and "
+        "unlike": "pyright, rust-analyzer and gopls speak LSP: definitions addressed by file and "
                   "cursor, per-document versions but no whole-tree hash, no byte-identical guarantee, no "
                   "authority model. rust-analyzer routinely runs cargo, build scripts and proc macros.",
         "sample": ("json", """→ {"jsonrpc": "2.0", "id": 1, "method": "initialize"}
