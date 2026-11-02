@@ -402,15 +402,15 @@
   },
   {
    "key": "named_args",
-   "label": "Named arguments required at every multi-argument call of a declared function",
+   "label": "Named arguments required at every multi-argument call of a declared function by its name",
    "draconyx": "ships",
-   "judging_rule": "yes = the compiler rejects an unlabelled argument at every call of a declared function with 2+ parameters, and the author has no opt-out. part = labels are required by default but the author can opt out (Swift `_`), or the author can opt in (Python keyword-only `*`). no = TS, Java, C#, C++, Rust, Go, Zig, Elixir, Mojo, where named args are optional or don't exist."
+   "judging_rule": "yes = the compiler rejects an unlabelled argument at every call of a declared function with 2+ parameters made by its name, and the author has no opt-out (a call through a function value binds by position). part = labels are required by default but the author can opt out (Swift `_`), or the author can opt in (Python keyword-only `*`). no = TS, Java, C#, C++, Rust, Go, Zig, Elixir, Mojo, where named args are optional or don't exist."
   },
   {
    "key": "callsite_effects",
-   "label": "Mutation and moves spelled at the call site",
+   "label": "Mutation and moves spelled in the argument list of every call",
    "draconyx": "ships",
-   "judging_rule": "yes = both mutation and ownership transfer must be written at every call site, receivers included. part = only one is marked, or only some calls (Rust `&mut` but moves and method auto-borrow unmarked; Swift `&` for inout plus optional `consume`; C# `ref`/`out` but mutation through references unmarked; Mojo `^` for transfer but mutation unmarked). no = Python, TS, Java, C++, Go, Zig, Elixir."
+   "judging_rule": "yes = both mutation and ownership transfer must be written on every argument in the argument list of every call. Receivers, pipelined values and operator operands sit outside the list and are not judged here; no verdict below rests on them alone. part = only one is marked, or only some calls (Rust `&mut` but moves and method auto-borrow unmarked; Swift `&` for inout plus optional `consume`; C# `ref`/`out` but mutation through references unmarked; Mojo `^` for transfer but mutation unmarked). no = Python, TS, Java, C++, Go, Zig, Elixir."
   },
   {
    "key": "match_arms",

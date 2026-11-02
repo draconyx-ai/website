@@ -3,11 +3,12 @@ changelog page.
 
 Reasons 1-8 were fact-checked against the spec and the compiler on 2026-10-18 (adversarial
 verifier per reason, code samples run through the compiler); reason 9 (context) and the name section were
-checked by the site review the same day. Keep it that way:
-change a claim only together with its citation.
+checked by the site review the same day. On 2026-11-02 every reason, feature, number and spec citation was
+re-checked against main of the language repository (fb4f8937), and the code samples were re-run through a
+compiler built from it. Keep it that way: change a claim only together with its citation.
 """
 
-AS_OF = "18 October 2026"
+AS_OF = "2 November 2026"
 CONTACT = "info@draconyx.ai"
 # Set to the listmonk list UUID once the public "Draconyx updates" list exists; None keeps the form disabled.
 LISTMONK_LIST_UUID = "240235c8-27a5-472b-b775-904925a1ceb6"
@@ -20,7 +21,7 @@ HERO = {
     "subhead": (
         "Python, Rust and Go were designed for a human at a keyboard. Draconyx was designed for the "
         "model in the loop: errors that come back as data, edits addressed by name and checked before they land, "
-        "laws no release build ships without passing, and every service a function uses printed in its outline."
+        "laws that are checked, not trusted, and every service a function uses printed in its outline."
     ),
 }
 
@@ -54,7 +55,7 @@ REASONS = [
             "`drx explain` answers for every code the toolchain can emit, and a test enforces it.",
         ],
         "ships": "Ships today: the JSON channel, the ownership checker's two-file edits with consequences, ranked candidates "
-                 "(by edit distance so far), explain for all 129 catalogued codes.",
+                 "(by edit distance so far), explain for all 143 catalogued codes.",
         "unlike": "rustc's JSON has applicability but no per-edit consequence, and many diagnostics have no "
                   "code. CPython's “Did you mean” is prose. Go's compiler errors carry neither codes nor edits; fixes "
                   "come from gopls.",
@@ -69,7 +70,7 @@ REASONS = [
    "replacement": "add_amounts", "applicability": "maybe",
    "description": "replace `add_amount` with `add_amounts`"}]}""",
                    "Real compiler output, trimmed."),
-        "cites": ["25-tooling:9-26", "25-tooling:65-106", "25-tooling:143-165", "26-agent-interface:387-400"],
+        "cites": ["25-tooling:9-26", "25-tooling:65-106", "25-tooling:143-165", "26-agent-interface:417-430"],
     },
     {
         "id": "edit-by-name",
@@ -85,9 +86,9 @@ REASONS = [
             "an applied flag, the tree hash, the diagnostics and an impact diff, so the agent never needs a "
             "second query to learn what its edit did.",
         ],
-        "ships": "Ships today in `drx serve` and `drx rpc`. Still owed: auto-import, canonical splicing "
-                 "of nested members, a crash-atomic disk mirror, and re-reading the workspace before a write "
-                 "(today `base` is checked against the daemon's in-memory tree, so edits made outside it are missed).",
+        "ships": "Ships today in `drx serve` and `drx rpc`. The daemon re-reads the workspace before every write, "
+                 "so a write whose `base` predates an edit made outside it is refused, and it stages every changed "
+                 "file before replacing any. Still owed: auto-import and canonical splicing of nested members.",
         "unlike": "Python, Rust and Go define no such write interface. Agents patch text by string "
                   "match, diff hunks or range-keyed LSP edits. Codemod tools (LibCST, rust-analyzer "
                   "SSR) are add-ons with no tree-hash precondition, no type check before the bytes land and no "
@@ -108,7 +109,7 @@ REASONS = [
    "message": "type mismatch: expected `Int`, found `String`"}],
  "impact": {"broken_consumers": [{"address": "shop.inventory.reprice",
    "codes": ["AX1001"]}]}}""", "Real daemon replies, abridged (hashes trimmed, fields elided)."),
-        "cites": ["26-agent-interface:66-89", "26-agent-interface:412-494", "25-tooling:565"],
+        "cites": ["26-agent-interface:66-89", "26-agent-interface:136-144", "26-agent-interface:442-524", "25-tooling:567"],
     },
     {
         "id": "authority",
@@ -123,9 +124,10 @@ REASONS = [
             "each definition's uses and needs. A host can wrap an AI-written plan in `scope_to(...)` and know "
             "from the outline exactly which services it can reach.",
         ],
-        "ships": "Ships today: AX0501 with call chains, uses/needs in the outline. Specified, not yet enforced: "
-                 "unforgeable handles. Today's checker still lets user code construct standard handles such "
-                 "as `File(descriptor)`; closing that comes before we claim “by construction”.",
+        "ships": "Ships today: AX0501 with call chains, uses/needs in the outline, and AX0241 for a standard handle "
+                 "such as `File(descriptor)` built outside its module. Still owed: refusing a handle built through a "
+                 "type alias, which comes before we claim “by construction”, and reporting a service reached only "
+                 "through a lambda passed to a standard function such as `map`.",
         "unlike": "In Python, Go and Rust any imported module can open files or sockets on ambient "
                   "process authority. Confinement comes from outside the type system (containers, seccomp, "
                   "the third-party cap-std crate for Rust). None checks per function, at "
@@ -141,7 +143,7 @@ in:
 //     reached from run_generated_plan
 //     reached from upload
 //     no 'provide Network' in any enclosing scope""", "Checked with the compiler."),
-        "cites": ["12-services-di-permissions:221-263", "12-services-di-permissions:83-106", "12-services-di-permissions:299-314", "26-agent-interface:228-234"],
+        "cites": ["12-services-di-permissions:221-263", "12-services-di-permissions:83-106", "12-services-di-permissions:299-314", "09-modules:391-448", "26-agent-interface:259-264"],
     },
     {
         "id": "tainted",
@@ -157,8 +159,9 @@ in:
             "trusted is one line you can grep for.",
         ],
         "ships": "Ships today: AX1022 at every argument, field, return, binding and collection element; taint "
-                 "through field projection and generic code; the prompt-instruction barrier. Specified, not "
-                 "yet built: the SQL and process-argument barriers, and taint through string interpolation.",
+                 "through field projection and type arguments, as in `List<tainted String>`; the prompt-instruction "
+                 "barrier. Specified, not yet built: the SQL and process-argument barriers, and taint through string "
+                 "interpolation and through a generic function's bare type parameter.",
         "unlike": "Python, Go and Rust treat model output as a plain string. A newtype can imitate "
                   "a taint marker by convention, but the standard library never marks its sources and nothing "
                   "makes unwrapping state a reason. Real defences are runtime libraries or separate analysers "
@@ -170,24 +173,26 @@ in:
 
 def summarize(transfer email: tainted String) -> Prompt:
     prompt(instruction = "Summarize the message.", data = [transfer email])  // OK""", "Checked with the compiler."),
-        "cites": ["12-services-di-permissions:460-517"],
+        "cites": ["12-services-di-permissions:471-528"],
     },
     {
         "id": "laws",
-        "state": "ships",
+        "state": "gaps",
         "title": "Laws are checked. Not trusted.",
         "body": [
             "Capabilities carry algebraic laws as syntax, and a law with no mode is checked. `drx test` "
             "synthesizes a property test for it, draws inputs from a fixed seed, shrinks any failure to a "
             "minimal counter-example and records it in a regression file that later runs replay first. "
-            "Release builds require checked laws to pass; skipping one takes an explicit `trust`, and the test "
-            "target warns about each.",
+            "A violation fails the run. In the spec, release builds also require checked laws to pass; skipping "
+            "one takes an explicit `trust`, and the test target warns about each.",
             "Dispatch picks implementations by the laws a type asserts, so the spec counts a false law as a "
-            "miscompilation. An obligation the toolchain could not evaluate is reported as “not run”, never as "
-            "a pass, and a `todo()` body gets its own `UNIMPLEMENTED` verdict instead of a fake failure.",
+            "miscompilation. An obligation the toolchain could not evaluate is reported as a “coverage shortfall” "
+            "naming its cause, never as a pass, and fails the run unless `--allow-unsupported` is given; a "
+            "`todo()` body gets its own `UNIMPLEMENTED` verdict instead of a fake failure.",
         ],
-        "ships": "Ships today in the v0 toolchain. Specified, not yet built: the violation report that lists "
-                 "every site resting on the law and offers exactly two repairs.",
+        "ships": "Ships today in the v0 toolchain, through `drx test` and `drx verify`. Specified, not yet built: "
+                 "release builds gated on laws, and the violation report that lists every site resting on the law "
+                 "and offers exactly two repairs.",
         "unlike": "Python, Rust and Go state laws like Ord/Hash consistency only in documentation; "
                   "the compiler never sees them. Property testing is a third-party library (Hypothesis, "
                   "proptest) or, in Go, stdlib testing/quick and fuzzing, and someone must restate each law as a "
@@ -202,20 +207,23 @@ def summarize(transfer email: tainted String) -> Prompt:
 def median(values: List<Float>) -> Float:
     todo()  // verdict UNIMPLEMENTED, not a failure
 example median(values = [1.0, 3.0, 2.0]) == 2.0""", "Checked with the compiler."),
-        "cites": ["13-law-verification:4-97", "13-law-verification:319-345", "13-law-verification:400-409", "10-capabilities:88-101"],
+        "cites": ["13-law-verification:4-97", "13-law-verification:320-346", "13-law-verification:401-410", "10-capabilities:101-114"],
     },
     {
         "id": "calls",
         "state": "ships",
         "title": "Every named call tells the truth.",
         "body": [
-            "Named arguments are mandatory at every call of a declared function with two or more arguments; an unlabelled one is "
-            "AX0256, and the error lists the callee's labels. Ownership is spelled the same at both ends of a "
+            "Named arguments are mandatory whenever a declared function with two or more arguments is called by its "
+            "name; an unlabelled one is AX0256 unless it is a name matching its label, and the error lists the "
+            "callee's labels. Ownership is spelled the same at both ends of a "
             "call: unmarked is read-only, `borrow` is exclusive mutation, `transfer` consumes. A mismatch is "
             "AX0306, and using a value after it moved is AX0312.",
-            "A positional swap of a declared function's arguments can't be written, a mislabelled argument shows on the call line, and a mutation "
-            "or consumption the call doesn't spell won't compile. An agent reads what happens to each argument "
-            "from the call alone.",
+            "Called by its name, a declared function can't have its arguments swapped by position, a mislabelled "
+            "argument shows on the call line, and a mutation or consumption the argument list doesn't spell won't "
+            "compile, so an agent reads what happens to each argument from the call alone. The exception is a "
+            "pipeline: a stage may borrow the value piped into it and mutate it without `borrow` being written, "
+            "though it consumes a named value only when `transfer` is.",
         ],
         "ships": "Ships today: all three diagnostics.",
         "unlike": "Rust and Go have no named arguments, so `resize(height, width)` compiles and looks right. "
@@ -232,7 +240,7 @@ def ping_once(address: String, ping: Request) -> Result<Unit>:
     close(transfer conn)  // consumption is spelled here
     close(transfer conn)  // AX0312: use of moved value `conn`
     Ok(unit)""", "Checked with the compiler."),
-        "cites": ["05-syntax-conventions:3-4", "04-core-language:251-272", "04-core-language:1624-1640", "07-memory-model:253-285"],
+        "cites": ["05-syntax-conventions:3-4", "04-core-language:251-272", "04-core-language:1650-1666", "04-core-language:1707-1741", "07-memory-model:253-285"],
     },
     {
         "id": "failure",
@@ -263,7 +271,7 @@ def label(payment_state: PaymentState) -> String:
         Authorized(_) -> "authorized"
         Captured(_)   -> "captured"
 // error[AX0601]: non-exhaustive match: missing `Refunded(_, _)`""", "Checked with the compiler."),
-        "cites": ["04-core-language:545-645", "11-type-system:444-498"],
+        "cites": ["04-core-language:544-643", "11-type-system:546-609"],
     },
     {
         "id": "determinism",
@@ -285,13 +293,13 @@ def label(payment_state: PaymentState) -> String:
         "sample": ("json", """→ {"jsonrpc": "2.0", "id": 1, "method": "initialize"}
 ← {"jsonrpc": "2.0", "id": 1, "result": {"protocol": "jsonrpc-2.0/ndjson",
    "toolchain": "25bb73aed9ee4627...", "tree": "c002b18c7945ac6c...",
-   "methods": ["delete-def", "delta-card", "diagnostics", "fork", "get-def", ...],
+   "methods": ["delete-def", "delta-card", "diagnostics", "drop-fork", "fork", ...],
    "authority": ["read: the workspace source tree",
      "read: the synthesized standard library",
      "write: workspace source under the package root",
      "no network", "no home directory", "no process spawning"]}}""",
                    "Real daemon handshake, abridged."),
-        "cites": ["26-agent-interface:31-61", "26-agent-interface:91-127", "25-tooling:501-522"],
+        "cites": ["26-agent-interface:31-61", "26-agent-interface:91-134", "25-tooling:501-522"],
     },
     {
         "id": "context",
@@ -308,22 +316,22 @@ def label(payment_state: PaymentState) -> String:
             "the language departs from what a model expects; the resume card lets an agent pick up work where "
             "it left off.",
         ],
-        "ships": "Ships today: outline, slice, search, `delta-card` and `resume-card` as daemon methods. Card "
-                 "contents are partial: the dialect grammar cards the spec requires are not emitted yet, and the "
-                 "resume card's budget is still measured over its JSON envelope. Token budgets use a declared "
-                 "bytes/4 estimate until the specified reference tokenizer is pinned.",
+        "ships": "Ships today: outline, slice, search, `delta-card` and `resume-card` as daemon methods, each card "
+                 "measured over its own text. Card contents are partial: the dialect grammar cards the spec requires "
+                 "are not emitted yet. Token budgets use a declared bytes/4 estimate until the specified reference "
+                 "tokenizer is pinned.",
         "unlike": "Assembling context is the agent framework's job (repository maps, embeddings, file reads); "
                   "the language defines no briefing format and no token budget.",
         "sample": None,
-        "cites": ["26-agent-interface:183", "26-agent-interface:228-234", "26-agent-interface:648", "26-agent-interface:306-324", "26-agent-interface:739-740"],
+        "cites": ["26-agent-interface:213", "26-agent-interface:259-264", "26-agent-interface:681", "26-agent-interface:336-354", "26-agent-interface:772-773", "26-agent-interface:298-306"],
     },
 ]
 
 # Big numbers for the stats band (all from STATUS, as of AS_OF).
 STATS = [
-    ("522", "pages of normative spec"),
-    ("51k", "lines of compiler written in Draconyx"),
-    ("129", "diagnostic codes, each explained"),
+    ("548", "pages of normative spec"),
+    ("63k", "lines of compiler written in Draconyx"),
+    ("143", "diagnostic codes, each explained"),
     ("5", "compiler stages also written in the language"),
     ("209", "design rulings ratified"),
 ]
@@ -340,12 +348,12 @@ LOOP = [
 FEATURE_GROUPS = [
     ('Types and algebra', [
         ('Capabilities: named, but never declared', 'Write the functions and the type conforms. No impl blocks, and no two modules can give one type two meanings.', 'ships'),
-        ('Algebraic laws as code, checked at build time', 'In C++ and Rust, associativity is a line in the docs. In Draconyx it is a `law` line, and a false one fails the build with a shrunk counter-example.', 'partial'),
+        ('Algebraic laws as code, property-tested by default', 'In C++ and Rust, associativity is a line in the docs. In Draconyx it is a `law` line, and a false one fails `drx test` with a shrunk counter-example.', 'partial'),
         ('Dispatch on algebra', 'Write the parallel reduction once. The compiler picks it only for types that assert the laws that make it correct.', 'ships'),
         ('Generics that infer the hard parts', 'Variance, associated types and const-generic shapes are worked out by the compiler, not annotated by the model.', 'partial'),
     ]),
     ('Memory and ownership', [
-        ('Ownership spelled at both ends', 'Every handover is written where the value is given and again where it is taken, so a model never has to guess who owns what.', 'ships'),
+        ('Ownership spelled at both ends', 'Every handover at a call is written where the value is given and again where it is taken, so a model never has to guess who owns what.', 'ships'),
         ('Borrow checking with zero lifetime syntax', "Rust-grade memory safety without a single `'a`: you never write a lifetime, and the compiler works out every one.", 'ships'),
         ('Views inferred, not annotated', 'Put a borrow in a struct and it becomes a safe view on its own: no keyword, no lifetime parameter.', 'ships'),
         ('No garbage collector, deterministic drops', 'No tracing GC and no pauses: each value is freed the moment its last owner lets go.', 'partial'),
@@ -368,7 +376,7 @@ FEATURE_GROUPS = [
         ('With blocks: one keyword for receiver, destructuring and scoped release', "One `with` covers Python's context managers, Rust's RAII and multi-value destructuring, even at the end of a pipeline.", 'ships'),
     ]),
     ('AI and numerics', [
-        ('Shapes and named axes in the type', "A tensor's dtype, axis names and sizes belong to its type, so a mismatched matmul fails at compile time, before any array is allocated.", 'partial'),
+        ('Shapes and named axes in the type', "A tensor's dtype, axis names and sizes belong to its type, so a tensor passed where a signature declares another shape fails at compile time, before any array is allocated. The standard library's tensor functions check only the dtype so far.", 'partial'),
         ('grad, vmap, jit as typed function transforms, with schedules certified by laws', 'Autodiff, auto-batching and fusion are plain functions over functions, and schedule rewrites are gated by laws instead of being trusted.', 'specified'),
         ('Hygienic, typed dialects (macros, elab, comptime)', 'Dialects extend the syntax with Racket-grade hygiene and type-directed elaboration, without textual macros.', 'specified'),
     ]),
@@ -382,8 +390,8 @@ VERSUS = [
     ('Compiler-computed map of the services each function reaches, through the whole call chain', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
     ('Model output typed untrusted at its standard-library source', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
     ("Algebraic laws property-tested by default by the compiler's own test command", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Named arguments required at every multi-argument call of a declared function', ['yes', 'part', 'no', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'no', 'no', 'part']),
-    ('Mutation and moves spelled at the call site', ['yes', 'no', 'no', 'no', 'part', 'part', 'part', 'no', 'part', 'part', 'no', 'no', 'part']),
+    ('Named arguments required at every multi-argument call of a declared function by its name', ['yes', 'part', 'no', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'no', 'no', 'part']),
+    ('Mutation and moves spelled in the argument list of every call', ['yes', 'no', 'no', 'no', 'part', 'part', 'part', 'no', 'part', 'part', 'no', 'no', 'part']),
     ('Missing and redundant match arms both rejected, on every match', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'yes', 'no', 'part', 'no']),
     ('Deterministic agent protocol: same source tree, byte-identical answers', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
     ('Ownership and borrows checked at compile time, with no tracing garbage collector and no lifetime annotations', ['yes', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'part', 'no', 'no', 'no', 'part']),
@@ -392,7 +400,7 @@ VERSUS = [
 # The fine print for every "part"/"yes" a competitor gets, so nobody has to take our word for it.
 VERSUS_NOTES = {
     'Python': [
-        'Named arguments required at every multi-argument call of a declared function: The author can opt in with keyword-only parameters after a bare `*` (PEP 3102), and calling them positionally is then a TypeError. But that is opt-in, and the error comes at run time, not compile time.',
+        'Named arguments required at every multi-argument call of a declared function by its name: The author can opt in with keyword-only parameters after a bare `*` (PEP 3102), and calling them positionally is then a TypeError. But that is opt-in, and the error comes at run time, not compile time.',
     ],
     'Java': [
         'Every error has a code and an explain entry: javac has stable internal diagnostic keys (e.g. compiler.err.cant.resolve), shown with -XDrawDiagnostics, but has no explain command and no machine-readable fixes. Quick-fixes come from IDEs (Eclipse JDT problem IDs, IntelliJ).',
@@ -404,29 +412,29 @@ VERSUS_NOTES = {
     ],
     'C#': [
         'Every error has a code and an explain entry: Every Roslyn diagnostic has a stable CSxxxx ID, and analyzers/code fixes ship in the SDK (dotnet format applies them). There is no built-in explain command; explanations live in the docs on learn.microsoft.com.',
-        'Mutation and moves spelled at the call site: `ref`/`out` (and optionally `in`) must be written at the call site. Mutation through reference-type arguments and receivers is unmarked, and there is no move semantics.',
+        'Mutation and moves spelled in the argument list of every call: `ref`/`out` (and optionally `in`) must be written at the call site. Mutation through reference-type arguments and receivers is unmarked, and there is no move semantics.',
         'Missing and redundant match arms both rejected: A subsumed/unreachable arm is an error (CS8510 in switch expressions, CS8120 in switch statements). A non-exhaustive switch expression is only warning CS8509, switch statements get no exhaustiveness check, and there are no closed union types even in C# 14.',
     ],
     'C++': [
         'Every error has a code and an explain entry: There is no single reference compiler. MSVC gives errors stable codes (C2065, C2440...) with an online docs entry for each, but it has no built-in explain command. Clang and GCC emit machine-readable fix-its (clang -fdiagnostics-parseable-fixits;',
-        'Mutation and moves spelled at the call site: To move from a named lvalue you must write std::move/std::forward at the call site. Moves of temporaries and return values are implicit, and std::move is only a cast, so a moved-from object stays usable. Mutation through a non-const reference parameter or a method receiver is not marked.',
+        'Mutation and moves spelled in the argument list of every call: To move from a named lvalue you must write std::move/std::forward at the call site. Moves of temporaries and return values are implicit, and std::move is only a cast, so a moved-from object stays usable. Mutation through a non-const reference parameter or a method receiver is not marked.',
         'Missing and redundant match arms both rejected: A duplicate case label in a switch is always a compile ERROR. A missing enumerator in an enum switch is a warning (-Wswitch, on in -Wall) and becomes an error only by opt-in (-Werror=switch).',
     ],
     'Rust': [
         'Every error has a code and an explain entry: Many rustc errors carry stable E-codes with `rustc --explain`, and `--error-format=json` emits suggestions marked MachineApplicable, which `cargo fix` / `cargo clippy --fix` apply. Not every diagnostic has a code: many errors and all lints lack E-codes.',
-        'Mutation and moves spelled at the call site: `&mut buffer` is written at the call site for free-function args. Moves are not marked, and method calls auto-borrow `&mut self` without a marker.',
+        'Mutation and moves spelled in the argument list of every call: `&mut buffer` is written at the call site for free-function args. Moves are not marked, and method calls auto-borrow `&mut self` without a marker.',
         'Missing and redundant match arms both rejected: A non-exhaustive match is a hard error (E0004) on every match. Unreachable or redundant arms only trigger the warn-by-default `unreachable_patterns` lint (an error only with deny/-D warnings).',
         "Ownership and borrows checked at compile time: Use-after-move and aliased &mut are rejected statically, with no tracing GC. But Rust has lifetime annotation syntax ('a), so it meets two of the three conditions.",
     ],
     'Swift': [
         'Every error has a code and an explain entry: Swift 6.1/6.2 diagnostic groups (e.g. [#StrictMemorySafety]) have names and documentation pages, but most errors have no code. Fix-its are built in and can be exported in machine-readable form (serialized diagnostics, -emit-fixits-path).',
-        'Named arguments required at every multi-argument call of a declared function: Argument labels are required by default at every call, but the author can opt out per parameter with _.',
-        'Mutation and moves spelled at the call site: & is required at the call site for inout. consume (SE-0366) is optional. Mutating method calls on receivers are not marked.',
+        'Named arguments required at every multi-argument call of a declared function by its name: Argument labels are required by default at every call, but the author can opt out per parameter with _.',
+        'Mutation and moves spelled in the argument list of every call: & is required at the call site for inout. consume (SE-0366) is optional. Mutating method calls on receivers are not marked.',
         "Missing and redundant match arms both rejected: A non-exhaustive switch is a compile error. A duplicate or unreachable case is only a warning ('case is already handled by previous patterns').",
         'Ownership and borrows checked at compile time: Swift uses ARC, not a tracing GC. It has no stable lifetime syntax (@lifetime for ~Escapable is still experimental). ~Copyable types reject use-after-consume statically.',
     ],
     'Zig': [
-        "Mutation and moves spelled at the call site: This goes against the rule's 'no' on purpose. Zig parameters are immutable, so a caller has to write &x at the call site to let a callee mutate a local, much like Rust's &mut. Method receivers auto-take the address, an already-held pointer passes unmarked, and moves don't exist.",
+        "Mutation and moves spelled in the argument list of every call: This goes against the rule's 'no' on purpose. Zig parameters are immutable, so a caller has to write &x at the call site to let a callee mutate a local, much like Rust's &mut. Method receivers auto-take the address, an already-held pointer passes unmarked, and moves don't exist.",
         'Missing and redundant match arms both rejected: On an enum or tagged-union switch, a missing prong is a compile error, so is a duplicate prong, and so is an else prong once every case is handled. (Integer switches need an else.)',
     ],
     'Haskell': [
@@ -434,8 +442,8 @@ VERSUS_NOTES = {
         'Missing and redundant match arms both rejected: -Woverlapping-patterns (redundant arms) is on by default and -Wincomplete-patterns (missing arms) comes with -W or -Wall, but both are warnings; rejecting a match takes -Werror or -Werror=incomplete-patterns.',
     ],
     'Mojo': [
-        "Named arguments required at every multi-argument call of a declared function: Mojo supports Python-style keyword-only parameters (after `*` in the signature), so an author can opt in to required labels, as in Python. The default is optional. The rule's draft lists Mojo as no, but scoring it the same as Python means part.",
-        'Mutation and moves spelled at the call site: Ownership transfer is written `buffer^` at the call site, but passing to a `mut` parameter is unmarked.',
+        "Named arguments required at every multi-argument call of a declared function by its name: Mojo supports Python-style keyword-only parameters (after `*` in the signature), so an author can opt in to required labels, as in Python. The default is optional. The rule's draft lists Mojo as no, but scoring it the same as Python means part.",
+        'Mutation and moves spelled in the argument list of every call: Ownership transfer is written `buffer^` at the call site, but passing to a `mut` parameter is unmarked.',
         "Ownership and borrows checked at compile time: Static move and borrow checking (use-after-move, argument exclusivity, and reference-invalidation diagnostics in 1.0), ASAP destruction with no tracing GC, but explicit origin parameters (Mojo's lifetimes) exist. That is two of three.",
     ],
 }
@@ -453,13 +461,13 @@ NAME_SOURCE = ("Attic Inscriptions Online, ML 86: decree to republish Draco's la
                "https://atticinscriptions.com/inscription/ML/86")
 
 STATUS = [
-    ("Specification", "31 normative sections, a 522-page PDF with 563 code blocks that the corpus tool turns into test oracles."),
+    ("Specification", "31 normative sections, a 548-page PDF with 575 code blocks that the corpus tool turns into test oracles."),
     ("Toolchain", "Lexer, parser, resolver, type checker, ownership checker, interpreter with law runner, canonical formatter, agent daemon and native code generation."),
     ("Agent daemon", "20 JSON-RPC methods, among them outline, get-def, slice, search, put-def, put-defs, fork, verify, `delta-card` and `resume-card`."),
-    ("Diagnostics", "129 codes, each with an explain entry; a test enforces the coverage."),
-    ("Self-hosting", "The lexer, parser, resolver, type checker and ownership checker are written in Draconyx itself, about 51,000 lines. The ownership checker port is the stage in progress."),
-    ("Latest full gate", "9 October 2026, all green on the shared test corpus: lexer 775/775, parser 1270/1270, resolver 966/966, type checker 1015/1015, ownership 1015/1015, native code vs interpreter 105/105."),
-    ("Design record", "209 numbered rulings ratified into the spec; four example packages, among them an online shop, event sourcing and FlashAttention, and a 3,426-line standard library generated from the spec."),
+    ("Diagnostics", "143 codes, each with an explain entry; a test enforces the coverage."),
+    ("Self-hosting", "The lexer, parser, resolver, type checker and ownership checker are written in Draconyx itself, about 63,700 lines, and each agrees with its reference implementation on the whole shared test corpus. The back end is still written in Rust."),
+    ("Latest full gate", "2 November 2026, all green on the shared test corpus: lexer 787/787, parser 1665/1665, resolver 1252/1252, type checker 1424/1424, ownership 1424/1424, native code vs interpreter 134/134."),
+    ("Design record", "209 numbered rulings ratified into the spec; four example packages, among them an online shop, event sourcing and FlashAttention, and a 3,466-line standard library generated from the spec."),
     ("Release", "Pre-release research project, first commit 20 July 2026. The first public release comes when the first compiler written entirely in Draconyx is ready."),
 ]
 

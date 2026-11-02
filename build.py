@@ -664,7 +664,7 @@ def build_opinions_md():
 def build_llms():
     out = ["# Draconyx", "",
            "> A programming language designed for code written by AI models and used by AI agents. "
-           "Pre-release research project: a 522-page specification and a working compiler, "
+           f"Pre-release research project: a {C.STATS[0][0]}-page specification and a working compiler, "
            "public at the first release. Each mechanism below states what ships today and what is only specified.", "",
            f"Status as of {C.AS_OF}: " + " ".join(f"{k}: {v}" for k, v in C.STATUS), "",
            "## Mechanisms", ""]
