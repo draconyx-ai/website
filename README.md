@@ -7,6 +7,7 @@ The Draconyx website.
   scripts or trackers.
 - `assets/`: the logo and its resized versions; `assets/github/` holds the organization avatars.
 - `research-features-versus.json`: the evidence behind every cell of the comparison table.
+- `indexnow.py`: after a deploy, submits the live sitemap's URLs to IndexNow.
 
 Build and preview:
 
@@ -18,4 +19,16 @@ Deploy (the site is served by Caddy from `/var/www/draconyx.ai` on the `mail` ho
     rsync -a --delete dist/ mail:/tmp/draconyx-site/
     ssh mail 'sudo rsync -a --delete /tmp/draconyx-site/ /var/www/draconyx.ai/ && sudo chown -R caddy:caddy /var/www/draconyx.ai && rm -rf /tmp/draconyx-site'
 
+After a deploy that changes the pages, tell the IndexNow search engines (Bing, Yandex, Seznam, Naver, Yep and
+the others; Google does not take part):
+
+    python3 indexnow.py
+
 draconyx.org and the www hosts redirect to https://draconyx.ai.
+
+## Search engines
+
+`build.py` writes `robots.txt`, `sitemap.xml` (the canonical pages in `PAGES`, with the date of the last commit to
+the sources as `lastmod`) and the IndexNow key file `/<INDEXNOW_KEY>.txt`. The webmaster consoles' ownership
+proofs go in `VERIFY_META` (meta tags) or `VERIFY_FILES` (files at the site root) in `build.py`. Keep them: if a
+token disappears from the live site, the console drops the verification.

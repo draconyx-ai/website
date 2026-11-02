@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """Build draconyx.ai into dist/ from content.py: index.html, index.md, llms.txt, assets, favicon.svg,
-robots.txt, sitemap.xml. No external requests at runtime: no web fonts, scripts or trackers.
+robots.txt, sitemap.xml, the IndexNow key file and any search-engine verification files.
+No external requests at runtime: no web fonts, scripts or trackers.
 
     python3 build.py            # writes dist/
+    python3 indexnow.py         # after a deploy: tells IndexNow engines the sitemap URLs changed
 """
 import html
 import os
 import re
 import shutil
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -16,6 +19,24 @@ import content as C  # noqa: E402
 HERE = os.path.dirname(__file__)
 OUT = os.path.join(HERE, "dist")
 SITE = "https://draconyx.ai"
+TITLE = "Draconyx: a programming language designed for its AI author"
+
+# Search engines. The IndexNow key is public by design: it is served as /<key>.txt and proves that
+# submissions come from the site's owner (https://www.indexnow.org/documentation).
+INDEXNOW_KEY = "7a40ed4c85a90c8eeddb499ccbd8a46b"
+# Ownership verification tokens, one <meta> per non-empty value. They are public too (they sit in the page).
+VERIFY_META = {
+    "google-site-verification": "",   # Google Search Console, HTML tag method
+    "msvalidate.01": "",              # Bing Webmaster Tools, meta tag method
+    "yandex-verification": "",        # Yandex Webmaster, meta tag method
+    "naver-site-verification": "",    # Naver Search Advisor, HTML tag method
+    "seznam-wmt": "",                 # Seznam Webmaster (reporter.seznam.cz/wm), meta tag method
+}
+# Verification files served at the site root: {filename: exact content}, as each engine's console gives them.
+VERIFY_FILES = {}
+# Pages listed in sitemap.xml and submitted to IndexNow: the canonical HTML pages only. /index.md and
+# /llms.txt are alternate formats of the same page, linked from it, and stay crawlable.
+PAGES = ["/"]
 MECH_LEDE = "Real mechanisms in a real compiler. Every sample on this page was run through it."
 e = html.escape
 
@@ -256,15 +277,16 @@ def build_html():
         form = '<p class="note">An update list opens at launch.</p>'
     spec = f'<a class="btn" href="{e(C.SPEC_PDF)}">Read the spec (PDF)</a>' if C.SPEC_PDF else ""
     involved = e(C.INVOLVED).replace(e(C.CONTACT), f'<a href="mailto:{e(C.CONTACT)}">{e(C.CONTACT)}</a>')
+    verify_meta = "".join(f'<meta name="{e(n)}" content="{e(v)}">\n' for n, v in VERIFY_META.items() if v)
 
     return f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Draconyx</title>
+<title>{e(TITLE)}</title>
 <meta name="description" content="Draconyx is a programming language designed for its AI author: structured diagnostics with edits, writes by definition name, laws checked by default, compile-time authority.">
-<meta name="color-scheme" content="light dark">
+{verify_meta}<meta name="color-scheme" content="light dark">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="alternate" type="text/markdown" href="/index.md" title="This page as Markdown">
 <link rel="canonical" href="{SITE}/">
@@ -416,15 +438,34 @@ def build_llms():
     return "\n".join(out)
 
 
+def last_modified():
+    """Date of the last commit that touched what the pages are built from (W3C date), or None outside git."""
+    try:
+        out = subprocess.run(["git", "log", "-1", "--format=%cs", "--", "content.py", "build.py", "assets"],
+                             cwd=HERE or ".", capture_output=True, text=True, check=True).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return out or None
+
+
+def build_sitemap():
+    mod = last_modified()
+    lastmod = f"<lastmod>{mod}</lastmod>" if mod else ""
+    urls = "".join(f"<url><loc>{e(SITE + p)}</loc>{lastmod}</url>" for p in PAGES)
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n')
+
+
 def main():
     os.makedirs(os.path.join(OUT, "assets"), exist_ok=True)
     for name in ("logo-1200.webp", "logo-640.webp"):
         shutil.copyfile(os.path.join(HERE, "assets", name), os.path.join(OUT, "assets", name))
     files = {
         "index.html": build_html(), "index.md": build_md(), "llms.txt": build_llms(), "favicon.svg": FAVICON,
-        "robots.txt": f"User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n",
-        "sitemap.xml": ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-                        f"<url><loc>{SITE}/</loc></url><url><loc>{SITE}/index.md</loc></url><url><loc>{SITE}/llms.txt</loc></url></urlset>\n"),
+        "robots.txt": f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n",
+        "sitemap.xml": build_sitemap(),
+        f"{INDEXNOW_KEY}.txt": INDEXNOW_KEY,
+        **VERIFY_FILES,
     }
     for name, text in files.items():
         with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
