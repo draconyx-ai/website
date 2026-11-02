@@ -474,3 +474,16 @@ INVOLVED = (
     "Want in early? For design discussion, collaboration, or to train or evaluate models on Draconyx, write to "
     f"{CONTACT}."
 )
+
+# Footer note. Keep it true of the server (infra runbook, "Website statistics"; listmonk privacy settings):
+# Caddy access log rolled daily and deleted after about 14 days, monthly/all-time totals with anonymised IPs,
+# listmonk record_optin_ip off, view/click tracking off, double opt-in.
+PRIVACY = (
+    "This site sets no cookies, runs no tracking scripts and loads nothing from other sites. Its web server logs each "
+    "request: your IP address, the time, the page, and what your browser sends with it, such as its name and the page "
+    "that linked here. The logs are kept about 14 days for security and visitor statistics, then deleted; after that, "
+    "the statistics keep only totals, without full IP addresses. The signup form sends your email address to the "
+    "Draconyx list at lists.draconyx.ai, on the same server: you get a confirmation email first and nothing else until "
+    "you confirm, the list does not record your IP address or which emails you open or links you click, and every "
+    f"update has an unsubscribe link. Questions: {CONTACT}."
+)
