@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build draconyx.ai into dist/ from content.py: index.html, index.md, llms.txt, the opinions page
-(what-models-think/index.html and .md, logos inlined from assets/models/), assets, favicon.svg,
+(what-models-think/index.html and .md, logos inlined from assets/models/), the changelog page
+(changelog/index.html and .md), assets, favicon.svg,
 favicon.ico, apple-touch-icon.png, robots.txt, sitemap.xml, the IndexNow key file and any search-engine verification files.
 No external requests at runtime: no web fonts, scripts or trackers.
 
@@ -37,7 +38,7 @@ VERIFY_META = {
 VERIFY_FILES = {}
 # Pages listed in sitemap.xml and submitted to IndexNow: the canonical HTML pages only. /index.md and
 # /llms.txt are alternate formats of the same page, linked from it, and stay crawlable.
-PAGES = ["/", C.OPINIONS_URL]
+PAGES = ["/", C.OPINIONS_URL, C.CHANGELOG_URL]
 MECH_LEDE = "Real mechanisms in a real compiler. Every sample on this page was run through it."
 e = html.escape
 
@@ -216,10 +217,10 @@ pre .c{color:var(--code-c)}pre .s{color:var(--code-s)}pre .k{color:var(--code-k)
 figcaption{font-size:13px;color:var(--muted);margin-top:8px}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
 .cites{margin-top:10px;font-size:13px;color:var(--muted)}.cites summary{cursor:pointer}.cites code{white-space:nowrap}
-.loop li,.fcard,.reason,details.fine,.btn,.opinion,.tcard,.roster a{position:relative;isolation:isolate}
-.loop li::before,.fcard::before,.reason::before,details.fine::before,.btn::before,.opinion::before,.tcard::before,.roster a::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--edge,var(--line));clip-path:var(--cut,var(--cut1));transition:background .2s}
-.loop li::after,.fcard::after,.reason::after,details.fine::after,.btn::after,.opinion::after,.tcard::after,.roster a::after{content:"";position:absolute;inset:var(--ew,1px) var(--ew,1px) var(--eb,3px);z-index:-1;background:var(--fill,var(--card));clip-path:var(--cut,var(--cut1))}
-.fcard:nth-child(3n+2),.reason:nth-child(3n+2),.loop li:nth-child(3n+2),.btn:nth-child(2),.opinion:nth-child(3n+2),.tcard:nth-child(3n+2){--cut:var(--cut2)}.fcard:nth-child(3n),.reason:nth-child(3n),.loop li:nth-child(3n),.btn:nth-child(3),.opinion:nth-child(3n),.tcard:nth-child(3n){--cut:var(--cut3)}
+.loop li,.fcard,.reason,details.fine,.btn,.opinion,.tcard,.roster a,.entry{position:relative;isolation:isolate}
+.loop li::before,.fcard::before,.reason::before,details.fine::before,.btn::before,.opinion::before,.tcard::before,.roster a::before,.entry::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--edge,var(--line));clip-path:var(--cut,var(--cut1));transition:background .2s}
+.loop li::after,.fcard::after,.reason::after,details.fine::after,.btn::after,.opinion::after,.tcard::after,.roster a::after,.entry::after{content:"";position:absolute;inset:var(--ew,1px) var(--ew,1px) var(--eb,3px);z-index:-1;background:var(--fill,var(--card));clip-path:var(--cut,var(--cut1))}
+.fcard:nth-child(3n+2),.reason:nth-child(3n+2),.loop li:nth-child(3n+2),.btn:nth-child(2),.opinion:nth-child(3n+2),.tcard:nth-child(3n+2),.entry:nth-child(3n+2){--cut:var(--cut2)}.fcard:nth-child(3n),.reason:nth-child(3n),.loop li:nth-child(3n),.btn:nth-child(3),.opinion:nth-child(3n),.tcard:nth-child(3n),.entry:nth-child(3n){--cut:var(--cut3)}
 @media (max-width:600px){.reason{padding:23px 19px 21px}}
 :root{--mk-bg:#efe4cc}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--mk-bg:#e6dcc3}}:root[data-theme="dark"]{--mk-bg:#e6dcc3}
 .mk{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;background:var(--mk-bg);color:#15130f;clip-path:var(--chip-cut)}
@@ -244,6 +245,18 @@ blockquote{margin:0}blockquote p{margin:0}
 .quotes code,.pull code,.tcard code{background:var(--chip);padding:1px 5px;border-radius:5px;font-size:.84em}
 @media (max-width:760px){.quotes{grid-template-columns:minmax(0,1fr)}.opinion{padding:24px 19px 24px}.ohead .mk{width:50px;height:50px}}
 .credits{margin-top:30px}
+.roster.plain a{padding:8px 16px 11px}
+.lognote{margin:0 0 34px;max-width:86ch}
+.log{display:grid;gap:56px}.month{scroll-margin-top:80px}.month h2{margin:0 0 22px}
+.entries{display:grid;gap:22px}
+.entry{padding:26px 30px 28px;scroll-margin-top:80px}
+.ehead{display:flex;align-items:center;gap:14px}.ehead .num{flex:none;white-space:nowrap}
+.ehead h3{margin:0;font-size:clamp(20px,2.3vw,25px)}
+.changes{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:12px}
+.changes li{display:grid;grid-template-columns:136px minmax(0,1fr);gap:4px 18px;align-items:baseline}
+.changes .qtag{margin:0;line-height:1.5}.changes p{margin:0;max-width:78ch;font-size:16px}
+.changes code{background:var(--chip);padding:1px 5px;border-radius:5px;font-size:.88em}
+@media (max-width:640px){.changes li{grid-template-columns:minmax(0,1fr)}.entry{padding:22px 19px 24px}.ehead{align-items:flex-start;flex-direction:column;gap:10px}}
 .tgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:30px}
 .tcard{margin:0;padding:20px 21px 23px;display:flex;flex-direction:column;gap:14px;transition:transform .2s}
 .tcard:hover{transform:translateY(-2px);--edge:var(--olive)}
@@ -385,6 +398,7 @@ def build_html():
 <h2>Where it stands</h2>
 <p class="lede">As of {e(C.AS_OF)}.</p>
 <dl class="status">{status}</dl>
+<div class="btns start"><a class="btn" href="{C.CHANGELOG_URL}">What changed: the changelog</a></div>
 </div></section>
 
 {signup()}</main>
@@ -423,10 +437,12 @@ def head(title, description, path, og_title, og_description, verify=False):
 def topbar(path):
     """The sticky top bar. Away from the home page, its section links lead back to it."""
     home = "" if path == "/" else "/"
-    here = ' aria-current="page"' if path == C.OPINIONS_URL else ""
+
+    def here(url):
+        return ' aria-current="page"' if path == url else ""
     return f"""<header class="top"><div class="wrap">
 <a class="brand" href="/">{CLAW}<span>Draconyx</span></a>
-<nav aria-label="Sections"><a href="{home}#versus">Versus</a><a class="opt" href="{home}#why">Why</a><a class="opt" href="{home}#language">Language</a><a class="opt" href="{home}#name">Name</a><a href="{home}#status">Status</a><a class="opt" href="{C.OPINIONS_URL}"{here}>Reviews</a><a href="/llms.txt">For agents</a></nav>
+<nav aria-label="Sections"><a href="{home}#versus">Versus</a><a class="opt" href="{home}#why">Why</a><a class="opt" href="{home}#language">Language</a><a class="opt" href="{home}#name">Name</a><a href="{home}#status">Status</a><a class="opt" href="{C.CHANGELOG_URL}"{here(C.CHANGELOG_URL)}>Changelog</a><a class="opt" href="{C.OPINIONS_URL}"{here(C.OPINIONS_URL)}>Reviews</a><a href="/llms.txt">For agents</a></nav>
 </div></header>
 """
 
@@ -458,7 +474,7 @@ def footer(md_path):
     privacy = e(C.PRIVACY).replace(e(C.CONTACT), f'<a href="mailto:{e(C.CONTACT)}">{e(C.CONTACT)}</a>')
     return f"""<footer><div class="wrap">
 <span>{CLAW}Draconyx, a language designed by <a href="https://www.linkedin.com/in/filippofadda/" rel="author">Filippo F. Fadda</a>.</span>
-<span><a href="{md_path}">This page as Markdown</a> &middot; <a href="/llms.txt">llms.txt</a></span>
+<span><a href="{C.CHANGELOG_URL}">Changelog</a> &middot; <a href="{md_path}">This page as Markdown</a> &middot; <a href="/llms.txt">llms.txt</a></span>
 <p class="privacy" id="privacy"><b>Privacy.</b> {privacy}</p>
 </div></footer>
 </body>
@@ -524,6 +540,74 @@ def build_opinions_html():
 {signup()}</main>
 """ + footer(path + "index.md")
 
+
+MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+          "November", "December"]
+
+
+def long_date(iso):
+    """2026-11-02 -> 2 November 2026."""
+    y, m, d = (int(x) for x in iso.split("-"))
+    return f"{d} {MONTHS[m - 1]} {y}"
+
+
+def changelog_months():
+    """The changelog's entries grouped by month, in the order given (newest first): [(yyyy-mm, "Month yyyy", entries)]."""
+    months = []
+    for entry in C.CHANGELOG:
+        key = entry["date"][:7]
+        if not months or months[-1][0] != key:
+            y, m = (int(x) for x in key.split("-"))
+            months.append((key, f"{MONTHS[m - 1]} {y}", []))
+        months[-1][2].append(entry)
+    return months
+
+
+def build_changelog_html():
+    """The changelog page: dated entries, newest first, grouped by month; each change tagged with its area."""
+    path = C.CHANGELOG_URL
+    months = changelog_months()
+    jump = "".join(f'<li><a href="#{k}">{e(name)}</a></li>' for k, name, _ in months)
+    blocks = []
+    for key, name, entries in months:
+        arts = []
+        for en in entries:
+            y, m, d = (int(x) for x in en["date"].split("-"))
+            changes = "".join(f'<li><span class="qtag">{e(area)}</span><p>{md(text)}</p></li>'
+                              for area, text, _evidence in en["items"])
+            arts.append(f'<article class="entry" id="{en["date"]}"><div class="ehead">'
+                        f'<time class="num" datetime="{en["date"]}">{d} {MONTHS[m - 1][:3]}</time>'
+                        f'<h3>{e(en["title"])}</h3></div><ul class="changes">{changes}</ul></article>')
+        blocks.append(f'<div class="month" id="{key}"><h2>{e(name)}</h2><div class="entries">{"".join(arts)}</div></div>')
+    return head(C.CHANGELOG_TITLE, f"{C.CHANGELOG_LEDE} Dated, pre-release: no version numbers yet.", path,
+                C.CHANGELOG_TITLE, C.CHANGELOG_LEDE) + topbar(path) + f"""<main id="main">
+<div class="hero page"><div class="wrap">
+<p class="eyebrow">Changelog</p>
+<h1>{e(C.CHANGELOG_HEADLINE)}</h1>
+<p class="sub">{e(C.CHANGELOG_LEDE)}</p>
+<ul class="roster plain" aria-label="Months">{jump}</ul>
+</div></div>
+
+<section id="log"><div class="wrap">
+<p class="note lognote">{md(C.CHANGELOG_NOTE)}</p>
+<div class="log">{''.join(blocks)}</div>
+</div></section>
+
+{signup()}</main>
+""" + footer(path + "index.md")
+
+
+def build_changelog_md():
+    lines = [f"# {C.CHANGELOG_TITLE}", "", f"> {C.CHANGELOG_LEDE}", "", C.CHANGELOG_NOTE, ""]
+    for _key, name, entries in changelog_months():
+        lines += [f"## {name}", ""]
+        for en in entries:
+            lines += [f"### {long_date(en['date'])}: {en['title']}", ""]
+            lines += [f"- **{area}:** {text}" for area, text, _evidence in en["items"]] + [""]
+    lines += [f"Home: [Draconyx]({SITE}/) · [llms.txt]({SITE}/llms.txt)", ""]
+    return "\n".join(lines)
+
+
 def build_md():
     lines = ["# Draconyx", "", f"> {C.HERO['headline']} {C.HERO['subhead']}", "",
              "## Every other language was built for humans", ""]
@@ -556,6 +640,7 @@ def build_md():
     lines += ["## Dragon claw, written law", ""] + [p + "\n" for p in C.NAME]
     lines += [f"Source: [{C.NAME_SOURCE[0]}]({C.NAME_SOURCE[1]})", "", f"## Where it stands (as of {C.AS_OF})", ""]
     lines += [f"- **{k}:** {v}" for k, v in C.STATUS]
+    lines += ["", f"What changed, by date: [{C.CHANGELOG_TITLE}]({SITE}{C.CHANGELOG_URL})"]
     lines += ["", f"## {C.SIGNUP_TITLE}", "", C.SIGNUP_LEAD, "", f"Subscribe: {C.LISTMONK_FORM_URL}", ""]
     lines += ["## Get in early", "", C.INVOLVED, ""]
     lines += ["## Privacy", "", C.PRIVACY, ""]
@@ -594,6 +679,8 @@ def build_llms():
             f"- [Why the name]({SITE}/#name): Draconyx, Draco's written laws and the axones",
             f"- [{C.OPINIONS_TITLE}]({SITE}{C.OPINIONS_URL}): verbatim excerpts from six AI models asked about the "
             f"spec through a service, without knowing who was asking ([Markdown]({SITE}{C.OPINIONS_URL}index.md))",
+            f"- [{C.CHANGELOG_TITLE}]({SITE}{C.CHANGELOG_URL}): what changed in the language, the spec and the "
+            f"toolchain, dated, newest first ([Markdown]({SITE}{C.CHANGELOG_URL}index.md))",
             f"- [Contact](mailto:{C.CONTACT}): design discussion, collaboration, model training or evaluation",
             f"- [Launch updates]({C.LISTMONK_FORM_URL}): mailing list for the launch and new features (double opt-in)", ""]
     return "\n".join(out)
@@ -632,6 +719,8 @@ def main():
         **VERIFY_FILES,
         C.OPINIONS_URL.strip("/") + "/index.html": build_opinions_html(),
         C.OPINIONS_URL.strip("/") + "/index.md": build_opinions_md(),
+        C.CHANGELOG_URL.strip("/") + "/index.html": build_changelog_html(),
+        C.CHANGELOG_URL.strip("/") + "/index.md": build_changelog_md(),
     }
     for name, text in files.items():
         os.makedirs(os.path.dirname(os.path.join(OUT, name)), exist_ok=True)
