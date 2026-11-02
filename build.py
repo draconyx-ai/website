@@ -27,7 +27,7 @@ INDEXNOW_KEY = "7a40ed4c85a90c8eeddb499ccbd8a46b"
 # Ownership verification tokens, one <meta> per non-empty value. They are public too (they sit in the page).
 VERIFY_META = {
     "google-site-verification": "k8XJduzwzitQAtVzBfwNyRI8RYR3AAJbgtZGccEutw8",  # Google Search Console, HTML tag method
-    "msvalidate.01": "",              # Bing Webmaster Tools, meta tag method
+    "msvalidate.01": "AA85F239DE5C1777B1DA35E1AC7A54C4",  # Bing Webmaster Tools, meta tag method
     "yandex-verification": "",        # Yandex Webmaster, meta tag method
     "naver-site-verification": "",    # Naver Search Advisor, HTML tag method
     "seznam-wmt": "",                 # Seznam Webmaster (reporter.seznam.cz/wm), meta tag method
