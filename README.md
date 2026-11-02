@@ -5,7 +5,9 @@ The Draconyx website.
 - `content.py`: every word on the page, the single source for `index.html`, `index.md` and `llms.txt`.
 - `build.py`: renders them into `dist/` (git-ignored). No external requests at runtime: no web fonts,
   scripts or trackers.
-- `assets/`: the logo and its resized versions; `assets/github/` holds the organization avatars.
+- `assets/`: the logo and its resized versions; `assets/github/` holds the organization avatars; `favicon.ico`
+  (16, 32, 48 px) and `apple-touch-icon.png` (180 px, opaque), which `build.py` copies to the site root.
+- `make_icons.py`: regenerates those two icons (see below).
 - `research-features-versus.json`: the evidence behind every cell of the comparison table.
 - `indexnow.py`: after a deploy, submits the live sitemap's URLs to IndexNow.
 
@@ -13,6 +15,12 @@ Build and preview:
 
     python3 build.py
     python3 -m http.server 8765 --directory dist
+
+Icons: `favicon.svg` is written by `build.py` (olive claws on the page's cream, from `CLAW_PATHS` and the `FAVICON_*`
+colours). The ICO and the Apple touch icon are rasters of the same design, committed in `assets/`. Regenerate them only
+when the design changes (needs Google Chrome on macOS; the rest is standard library):
+
+    python3 make_icons.py
 
 Deploy (the site is served by Caddy from `/var/www/draconyx.ai` on the `mail` host):
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Build draconyx.ai into dist/ from content.py: index.html, index.md, llms.txt, assets, favicon.svg,
-robots.txt, sitemap.xml, the IndexNow key file and any search-engine verification files.
+favicon.ico, apple-touch-icon.png, robots.txt, sitemap.xml, the IndexNow key file and any search-engine verification files.
 No external requests at runtime: no web fonts, scripts or trackers.
 
     python3 build.py            # writes dist/
@@ -45,8 +45,10 @@ CLAW_PATHS = ('<path d="M14 54C10 38 14 20 30 8C22 24 22 40 26 54Z"/>'
               '<path d="M28 56C26 40 32 24 48 14C40 30 38 44 40 56Z"/>'
               '<path d="M42 58C42 46 48 36 60 30C54 42 52 50 54 58Z"/>')
 CLAW = f'<svg class="claw" viewBox="0 0 64 64" aria-hidden="true" focusable="false">{CLAW_PATHS}</svg>'
+# The favicon is the top bar's mark as it looks in the light theme: olive claws (--olive) on the page's cream (--bg).
+FAVICON_OLIVE, FAVICON_CREAM = "#5b6b25", "#f6efdf"
 FAVICON = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" '
-           f'fill="#5b6b25"/><g fill="#f4ecd8">{CLAW_PATHS}</g></svg>')
+           f'fill="{FAVICON_CREAM}"/><g fill="{FAVICON_OLIVE}">{CLAW_PATHS}</g></svg>')
 
 KEYWORDS = {"def", "let", "match", "enum", "capability", "law", "provide", "locally", "in", "example",
             "transfer", "borrow", "tainted", "if", "else", "for", "return", "struct"}
@@ -289,7 +291,9 @@ def build_html():
 <title>{e(TITLE)}</title>
 <meta name="description" content="Draconyx is a programming language designed for its AI author: structured diagnostics with edits, writes by definition name, laws checked by default, compile-time authority.">
 {verify_meta}<meta name="color-scheme" content="light dark">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="alternate" type="text/markdown" href="/index.md" title="This page as Markdown">
 <link rel="canonical" href="{SITE}/">
 <meta property="og:title" content="Draconyx">
@@ -464,6 +468,9 @@ def main():
     os.makedirs(os.path.join(OUT, "assets"), exist_ok=True)
     for name in ("logo-1200.webp", "logo-640.webp"):
         shutil.copyfile(os.path.join(HERE, "assets", name), os.path.join(OUT, "assets", name))
+    # Browsers and apps ask for these at the site root. Made by make_icons.py, committed in assets/.
+    for name in ("favicon.ico", "apple-touch-icon.png"):
+        shutil.copyfile(os.path.join(HERE, "assets", name), os.path.join(OUT, name))
     files = {
         "index.html": build_html(), "index.md": build_md(), "llms.txt": build_llms(), "favicon.svg": FAVICON,
         "robots.txt": f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n",
