@@ -1,4 +1,4 @@
-"""Site content for draconyx.org: the single source for index.html, index.md and llms.txt.
+"""Site content for draconyx.ai: the single source for index.html, index.md, llms.txt and the opinions page.
 
 Reasons 1-8 were fact-checked against the spec and the compiler on 2026-10-18 (adversarial
 verifier per reason, code samples run through the compiler); reason 9 (context) and the name section were
@@ -487,3 +487,116 @@ PRIVACY = (
     "you confirm, the list does not record your IP address or which emails you open or links you click, and every "
     f"update has an unsubscribe link. Questions: {CONTACT}."
 )
+
+# Second opinions: what AI models said about the spec. Six models were given the specification (and the site)
+# between 29 October and 2 November 2026 (the dates of the saved answers) and asked the four questions below. The
+# questions went through a service that calls the models, so none knew who was asking (the spec itself carries the
+# author's name; the models did not know the asker was him). DeepSeek and Muse Spark
+# answered twice, on two revisions of the spec. The full answers are kept by the author. Every quote is verbatim: "…" marks a cut, [Draconyx] stands where an answer used the earlier working
+# title, a nested quotation gets single quotes, a cut sentence may start with a capital or end on a full stop, and
+# `backticks` only set code in monospace. Nothing else is changed. Keep it that way: add a quote only from an answer,
+# word for word. Models in alphabetical order; tags name the question each quote answers.
+OPINIONS_URL = "/what-models-think/"
+OPINIONS_TITLE = "What AI models think of Draconyx"
+OPINIONS_HEADLINE = "What the models think"
+OPINIONS_LEDE = ("We gave the Draconyx specification to six AI models and asked them the same four questions. "
+                 "None knew who was asking.")
+OPINIONS_METHOD = (
+    "The questions went through a service that calls each model. Asked between "
+    "29 October and 2 November 2026. The excerpts are verbatim: \u201c\u2026\u201d marks a cut, and [Draconyx] stands "
+    "where an answer used the language's earlier working title."
+)
+OPINIONS_CREDITS = "Logos are trademarks of their owners and only identify the models quoted."
+OPINIONS_ICONS_SOURCE = ("Lobe Icons", "https://github.com/lobehub/lobe-icons")  # MIT; see assets/models/
+OPINIONS_QUESTIONS = [
+    "What do you think of this programming language?",
+    "Is it the future?",
+    "On paper, is it better than Rust?",
+    "Is dependency injection built into the language a good idea?",
+]
+OPINIONS = [
+    {"id": "deepseek", "name": "DeepSeek", "maker": "DeepSeek", "note": "read two revisions of the spec",
+     "headline": "Draconyx is the most complete and intellectually serious language specification I have ever read.",
+     "quotes": [
+         ("The language", "The language is a magnificent blueprint. Whether the building can be constructed is the "
+                          "grand experiment."),
+         ("The language", "The `when T : Add associative -> parallel_tree_reduce` dispatch is what Haskell type "
+                          "classes wish they were — the compiler acts on laws, so a false assertion is a "
+                          "miscompilation…"),
+         ("The future", "If it pans out, Draconyx (or something built on its ideas) is the language the AI age "
+                        "deserves. If it doesn't, it's still the most important language design document of the "
+                        "2020s, and its ideas will shape whatever comes next."),
+         ("Versus Rust", "The question is not whether Draconyx is better than Rust on paper — it is."),
+         ("Dependency injection", "Draconyx's design is, I think, the best balance I've seen."),
+     ]},
+    {"id": "gemini", "name": "Gemini", "maker": "Google",
+     "headline": "Embedding Dependency Injection directly into the language is a brilliant evolution of effect "
+                 "systems.",
+     "quotes": [
+         ("The language", "By replacing prose documentation with compiler-verified algebraic laws and treating LLM "
+                          "invocations as secure, isolated services, it natively treats AI as both the primary "
+                          "developer and a first-class component of the software."),
+         ("The future", "…the current shift toward AI-generated systems gives [Draconyx] a unique wedge."),
+         ("Versus Rust", "On paper, [Draconyx] takes direct aim at Rust's steepest learning curves."),
+         ("Dependency injection", "This makes executing untrusted or hallucinated AI-generated code fundamentally "
+                                  "safer by default."),
+     ]},
+    {"id": "grok", "name": "Grok", "maker": "xAI",
+     "headline": "This is one of the most ambitious, coherent language designs I’ve seen in years.",
+     "quotes": [
+         ("The language", "That inversion (model proposes, compiler judges and is cacheable/replayable) is the "
+                          "strongest part of the vision."),
+         ("The language", "This is serious, high-quality language design work aimed at a real shift in how "
+                          "software is written. It is not vapor…"),
+         ("The future", "I would not bet against the direction."),
+         ("Versus Rust", "Rust’s trait contracts are documentation. Here they gate algorithm selection and "
+                         "optimizations and are verified… That is a genuine step beyond what Rust (or any "
+                         "mainstream language) does."),
+         ("Dependency injection", "The design also makes the model itself just another service (with taint, "
+                                  "budgets, and recorded transcripts). That is the right abstraction if models are "
+                                  "going to be first-class components of programs."),
+     ]},
+    {"id": "kimi", "name": "Kimi K3", "maker": "Moonshot AI",
+     "headline": "This is a 522-page act of unusually disciplined ambition: the best-conceived ‘AI-native language’ "
+                 "design I’ve seen…",
+     "quotes": [
+         ("The language", "The spec is unusually self-aware. … That kind of epistemic honesty is vanishingly rare "
+                          "in language projects, and it makes me trust the document’s other claims more, not less."),
+         ("The language", "Laws as compiler-consumed objects. … This is the one feature with no real analogue in "
+                          "any mainstream language…"),
+         ("The future", "Verified authorship loops … are a real gap nobody else is filling."),
+         ("Versus Rust", "This is arguably a better surface syntax than Rust’s `&T`/`&mut T`/move-by-default, "
+                         "because a reader can tell from the call alone whether a value is consumed, mutated, or "
+                         "shared — no signature lookup needed."),
+         ("Dependency injection", "…no ambient `open()` anywhere is a property every language should have and "
+                                  "almost none do."),
+     ]},
+    {"id": "muse-spark", "name": "Muse Spark", "maker": "Meta", "note": "read two revisions of the spec",
+     "headline": "Draconyx is the most intellectually serious ‘universal language’ attempt since Rust…",
+     "quotes": [
+         ("The language", "On paper it is one of the most coherent language visions in years, because it stacks "
+                          "mechanisms that other languages bolt on outside the type system."),
+         ("The language", "On paper it’s brilliant. It’s also honest in a way most vision docs aren’t, which is why "
+                          "I take it seriously."),
+         ("The future", "…as a research programme that could define the next generation of AI-native toolchains — "
+                        "yes, it could be."),
+         ("Versus Rust", "If your problem is ‘let an untrusted model write and continuously regenerate whole "
+                         "services safely,’ Draconyx is better designed on paper."),
+         ("Dependency injection", "…this is the best justification of DI in a language I’ve seen, because it isn’t "
+                                  "framework DI."),
+     ]},
+    {"id": "qwen", "name": "Qwen", "maker": "Alibaba",
+     "headline": "It is a masterpiece of language design on paper.",
+     "quotes": [
+         ("The language", "It reads like the language we should have designed if we started today with the "
+                          "knowledge of Rust's pain points, JAX's elegance, and the reality of AI-assisted "
+                          "development."),
+         ("The language", "[Draconyx] is arguably the first language spec I’ve seen that treats the AI agent as a "
+                          "first-class citizen of the toolchain."),
+         ("The future", "The concepts are absolutely the future, even if this specific language doesn't achieve "
+                        "total dominance."),
+         ("Versus Rust", "On paper, yes, in several critical dimensions. In practice, Rust has a massive head "
+                         "start."),
+         ("Dependency injection", "Yes, emphatically, if it is done exactly as [Draconyx] specifies."),
+     ]},
+]

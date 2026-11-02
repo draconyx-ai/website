@@ -2,11 +2,14 @@
 
 The Draconyx website.
 
-- `content.py`: every word on the page, the single source for `index.html`, `index.md` and `llms.txt`.
+- `content.py`: every word on the site, the single source for `index.html`, `index.md`, `llms.txt` and the
+  opinions page `/what-models-think/` (verbatim quotes from AI models' answers on the spec; `OPINIONS`).
 - `build.py`: renders them into `dist/` (git-ignored). No external requests at runtime: no web fonts,
   scripts or trackers.
 - `assets/`: the logo and its resized versions; `assets/github/` holds the organization avatars; `favicon.ico`
   (16, 32, 48 px) and `apple-touch-icon.png` (180 px, opaque), which `build.py` copies to the site root.
+- `assets/models/`: the logos of the models quoted on the opinions page, one SVG per `OPINIONS` id, from
+  [Lobe Icons](https://github.com/lobehub/lobe-icons) (MIT, licence file alongside). `build.py` inlines them.
 - `make_icons.py`: regenerates those two icons (see below).
 - `research-features-versus.json`: the evidence behind every cell of the comparison table.
 - `indexnow.py`: after a deploy, submits the live sitemap's URLs to IndexNow.

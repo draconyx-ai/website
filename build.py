@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Build draconyx.ai into dist/ from content.py: index.html, index.md, llms.txt, assets, favicon.svg,
+"""Build draconyx.ai into dist/ from content.py: index.html, index.md, llms.txt, the opinions page
+(what-models-think/index.html and .md, logos inlined from assets/models/), assets, favicon.svg,
 favicon.ico, apple-touch-icon.png, robots.txt, sitemap.xml, the IndexNow key file and any search-engine verification files.
 No external requests at runtime: no web fonts, scripts or trackers.
 
@@ -36,7 +37,7 @@ VERIFY_META = {
 VERIFY_FILES = {}
 # Pages listed in sitemap.xml and submitted to IndexNow: the canonical HTML pages only. /index.md and
 # /llms.txt are alternate formats of the same page, linked from it, and stay crawlable.
-PAGES = ["/"]
+PAGES = ["/", C.OPINIONS_URL]
 MECH_LEDE = "Real mechanisms in a real compiler. Every sample on this page was run through it."
 e = html.escape
 
@@ -49,6 +50,24 @@ CLAW = f'<svg class="claw" viewBox="0 0 64 64" aria-hidden="true" focusable="fal
 FAVICON_OLIVE, FAVICON_CREAM = "#5b6b25", "#f6efdf"
 FAVICON = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" '
            f'fill="{FAVICON_CREAM}"/><g fill="{FAVICON_OLIVE}">{CLAW_PATHS}</g></svg>')
+
+# The logos of the models quoted on the opinions page: assets/models/<id>.svg, from Lobe Icons (MIT, licence file
+# alongside). Inlined, so no page loads anything from another site. They sit on a light tile (.mk) in both themes,
+# so the brand colours stay legible; the monochrome marks draw in currentColor.
+MODEL_ICONS = {o["id"]: open(os.path.join(HERE, "assets", "models", o["id"] + ".svg"), encoding="utf-8").read().strip()
+               for o in C.OPINIONS}
+
+
+def model_icon(slug, use):
+    """A model's logo, inlined. Gradient ids get the suffix `use`, so one logo can appear twice on a page."""
+    svg = re.sub(r'(id="|url\(#)([\w-]+)', rf"\g<1>\g<2>-{use}", MODEL_ICONS[slug])
+    return '<span class="mk" aria-hidden="true">' + svg.replace("<svg ", '<svg focusable="false" ', 1) + "</span>"
+
+
+def quote(text):
+    """A verbatim excerpt between typographic quotes; `backticks` set code."""
+    return f"“{md(text)}”"
+
 
 KEYWORDS = {"def", "let", "match", "enum", "capability", "law", "provide", "locally", "in", "example",
             "transfer", "borrow", "tainted", "if", "else", "for", "return", "struct"}
@@ -197,11 +216,42 @@ pre .c{color:var(--code-c)}pre .s{color:var(--code-s)}pre .k{color:var(--code-k)
 figcaption{font-size:13px;color:var(--muted);margin-top:8px}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
 .cites{margin-top:10px;font-size:13px;color:var(--muted)}.cites summary{cursor:pointer}.cites code{white-space:nowrap}
-.loop li,.fcard,.reason,details.fine,.btn{position:relative;isolation:isolate}
-.loop li::before,.fcard::before,.reason::before,details.fine::before,.btn::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--edge,var(--line));clip-path:var(--cut,var(--cut1));transition:background .2s}
-.loop li::after,.fcard::after,.reason::after,details.fine::after,.btn::after{content:"";position:absolute;inset:var(--ew,1px) var(--ew,1px) var(--eb,3px);z-index:-1;background:var(--fill,var(--card));clip-path:var(--cut,var(--cut1))}
-.fcard:nth-child(3n+2),.reason:nth-child(3n+2),.loop li:nth-child(3n+2),.btn:nth-child(2){--cut:var(--cut2)}.fcard:nth-child(3n),.reason:nth-child(3n),.loop li:nth-child(3n),.btn:nth-child(3){--cut:var(--cut3)}
+.loop li,.fcard,.reason,details.fine,.btn,.opinion,.tcard,.roster a{position:relative;isolation:isolate}
+.loop li::before,.fcard::before,.reason::before,details.fine::before,.btn::before,.opinion::before,.tcard::before,.roster a::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--edge,var(--line));clip-path:var(--cut,var(--cut1));transition:background .2s}
+.loop li::after,.fcard::after,.reason::after,details.fine::after,.btn::after,.opinion::after,.tcard::after,.roster a::after{content:"";position:absolute;inset:var(--ew,1px) var(--ew,1px) var(--eb,3px);z-index:-1;background:var(--fill,var(--card));clip-path:var(--cut,var(--cut1))}
+.fcard:nth-child(3n+2),.reason:nth-child(3n+2),.loop li:nth-child(3n+2),.btn:nth-child(2),.opinion:nth-child(3n+2),.tcard:nth-child(3n+2){--cut:var(--cut2)}.fcard:nth-child(3n),.reason:nth-child(3n),.loop li:nth-child(3n),.btn:nth-child(3),.opinion:nth-child(3n),.tcard:nth-child(3n){--cut:var(--cut3)}
 @media (max-width:600px){.reason{padding:23px 19px 21px}}
+:root{--mk-bg:#efe4cc}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--mk-bg:#e6dcc3}}:root[data-theme="dark"]{--mk-bg:#e6dcc3}
+.mk{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;background:var(--mk-bg);color:#15130f;clip-path:var(--chip-cut)}
+.mk svg{width:62%;height:62%}
+.hero.page .wrap{padding-top:56px;padding-bottom:64px}.hero.page h1{max-width:20ch}
+.roster{list-style:none;padding:0;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:860px}
+.roster a{--cut:var(--chip-cut);--eb:3px;display:flex;align-items:center;gap:10px;padding:6px 16px 9px 7px;color:var(--fg);text-decoration:none;font-weight:700;font-size:15px;transition:transform .12s}
+.roster a:hover{transform:translateY(-2px);color:var(--fg);--edge:var(--olive)}.roster .mk{width:34px;height:34px}
+.asks{list-style:none;padding:0;margin:26px 0 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 22px}
+.asks li{display:flex;gap:12px;align-items:flex-start;font:600 18px/1.35 ui-serif,"New York","Iowan Old Style",Georgia,serif}
+@media (max-width:900px){.asks{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:520px){.asks{grid-template-columns:minmax(0,1fr)}}
+.setup .note{margin:24px 0 0;max-width:86ch}
+.opinions{display:grid;gap:30px}
+.opinion{--edge:var(--shadow);--ew:2px;--eb:6px;padding:32px 34px 30px;scroll-margin-top:80px}
+.ohead{display:flex;align-items:center;gap:16px}.ohead .mk{width:60px;height:60px}
+.ohead h2{margin:0;font-size:clamp(26px,3vw,34px)}.maker{margin:3px 0 0;font-size:14.5px;color:var(--muted);font-weight:600}
+blockquote{margin:0}blockquote p{margin:0}
+.pull{margin:24px 0 0;padding:2px 0 2px 22px;border-left:4px solid var(--olive);max-width:48ch;font:600 clamp(21px,2.5vw,28px)/1.3 ui-serif,"New York","Iowan Old Style",Georgia,serif;letter-spacing:-.01em}
+.quotes{list-style:none;padding:0;margin:28px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 36px}
+.qtag{display:block;font:700 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--ember);margin:0 0 8px}
+.quotes blockquote{font-size:16px}
+.quotes code,.pull code,.tcard code{background:var(--chip);padding:1px 5px;border-radius:5px;font-size:.84em}
+@media (max-width:760px){.quotes{grid-template-columns:minmax(0,1fr)}.opinion{padding:24px 19px 24px}.ohead .mk{width:50px;height:50px}}
+.credits{margin-top:30px}
+.tgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:30px}
+.tcard{margin:0;padding:20px 21px 23px;display:flex;flex-direction:column;gap:14px;transition:transform .2s}
+.tcard:hover{transform:translateY(-2px);--edge:var(--olive)}
+.who{display:flex;align-items:center;gap:12px;line-height:1.25}.who a{color:var(--fg);text-decoration:none;font-weight:750}.who a:hover{color:var(--ember)}
+.who small{display:block;color:var(--muted);font-size:13.5px;font-weight:600}
+.tcard blockquote{font:600 17.5px/1.4 ui-serif,"New York","Iowan Old Style",Georgia,serif}
+@media (max-width:900px){.tgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:600px){.tgrid{grid-template-columns:minmax(0,1fr)}}
+.btns.start{justify-content:flex-start;margin-top:30px}
 .name{background:linear-gradient(180deg,var(--bg2),var(--bg))}
 .namegrid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:44px;align-items:center}
 .namegrid img{width:100%;height:auto;filter:drop-shadow(0 14px 24px rgba(40,30,10,.16))}
@@ -268,48 +318,12 @@ def build_html():
                    + ('<i class="arr" aria-hidden="true"></i>' if i < len(C.LOOP) else "") + "</li>"
                    for i, (t, d) in enumerate(C.LOOP, 1))
     status = "".join(f"<dt>{e(k)}</dt><dd>{md(v)}</dd>" for k, v in C.STATUS)
-    uuid = C.LISTMONK_LIST_UUID
-    if uuid:
-        form = (f'<form class="signup" method="post" action="{e(C.LISTMONK_FORM_URL)}">'
-                f'<input type="hidden" name="l" value="{e(uuid)}">'
-                f'<label class="vh" for="em">Your email address</label>'
-                f'<input id="em" type="email" name="email" required placeholder="you@example.com" autocomplete="email">'
-                f'<button type="submit">Keep me posted</button></form>'
-                f'<p class="note">{e(C.SIGNUP_FINE)}</p>')
-    else:
-        form = '<p class="note">An update list opens at launch.</p>'
     spec = f'<a class="btn" href="{e(C.SPEC_PDF)}">Read the spec (PDF)</a>' if C.SPEC_PDF else ""
-    involved = e(C.INVOLVED).replace(e(C.CONTACT), f'<a href="mailto:{e(C.CONTACT)}">{e(C.CONTACT)}</a>')
-    privacy = e(C.PRIVACY).replace(e(C.CONTACT), f'<a href="mailto:{e(C.CONTACT)}">{e(C.CONTACT)}</a>')
-    verify_meta = "".join(f'<meta name="{e(n)}" content="{e(v)}">\n' for n, v in VERIFY_META.items() if v)
 
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{e(TITLE)}</title>
-<meta name="description" content="Draconyx is a programming language designed for its AI author: structured diagnostics with edits, writes by definition name, laws checked by default, compile-time authority.">
-{verify_meta}<meta name="color-scheme" content="light dark">
-<link rel="icon" href="/favicon.ico" sizes="32x32">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="alternate" type="text/markdown" href="/index.md" title="This page as Markdown">
-<link rel="canonical" href="{SITE}/">
-<meta property="og:title" content="Draconyx">
-<meta property="og:description" content="{e(C.HERO['headline'])} A programming language designed for its AI author.">
-<meta property="og:url" content="{SITE}/">
-<meta property="og:type" content="website">
-<meta property="og:image" content="{SITE}/assets/logo-1200.webp">
-<style>{CSS}</style>
-</head>
-<body>
-<a class="skip" href="#main">Skip to content</a>
-<header class="top"><div class="wrap">
-<a class="brand" href="/">{CLAW}<span>Draconyx</span></a>
-<nav aria-label="Sections"><a href="#versus">Versus</a><a class="opt" href="#why">Why</a><a class="opt" href="#language">Language</a><a class="opt" href="#name">Name</a><a href="#status">Status</a><a href="/llms.txt">For agents</a></nav>
-</div></header>
-<main id="main">
+    return head(TITLE, "Draconyx is a programming language designed for its AI author: structured diagnostics with "
+                "edits, writes by definition name, laws checked by default, compile-time authority.", "/",
+                "Draconyx", f"{C.HERO['headline']} A programming language designed for its AI author.",
+                verify=True) + topbar("/") + f"""<main id="main">
 <div class="hero"><div class="wrap">
 <img class="logo" src="/assets/logo-1200.webp" srcset="/assets/logo-640.webp 640w, /assets/logo-1200.webp 1200w" sizes="(max-width:760px) 100vw, 720px" width="1200" height="800" alt="Draconyx: a dinosaur mascot above the Draconyx wordmark">
 <p class="eyebrow">{e(C.HERO['eyebrow'])}</p>
@@ -358,6 +372,7 @@ def build_html():
 <div class="fgroups">{fgroups}</div>
 </div></section>
 
+{opinions_teaser()}
 <section id="name" class="name"><div class="wrap namegrid">
 <img src="/assets/logo-640.webp" width="640" height="427" alt="" loading="lazy">
 <div class="prose"><p class="kicker">The name</p><h2>Dragon claw, written law</h2>
@@ -372,23 +387,142 @@ def build_html():
 <dl class="status">{status}</dl>
 </div></section>
 
-<section id="involved" class="cta"><div class="wrap prose">
+{signup()}</main>
+""" + footer("/index.md")
+
+
+def head(title, description, path, og_title, og_description, verify=False):
+    """Everything up to the skip link: meta, icons, the Markdown alternate (<path>index.md), the inlined CSS.
+    verify adds the webmaster consoles' ownership tags, which only the home page needs."""
+    verify_meta = "".join(f'<meta name="{e(n)}" content="{e(v)}">\n' for n, v in VERIFY_META.items() if v) if verify else ""
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{e(title)}</title>
+<meta name="description" content="{e(description)}">
+{verify_meta}<meta name="color-scheme" content="light dark">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="alternate" type="text/markdown" href="{path}index.md" title="This page as Markdown">
+<link rel="canonical" href="{SITE}{path}">
+<meta property="og:title" content="{e(og_title)}">
+<meta property="og:description" content="{e(og_description)}">
+<meta property="og:url" content="{SITE}{path}">
+<meta property="og:type" content="website">
+<meta property="og:image" content="{SITE}/assets/logo-1200.webp">
+<style>{CSS}</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+"""
+
+
+def topbar(path):
+    """The sticky top bar. Away from the home page, its section links lead back to it."""
+    home = "" if path == "/" else "/"
+    here = ' aria-current="page"' if path == C.OPINIONS_URL else ""
+    return f"""<header class="top"><div class="wrap">
+<a class="brand" href="/">{CLAW}<span>Draconyx</span></a>
+<nav aria-label="Sections"><a href="{home}#versus">Versus</a><a class="opt" href="{home}#why">Why</a><a class="opt" href="{home}#language">Language</a><a class="opt" href="{home}#name">Name</a><a href="{home}#status">Status</a><a class="opt" href="{C.OPINIONS_URL}"{here}>Reviews</a><a href="/llms.txt">For agents</a></nav>
+</div></header>
+"""
+
+
+def signup():
+    """The closing call to action: the launch-updates form and the way to get in early."""
+    uuid = C.LISTMONK_LIST_UUID
+    if uuid:
+        form = (f'<form class="signup" method="post" action="{e(C.LISTMONK_FORM_URL)}">'
+                f'<input type="hidden" name="l" value="{e(uuid)}">'
+                f'<label class="vh" for="em">Your email address</label>'
+                f'<input id="em" type="email" name="email" required placeholder="you@example.com" autocomplete="email">'
+                f'<button type="submit">Keep me posted</button></form>'
+                f'<p class="note">{e(C.SIGNUP_FINE)}</p>')
+    else:
+        form = '<p class="note">An update list opens at launch.</p>'
+    involved = e(C.INVOLVED).replace(e(C.CONTACT), f'<a href="mailto:{e(C.CONTACT)}">{e(C.CONTACT)}</a>')
+    return f"""<section id="involved" class="cta"><div class="wrap prose">
 <h2 id="updates">{e(C.SIGNUP_TITLE)}</h2>
 <p class="lead">{e(C.SIGNUP_LEAD)}</p>
 {form}
 <h3>Get in early</h3>
 <p>{involved}</p>
 </div></section>
-</main>
-<footer><div class="wrap">
+"""
+
+
+def footer(md_path):
+    privacy = e(C.PRIVACY).replace(e(C.CONTACT), f'<a href="mailto:{e(C.CONTACT)}">{e(C.CONTACT)}</a>')
+    return f"""<footer><div class="wrap">
 <span>{CLAW}Draconyx, a language designed by <a href="https://www.linkedin.com/in/filippofadda/" rel="author">Filippo F. Fadda</a>.</span>
-<span><a href="/index.md">This page as Markdown</a> &middot; <a href="/llms.txt">llms.txt</a></span>
+<span><a href="{md_path}">This page as Markdown</a> &middot; <a href="/llms.txt">llms.txt</a></span>
 <p class="privacy" id="privacy"><b>Privacy.</b> {privacy}</p>
 </div></footer>
 </body>
 </html>
 """
 
+
+def opinions_teaser():
+    """Home page section: each model's headline quote, leading to the opinions page."""
+    cards = "".join(
+        f'<figure class="tcard"><figcaption class="who">{model_icon(o["id"], "t")}<span>'
+        f'<a href="{C.OPINIONS_URL}#{o["id"]}">{e(o["name"])}</a><small>{e(o["maker"])}</small></span></figcaption>'
+        f'<blockquote><p>{quote(o["headline"])}</p></blockquote></figure>' for o in C.OPINIONS)
+    return f"""<section id="reviews"><div class="wrap">
+<p class="kicker">Second opinions</p>
+<h2>Six AI models read the spec</h2>
+<p class="lede">{e(C.OPINIONS_LEDE)}</p>
+<div class="tgrid">{cards}</div>
+<div class="btns start"><a class="btn" href="{C.OPINIONS_URL}">Read what they said</a></div>
+</div></section>
+"""
+
+
+def build_opinions_html():
+    """The opinions page: per model, a headline quote and one or two quotes per question."""
+    path = C.OPINIONS_URL
+    roster = "".join(f'<li><a href="#{o["id"]}">{model_icon(o["id"], "r")}{e(o["name"])}</a></li>' for o in C.OPINIONS)
+    asks = "".join(f'<li><span class="num">{i:02d}</span><span>{e(q)}</span></li>'
+                   for i, q in enumerate(C.OPINIONS_QUESTIONS, 1))
+    cards = []
+    for o in C.OPINIONS:
+        by = f'By {e(o["maker"])}' + (f' &middot; {e(o["note"])}' if o.get("note") else "")
+        quotes = "".join(f'<li><span class="qtag">{e(t)}</span><blockquote><p>{quote(q)}</p></blockquote></li>'
+                         for t, q in o["quotes"])
+        cards.append(
+            f'<article class="opinion" id="{o["id"]}"><div class="ohead">{model_icon(o["id"], "c")}'
+            f'<div><h2>{e(o["name"])}</h2><p class="maker">{by}</p></div></div>'
+            f'<blockquote class="pull"><p>{quote(o["headline"])}</p></blockquote>'
+            f'<ul class="quotes">{quotes}</ul></article>')
+    names = ", ".join(o["name"] for o in C.OPINIONS)
+    src_name, src_url = C.OPINIONS_ICONS_SOURCE
+    return head(C.OPINIONS_TITLE, f"{C.OPINIONS_LEDE} Verbatim excerpts from {names}.", path,
+                C.OPINIONS_TITLE, C.OPINIONS_LEDE) + topbar(path) + f"""<main id="main">
+<div class="hero page"><div class="wrap">
+<p class="eyebrow">Second opinions</p>
+<h1>{e(C.OPINIONS_HEADLINE)}</h1>
+<p class="sub">{e(C.OPINIONS_LEDE)}</p>
+<ul class="roster">{roster}</ul>
+</div></div>
+
+<section id="setup" class="setup"><div class="wrap">
+<p class="kicker">The setup</p>
+<h2>Same four questions for every model</h2>
+<ol class="asks">{asks}</ol>
+<p class="note">{e(C.OPINIONS_METHOD)}</p>
+</div></section>
+
+<section id="answers"><div class="wrap">
+<div class="opinions">{''.join(cards)}</div>
+<p class="note credits">{e(C.OPINIONS_CREDITS)} Icons: <a href="{e(src_url)}">{e(src_name)}</a>, MIT License.</p>
+</div></section>
+
+{signup()}</main>
+""" + footer(path + "index.md")
 
 def build_md():
     lines = ["# Draconyx", "", f"> {C.HERO['headline']} {C.HERO['subhead']}", "",
@@ -416,12 +550,29 @@ def build_md():
     names = {"ships": "Ships", "partial": "Partly built", "specified": "In the spec"}
     for g, items in C.FEATURE_GROUPS:
         lines += [f"### {g}", ""] + [f"- **{n}** ({names[st]}): {pt}" for n, pt, st in items] + [""]
+    lines += ["## Six AI models read the spec", "", C.OPINIONS_LEDE, ""]
+    lines += [f"- **{o['name']}** ({o['maker']}): \u201c{o['headline']}\u201d" for o in C.OPINIONS]
+    lines += ["", f"Their answers, question by question: [{C.OPINIONS_HEADLINE}]({SITE}{C.OPINIONS_URL})", ""]
     lines += ["## Dragon claw, written law", ""] + [p + "\n" for p in C.NAME]
     lines += [f"Source: [{C.NAME_SOURCE[0]}]({C.NAME_SOURCE[1]})", "", f"## Where it stands (as of {C.AS_OF})", ""]
     lines += [f"- **{k}:** {v}" for k, v in C.STATUS]
     lines += ["", f"## {C.SIGNUP_TITLE}", "", C.SIGNUP_LEAD, "", f"Subscribe: {C.LISTMONK_FORM_URL}", ""]
     lines += ["## Get in early", "", C.INVOLVED, ""]
     lines += ["## Privacy", "", C.PRIVACY, ""]
+    return "\n".join(lines)
+
+
+def build_opinions_md():
+    lines = [f"# {C.OPINIONS_HEADLINE}", "", f"> {C.OPINIONS_LEDE}", "", "The four questions:", ""]
+    lines += [f"{i}. {q}" for i, q in enumerate(C.OPINIONS_QUESTIONS, 1)]
+    lines += ["", C.OPINIONS_METHOD, ""]
+    for o in C.OPINIONS:
+        by = f"By {o['maker']}" + (f", {o['note']}" if o.get("note") else "")
+        lines += [f"## {o['name']}", "", f"_{by}._", "", f"> \u201c{o['headline']}\u201d", ""]
+        lines += [f"- **{t}:** \u201c{q}\u201d" for t, q in o["quotes"]] + [""]
+    src_name, src_url = C.OPINIONS_ICONS_SOURCE
+    lines += [f"{C.OPINIONS_CREDITS} Icons: [{src_name}]({src_url}), MIT License.", "",
+              f"Home: [Draconyx]({SITE}/) \u00b7 [llms.txt]({SITE}/llms.txt)", ""]
     return "\n".join(lines)
 
 
@@ -441,6 +592,8 @@ def build_llms():
         out += [f"- [{n}]({SITE}/#language): {pt} ({g}; {names[st]})" for n, pt, st in items]
     out += ["", "## Docs", "", f"- [Full page as Markdown]({SITE}/index.md): every mechanism with samples and status",
             f"- [Why the name]({SITE}/#name): Draconyx, Draco's written laws and the axones",
+            f"- [{C.OPINIONS_TITLE}]({SITE}{C.OPINIONS_URL}): verbatim excerpts from six AI models asked about the "
+            f"spec through a service, without knowing who was asking ([Markdown]({SITE}{C.OPINIONS_URL}index.md))",
             f"- [Contact](mailto:{C.CONTACT}): design discussion, collaboration, model training or evaluation",
             f"- [Launch updates]({C.LISTMONK_FORM_URL}): mailing list for the launch and new features (double opt-in)", ""]
     return "\n".join(out)
@@ -477,8 +630,11 @@ def main():
         "sitemap.xml": build_sitemap(),
         f"{INDEXNOW_KEY}.txt": INDEXNOW_KEY,
         **VERIFY_FILES,
+        C.OPINIONS_URL.strip("/") + "/index.html": build_opinions_html(),
+        C.OPINIONS_URL.strip("/") + "/index.md": build_opinions_md(),
     }
     for name, text in files.items():
+        os.makedirs(os.path.dirname(os.path.join(OUT, name)), exist_ok=True)
         with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
             f.write(text)
     print("built", ", ".join(f"{n} ({len(t.encode())} B)" for n, t in files.items()))
