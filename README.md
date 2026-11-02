@@ -2,8 +2,9 @@
 
 The Draconyx website.
 
-- `content.py`: every word on the site, the single source for `index.html`, `index.md`, `llms.txt` and the
-  opinions page `/what-models-think/` (verbatim quotes from AI models' answers on the spec; `OPINIONS`).
+- `content.py`: every word on the site, the single source for `index.html`, `index.md`, `llms.txt`, the
+  opinions page `/what-models-think/` (verbatim quotes from AI models' answers on the spec; `OPINIONS`) and the
+  changelog page `/changelog/` (`CHANGELOG`, see below).
 - `build.py`: renders them into `dist/` (git-ignored). No external requests at runtime: no web fonts,
   scripts or trackers.
 - `assets/`: the logo and its resized versions; `assets/github/` holds the organization avatars; `favicon.ico`
@@ -36,6 +37,17 @@ the others; Google does not take part):
     python3 indexnow.py
 
 draconyx.org and the www hosts redirect to https://draconyx.ai.
+
+## Changelog
+
+`/changelog/` (and `/changelog/index.md`) lists what changed in the language, the spec and the toolchain, newest
+first, grouped by month. It is built from `CHANGELOG` in `content.py`: one entry per day that something public-worthy
+landed on `main` of the language repository, each with a short factual title and up to eight changes. A change is
+`(area, text, evidence)`: the area is one of the tags already in use (Spec, Syntax, Types, Ownership, ...), the text
+uses `backticks` for code, and the evidence (commit hashes on the language repository's `main`) is not rendered but
+keeps every line auditable. Public wording only: no earlier working title, no internal card, decision, question or
+gap numbers, no process, no benchmark results. The page is linked from the top bar, the Status section, the footer,
+`index.md` and `llms.txt`, and listed in the sitemap.
 
 ## Search engines
 
