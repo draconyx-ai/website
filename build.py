@@ -26,7 +26,7 @@ TITLE = "Draconyx: a programming language designed for its AI author"
 INDEXNOW_KEY = "7a40ed4c85a90c8eeddb499ccbd8a46b"
 # Ownership verification tokens, one <meta> per non-empty value. They are public too (they sit in the page).
 VERIFY_META = {
-    "google-site-verification": "",   # Google Search Console, HTML tag method
+    "google-site-verification": "k8XJduzwzitQAtVzBfwNyRI8RYR3AAJbgtZGccEutw8",  # Google Search Console, HTML tag method
     "msvalidate.01": "",              # Bing Webmaster Tools, meta tag method
     "yandex-verification": "",        # Yandex Webmaster, meta tag method
     "naver-site-verification": "",    # Naver Search Advisor, HTML tag method
@@ -218,6 +218,7 @@ footer{background:var(--ink);color:#bfb69d;border-top:1px solid #2a271f;padding:
 footer a{color:#e7dcc0}
 footer .wrap{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between;align-items:center}
 footer .claw{fill:#a6b85a;width:22px;height:22px;vertical-align:-5px;margin-right:6px}
+footer .privacy{flex:1 1 100%;margin:6px 0 0;font-size:13px;line-height:1.55;max-width:96ch}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 """
 # Language columns share the width equally and never shrink below VCOL px (the widest header,
@@ -277,6 +278,7 @@ def build_html():
         form = '<p class="note">An update list opens at launch.</p>'
     spec = f'<a class="btn" href="{e(C.SPEC_PDF)}">Read the spec (PDF)</a>' if C.SPEC_PDF else ""
     involved = e(C.INVOLVED).replace(e(C.CONTACT), f'<a href="mailto:{e(C.CONTACT)}">{e(C.CONTACT)}</a>')
+    privacy = e(C.PRIVACY).replace(e(C.CONTACT), f'<a href="mailto:{e(C.CONTACT)}">{e(C.CONTACT)}</a>')
     verify_meta = "".join(f'<meta name="{e(n)}" content="{e(v)}">\n' for n, v in VERIFY_META.items() if v)
 
     return f"""<!doctype html>
@@ -377,6 +379,7 @@ def build_html():
 <footer><div class="wrap">
 <span>{CLAW}Draconyx, a language designed by <a href="https://www.linkedin.com/in/filippofadda/" rel="author">Filippo F. Fadda</a>.</span>
 <span><a href="/index.md">This page as Markdown</a> &middot; <a href="/llms.txt">llms.txt</a></span>
+<p class="privacy" id="privacy"><b>Privacy.</b> {privacy}</p>
 </div></footer>
 </body>
 </html>
@@ -414,6 +417,7 @@ def build_md():
     lines += [f"- **{k}:** {v}" for k, v in C.STATUS]
     lines += ["", f"## {C.SIGNUP_TITLE}", "", C.SIGNUP_LEAD, "", f"Subscribe: {C.LISTMONK_FORM_URL}", ""]
     lines += ["## Get in early", "", C.INVOLVED, ""]
+    lines += ["## Privacy", "", C.PRIVACY, ""]
     return "\n".join(lines)
 
 
