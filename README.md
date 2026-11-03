@@ -11,7 +11,9 @@ The Draconyx website.
   (16, 32, 48 px) and `apple-touch-icon.png` (180 px, opaque), which `build.py` copies to the site root.
 - `assets/models/`: the logos of the models quoted on the opinions page, one SVG per `OPINIONS` id, from
   [Lobe Icons](https://github.com/lobehub/lobe-icons) (MIT, licence file alongside). `build.py` inlines them.
+- `assets/share-1200x630.png`: the image link previews show (`og:image`, `twitter:image`), copied to `dist/assets/`.
 - `make_icons.py`: regenerates those two icons (see below).
+- `make_share.py`: regenerates the share image (see below).
 - `research-features-versus.json`: the evidence behind every cell of the comparison table.
 - `indexnow.py`: after a deploy, submits the live sitemap's URLs to IndexNow.
 
@@ -25,6 +27,11 @@ colours). The ICO and the Apple touch icon are rasters of the same design, commi
 when the design changes (needs Google Chrome on macOS; the rest is standard library):
 
     python3 make_icons.py
+
+Share image: `make_share.py` renders the logo, the headline from `content.py` and the address on the page's cream into
+an opaque 1200x630 PNG, with the same Chrome. Regenerate it when the logo, the headline or the colours change:
+
+    python3 make_share.py
 
 Deploy (the site is served by Caddy from `/var/www/draconyx.ai` on the `mail` host):
 
