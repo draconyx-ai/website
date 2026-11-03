@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build draconyx.ai into dist/ from content.py: index.html, index.md, llms.txt, the opinions page
 (what-models-think/index.html and .md, logos inlined from assets/models/), the changelog page
-(changelog/index.html and .md), assets, favicon.svg,
+(changelog/index.html and .md), assets (the logo and the share image), favicon.svg,
 favicon.ico, apple-touch-icon.png, robots.txt, sitemap.xml, the IndexNow key file and any search-engine verification files.
 No external requests at runtime: no web fonts, scripts or trackers.
 
@@ -405,6 +405,11 @@ def build_html():
 """ + footer("/index.md")
 
 
+# The link-preview image (Open Graph and X/Twitter), made by make_share.py and committed in assets/.
+SHARE_IMAGE = "/assets/share-1200x630.png"
+SHARE_ALT = f"The Draconyx logo beside the headline: {C.HERO['headline']}"
+
+
 def head(title, description, path, og_title, og_description, verify=False):
     """Everything up to the skip link: meta, icons, the Markdown alternate (<path>index.md), the inlined CSS.
     verify adds the webmaster consoles' ownership tags, which only the home page needs."""
@@ -426,7 +431,14 @@ def head(title, description, path, og_title, og_description, verify=False):
 <meta property="og:description" content="{e(og_description)}">
 <meta property="og:url" content="{SITE}{path}">
 <meta property="og:type" content="website">
-<meta property="og:image" content="{SITE}/assets/logo-1200.webp">
+<meta property="og:image" content="{SITE}{SHARE_IMAGE}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{e(SHARE_ALT)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{e(og_title)}">
+<meta name="twitter:description" content="{e(og_description)}">
+<meta name="twitter:image" content="{SITE}{SHARE_IMAGE}">
 <style>{CSS}</style>
 </head>
 <body>
@@ -706,7 +718,7 @@ def build_sitemap():
 
 def main():
     os.makedirs(os.path.join(OUT, "assets"), exist_ok=True)
-    for name in ("logo-1200.webp", "logo-640.webp"):
+    for name in ("logo-1200.webp", "logo-640.webp", os.path.basename(SHARE_IMAGE)):
         shutil.copyfile(os.path.join(HERE, "assets", name), os.path.join(OUT, "assets", name))
     # Browsers and apps ask for these at the site root. Made by make_icons.py, committed in assets/.
     for name in ("favicon.ico", "apple-touch-icon.png"):
