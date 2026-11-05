@@ -484,6 +484,11 @@ SIGNUP_LEAD = (
     "the moment it lands. Updates only, straight from the source. One click to leave."
 )
 SIGNUP_FINE = "We send a confirmation link first. Nothing arrives until you click it."
+# Under the ALTCHA widget: its box ticks by itself, and a visitor who expects a picture puzzle cannot tell why.
+SIGNUP_CHECK = (
+    "The box ticks itself when you send the form: your browser solves a small puzzle to prove it isn't a bot, "
+    "with nothing for you to do."
+)
 SIGNUP_NOSCRIPT = "The form needs JavaScript: a short check in your browser keeps bots off the list."
 # The honeypot's label. People never see the field (it sits off-screen, hidden from screen readers); bots fill it in.
 HONEYPOT_LABEL = "Leave this field empty"
