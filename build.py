@@ -286,6 +286,8 @@ form.signup button{padding:11px 20px;clip-path:var(--chip-cut);border:0;backgrou
 form.signup .hp{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
 form.signup altcha-widget{flex:1 1 100%;font-size:15px;accent-color:#e8501f;--altcha-color-base:#1f1d17;--altcha-color-border:#8c8470;--altcha-color-border-focus:#ffb08f;--altcha-color-text:#f3ecda;--altcha-color-error-text:#ffb08f;--altcha-color-active:#e8501f;--altcha-border-radius:0;--altcha-max-width:320px}
 form.signup .altcha{clip-path:var(--chip-cut)}
+form.signup .check{flex:1 1 100%;margin:0}
+altcha-widget:not(:defined)+.check{display:none}
 .note{font-size:14px;color:var(--muted)}
 footer{background:var(--ink);color:#bfb69d;border-top:1px solid #2a271f;padding:26px 0 40px;font-size:14px}
 footer a{color:#e7dcc0}
@@ -498,7 +500,7 @@ def signup():
                 f'<input id="nonce" type="text" name="nonce" value="" tabindex="-1" autocomplete="off"></div>'
                 f'<button type="submit">Keep me posted</button>'
                 f'<altcha-widget challengeurl="{e(C.ALTCHA_CHALLENGE_URL)}" auto="onsubmit" hidelogo hidefooter>'
-                f'</altcha-widget></form>'
+                f'</altcha-widget><p class="note check">{e(C.SIGNUP_CHECK)}</p></form>'
                 f'<noscript><p class="note">{e(C.SIGNUP_NOSCRIPT)}</p></noscript>'
                 f'<p class="note">{e(C.SIGNUP_FINE)}</p>'
                 f'<script src="/{ALTCHA_JS}" defer></script>')

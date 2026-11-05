@@ -64,8 +64,9 @@ opt-in). listmonk refuses a sign-up that fails either of two bot checks:
   `0f557a9f535a15acbe0fc7abb4fe896502a6d4c27de1c4145cfa001d0d2be099`, byte-identical to the `altcha.umd.js` that
   listmonk v6.2.0 serves) fetches the challenge from `/altcha-challenge` on draconyx.ai, solves it in a web worker when
   the form is sent (`auto="onsubmit"`) and adds the solution to the form as `altcha`. It sets no cookies, stores
-  nothing in the browser and sends nothing anywhere else. Without JavaScript the form cannot pass the check (a
-  `<noscript>` note says so). Upgrading the widget: take the same file from the version listmonk ships, and keep the
+  nothing in the browser and sends nothing anywhere else. The box ticks by itself, with no picture puzzle, so a line
+  under it (`SIGNUP_CHECK` in `content.py`) says why; that line is hidden if the widget does not load. Without
+  JavaScript the form cannot pass the check (a `<noscript>` note says so). Upgrading the widget: take the same file from the version listmonk ships, and keep the
   file name's version in step (`ALTCHA_JS` in `build.py`).
 - **Honeypot.** listmonk's own `nonce` field, which a person never fills; listmonk refuses a post that fills it. It
   sits off-screen with CSS (`.hp`), inside `aria-hidden="true"`, with `tabindex="-1"` and `autocomplete="off"`, and is
