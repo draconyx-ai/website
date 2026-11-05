@@ -9,10 +9,16 @@ compiler built from it. Keep it that way: change a claim only together with its 
 """
 
 AS_OF = "2 November 2026"
-CONTACT = "info@draconyx.ai"
+# No page prints the contact address, where harvesters would collect it: the links go to /contact, which Caddy
+# redirects to a mailto: (README, "Contact"). CONTACT_LINK is the phrase linked to it, in INVOLVED and PRIVACY.
+CONTACT_URL = "https://draconyx.ai/contact"
+CONTACT_LINK = "email us"
 # Set to the listmonk list UUID once the public "Draconyx updates" list exists; None keeps the form disabled.
 LISTMONK_LIST_UUID = "240235c8-27a5-472b-b775-904925a1ceb6"
 LISTMONK_FORM_URL = "https://lists.draconyx.ai/subscription/form"
+# The form's bot check (README, "Signup form"): the ALTCHA widget fetches a proof-of-work challenge that listmonk
+# issues, from this path on the site itself (Caddy passes it to listmonk), and puts the solution in the form.
+ALTCHA_CHALLENGE_URL = "/altcha-challenge"
 SPEC_PDF = None  # "/draconyx-spec.pdf" once the renamed spec is published
 
 HERO = {
@@ -478,23 +484,30 @@ SIGNUP_LEAD = (
     "the moment it lands. Updates only, straight from the source. One click to leave."
 )
 SIGNUP_FINE = "We send a confirmation link first. Nothing arrives until you click it."
+SIGNUP_NOSCRIPT = "The form needs JavaScript: a short check in your browser keeps bots off the list."
+# The honeypot's label. People never see the field (it sits off-screen, hidden from screen readers); bots fill it in.
+HONEYPOT_LABEL = "Leave this field empty"
 
 INVOLVED = (
-    "Want in early? For design discussion, collaboration, or to train or evaluate models on Draconyx, write to "
-    f"{CONTACT}."
+    "Want in early? For design discussion, collaboration, or to train or evaluate models on Draconyx, email us."
 )
 
 # Footer note. Keep it true of the server (infra runbook, "Website statistics"; listmonk privacy settings):
 # Caddy access log rolled daily and deleted after about 14 days, monthly/all-time totals with anonymised IPs,
-# listmonk record_optin_ip off, view/click tracking off, double opt-in.
+# listmonk record_optin_ip off, view/click tracking off, double opt-in; and of the form (README, "Signup form"):
+# the honeypot (listmonk's nonce field), the ALTCHA widget served from /assets/altcha/ and its challenge from
+# ALTCHA_CHALLENGE_URL on this site, listmonk's CAPTCHA setting on.
 PRIVACY = (
     "This site sets no cookies, runs no tracking scripts and loads nothing from other sites. Its web server logs each "
     "request: your IP address, the time, the page, and what your browser sends with it, such as its name and the page "
     "that linked here. The logs are kept about 14 days for security and visitor statistics, then deleted; after that, "
     "the statistics keep only totals, without full IP addresses. The signup form sends your email address to the "
-    "Draconyx list at lists.draconyx.ai, on the same server: you get a confirmation email first and nothing else until "
-    "you confirm, the list does not record your IP address or which emails you open or links you click, and every "
-    f"update has an unsubscribe link. Questions: {CONTACT}."
+    "Draconyx list at lists.draconyx.ai, on the same server. To keep bots out, the form has a field that people never "
+    "see, and the list refuses a sign-up that fills it in; and a script served by this site, ALTCHA, has your browser "
+    "solve a small computing puzzle that the list sets. The script fetches the puzzle from this site and puts the "
+    "answer in the form; it sets no cookies, stores nothing in your browser and sends nothing anywhere else. You get "
+    "a confirmation email first and nothing else until you confirm, the list does not record your IP address or which "
+    "emails you open or links you click, and every update has an unsubscribe link. Questions: email us."
 )
 
 # Second opinions: what AI models said about the spec. Six models were given the specification (and the site)

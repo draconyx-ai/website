@@ -3,7 +3,8 @@
 (what-models-think/index.html and .md, logos inlined from assets/models/), the changelog page
 (changelog/index.html and .md), assets (the logo and the share image), favicon.svg,
 favicon.ico, apple-touch-icon.png, robots.txt, sitemap.xml, the IndexNow key file and any search-engine verification files.
-No external requests at runtime: no web fonts, scripts or trackers.
+No external requests at runtime: no web fonts, trackers or scripts from other sites. The one script, the signup form's
+ALTCHA widget, is served from the site itself (ALTCHA_JS), and so is the challenge it fetches.
 
     python3 build.py            # writes dist/
     python3 indexnow.py         # after a deploy: tells IndexNow engines the sitemap URLs changed
@@ -41,6 +42,10 @@ VERIFY_FILES = {}
 PAGES = ["/", C.OPINIONS_URL, C.CHANGELOG_URL]
 MECH_LEDE = "Real mechanisms in a real compiler. Every sample on this page was run through it."
 e = html.escape
+# The signup form's bot check (README, "Signup form"): the ALTCHA widget, MIT, pinned. It is dist/altcha.umd.cjs of the
+# npm package altcha@2.3.0, byte-identical to the altcha.umd.js that listmonk v6.2.0 serves; licence alongside.
+ALTCHA_DIR = "assets/altcha"
+ALTCHA_JS = f"{ALTCHA_DIR}/altcha-2.3.0.js"
 
 # Three talons: the "claw" in Draconyx.
 CLAW_PATHS = ('<path d="M14 54C10 38 14 20 30 8C22 24 22 40 26 54Z"/>'
@@ -278,6 +283,9 @@ dl.status dt{font-weight:750}dl.status dd{margin:0;color:var(--muted)}
 form.signup{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 8px}
 form.signup input[type=email]{flex:1 1 260px;min-width:0;padding:11px 14px;clip-path:var(--chip-cut);border:1px solid #8c8470;background:#1f1d17;color:#f3ecda;font-family:inherit;font-size:16px}
 form.signup button{padding:11px 20px;clip-path:var(--chip-cut);border:0;background:var(--ember2);color:#1a0c05;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
+form.signup .hp{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
+form.signup altcha-widget{flex:1 1 100%;font-size:15px;accent-color:#e8501f;--altcha-color-base:#1f1d17;--altcha-color-border:#8c8470;--altcha-color-border-focus:#ffb08f;--altcha-color-text:#f3ecda;--altcha-color-error-text:#ffb08f;--altcha-color-active:#e8501f;--altcha-border-radius:0;--altcha-max-width:320px}
+form.signup .altcha{clip-path:var(--chip-cut)}
 .note{font-size:14px;color:var(--muted)}
 footer{background:var(--ink);color:#bfb69d;border-top:1px solid #2a271f;padding:26px 0 40px;font-size:14px}
 footer a{color:#e7dcc0}
@@ -459,19 +467,44 @@ def topbar(path):
 """
 
 
+def contact_html(text):
+    """Escape text and link its last CONTACT_LINK phrase to the contact redirect (the address itself is never printed)."""
+    head, phrase, tail = e(text).rpartition(e(C.CONTACT_LINK))
+    assert phrase, f"{C.CONTACT_LINK!r} missing from {text!r}"
+    return f'{head}<a href="{e(C.CONTACT_URL)}" rel="nofollow">{phrase}</a>{tail}'
+
+
+def contact_md(text):
+    """The Markdown twin of contact_html."""
+    head, phrase, tail = text.rpartition(C.CONTACT_LINK)
+    assert phrase, f"{C.CONTACT_LINK!r} missing from {text!r}"
+    return f"{head}[{phrase}]({C.CONTACT_URL}){tail}"
+
+
 def signup():
-    """The closing call to action: the launch-updates form and the way to get in early."""
+    """The closing call to action: the launch-updates form and the way to get in early.
+
+    The form posts to listmonk, which refuses a sign-up without a solved CAPTCHA or with its honeypot filled
+    (README, "Signup form"). The honeypot is listmonk's own nonce field, kept out of sight with CSS, not with
+    type="hidden" (bots skip those). The ALTCHA widget solves the challenge when the form is sent (auto="onsubmit").
+    """
     uuid = C.LISTMONK_LIST_UUID
     if uuid:
         form = (f'<form class="signup" method="post" action="{e(C.LISTMONK_FORM_URL)}">'
                 f'<input type="hidden" name="l" value="{e(uuid)}">'
                 f'<label class="vh" for="em">Your email address</label>'
                 f'<input id="em" type="email" name="email" required placeholder="you@example.com" autocomplete="email">'
-                f'<button type="submit">Keep me posted</button></form>'
-                f'<p class="note">{e(C.SIGNUP_FINE)}</p>')
+                f'<div class="hp" aria-hidden="true"><label for="nonce">{e(C.HONEYPOT_LABEL)}</label>'
+                f'<input id="nonce" type="text" name="nonce" value="" tabindex="-1" autocomplete="off"></div>'
+                f'<button type="submit">Keep me posted</button>'
+                f'<altcha-widget challengeurl="{e(C.ALTCHA_CHALLENGE_URL)}" auto="onsubmit" hidelogo hidefooter>'
+                f'</altcha-widget></form>'
+                f'<noscript><p class="note">{e(C.SIGNUP_NOSCRIPT)}</p></noscript>'
+                f'<p class="note">{e(C.SIGNUP_FINE)}</p>'
+                f'<script src="/{ALTCHA_JS}" defer></script>')
     else:
         form = '<p class="note">An update list opens at launch.</p>'
-    involved = e(C.INVOLVED).replace(e(C.CONTACT), f'<a href="mailto:{e(C.CONTACT)}">{e(C.CONTACT)}</a>')
+    involved = contact_html(C.INVOLVED)
     return f"""<section id="involved" class="cta"><div class="wrap prose">
 <h2 id="updates">{e(C.SIGNUP_TITLE)}</h2>
 <p class="lead">{e(C.SIGNUP_LEAD)}</p>
@@ -483,7 +516,7 @@ def signup():
 
 
 def footer(md_path):
-    privacy = e(C.PRIVACY).replace(e(C.CONTACT), f'<a href="mailto:{e(C.CONTACT)}">{e(C.CONTACT)}</a>')
+    privacy = contact_html(C.PRIVACY)
     return f"""<footer><div class="wrap">
 <span>{CLAW}Draconyx, a language designed by <a href="https://www.linkedin.com/in/filippofadda/" rel="author">Filippo F. Fadda</a>.</span>
 <span><a href="{C.CHANGELOG_URL}">Changelog</a> &middot; <a href="{md_path}">This page as Markdown</a> &middot; <a href="/llms.txt">llms.txt</a></span>
@@ -654,8 +687,8 @@ def build_md():
     lines += [f"- **{k}:** {v}" for k, v in C.STATUS]
     lines += ["", f"What changed, by date: [{C.CHANGELOG_TITLE}]({SITE}{C.CHANGELOG_URL})"]
     lines += ["", f"## {C.SIGNUP_TITLE}", "", C.SIGNUP_LEAD, "", f"Subscribe: {C.LISTMONK_FORM_URL}", ""]
-    lines += ["## Get in early", "", C.INVOLVED, ""]
-    lines += ["## Privacy", "", C.PRIVACY, ""]
+    lines += ["## Get in early", "", contact_md(C.INVOLVED), ""]
+    lines += ["## Privacy", "", contact_md(C.PRIVACY), ""]
     return "\n".join(lines)
 
 
@@ -693,7 +726,7 @@ def build_llms():
             f"spec through a service, without knowing who was asking ([Markdown]({SITE}{C.OPINIONS_URL}index.md))",
             f"- [{C.CHANGELOG_TITLE}]({SITE}{C.CHANGELOG_URL}): what changed in the language, the spec and the "
             f"toolchain, dated, newest first ([Markdown]({SITE}{C.CHANGELOG_URL}index.md))",
-            f"- [Contact](mailto:{C.CONTACT}): design discussion, collaboration, model training or evaluation",
+            f"- [Email us]({C.CONTACT_URL}): design discussion, collaboration, model training or evaluation",
             f"- [Launch updates]({C.LISTMONK_FORM_URL}): mailing list for the launch and new features (double opt-in)", ""]
     return "\n".join(out)
 
@@ -720,6 +753,9 @@ def main():
     os.makedirs(os.path.join(OUT, "assets"), exist_ok=True)
     for name in ("logo-1200.webp", "logo-640.webp", os.path.basename(SHARE_IMAGE)):
         shutil.copyfile(os.path.join(HERE, "assets", name), os.path.join(OUT, "assets", name))
+    os.makedirs(os.path.join(OUT, ALTCHA_DIR), exist_ok=True)
+    for path in (ALTCHA_JS, f"{ALTCHA_DIR}/LICENSE.txt"):
+        shutil.copyfile(os.path.join(HERE, path), os.path.join(OUT, path))
     # Browsers and apps ask for these at the site root. Made by make_icons.py, committed in assets/.
     for name in ("favicon.ico", "apple-touch-icon.png"):
         shutil.copyfile(os.path.join(HERE, "assets", name), os.path.join(OUT, name))
