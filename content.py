@@ -8,7 +8,7 @@ re-checked against main of the language repository (fb4f8937), and the code samp
 compiler built from it. Keep it that way: change a claim only together with its citation.
 """
 
-AS_OF = "2 November 2026"
+AS_OF = "6 November 2026"
 # No page prints the contact address, where harvesters would collect it: the links go to /contact, which Caddy
 # redirects to a mailto: (README, "Contact"). CONTACT_LINK is the phrase linked to it, in INVOLVED and PRIVACY.
 CONTACT_URL = "https://draconyx.ai/contact"
@@ -335,11 +335,11 @@ def label(payment_state: PaymentState) -> String:
 
 # Big numbers for the stats band (all from STATUS, as of AS_OF).
 STATS = [
-    ("548", "pages of normative spec"),
+    ("567", "pages of normative spec"),
     ("63k", "lines of compiler written in Draconyx"),
     ("143", "diagnostic codes, each explained"),
     ("5", "compiler stages also written in the language"),
-    ("209", "design rulings ratified"),
+    ("335", "design rulings ratified"),
 ]
 
 # The loop the language is built for (spec 01-vision:71: generate, observe, repair).
@@ -467,13 +467,13 @@ NAME_SOURCE = ("Attic Inscriptions Online, ML 86: decree to republish Draco's la
                "https://atticinscriptions.com/inscription/ML/86")
 
 STATUS = [
-    ("Specification", "31 normative sections, a 548-page PDF with 575 code blocks that the corpus tool turns into test oracles."),
+    ("Specification", "31 normative sections, a 567-page PDF with 575 code blocks that the corpus tool turns into test oracles."),
     ("Toolchain", "Lexer, parser, resolver, type checker, ownership checker, interpreter with law runner, canonical formatter, agent daemon and native code generation."),
     ("Agent daemon", "20 JSON-RPC methods, among them outline, get-def, slice, search, put-def, put-defs, fork, verify, `delta-card` and `resume-card`."),
     ("Diagnostics", "143 codes, each with an explain entry; a test enforces the coverage."),
     ("Self-hosting", "The lexer, parser, resolver, type checker and ownership checker are written in Draconyx itself, about 63,700 lines, and each agrees with its reference implementation on the whole shared test corpus. The back end is still written in Rust."),
-    ("Latest full gate", "2 November 2026, all green on the shared test corpus: lexer 787/787, parser 1665/1665, resolver 1252/1252, type checker 1424/1424, ownership 1424/1424, native code vs interpreter 134/134."),
-    ("Design record", "209 numbered rulings ratified into the spec; four example packages, among them an online shop, event sourcing and FlashAttention, and a 3,466-line standard library generated from the spec."),
+    ("Latest full gate", "6 November 2026, all green on the shared test corpus: lexer 798/798, parser 1684/1684, resolver 1361/1361, type checker 1517/1517, ownership 1517/1517, native code vs interpreter 151/151."),
+    ("Design record", "335 numbered rulings ratified into the spec; four example packages, among them an online shop, event sourcing and FlashAttention, and a 3,553-line standard library generated from the spec."),
     ("Release", "Pre-release research project, first commit 20 July 2026. The first public release comes when the first compiler written entirely in Draconyx is ready."),
 ]
 
