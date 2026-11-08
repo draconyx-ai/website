@@ -25,7 +25,7 @@ CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 ASSETS = os.path.join(build.HERE, "assets")
 OUT = os.path.join(ASSETS, "share-1200x630.png")
 WIDTH, HEIGHT = 1200, 630
-# The light theme's colours, as in build.CSS: --bg, --fg, --olive, --ember2.
+# The page's colours, as in build.CSS: --bg, --fg, --olive, --ember2.
 BG, FG, OLIVE, EMBER = "#f6efdf", "#1c1a14", "#5b6b25", "#e8501f"
 
 

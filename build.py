@@ -52,13 +52,13 @@ CLAW_PATHS = ('<path d="M14 54C10 38 14 20 30 8C22 24 22 40 26 54Z"/>'
               '<path d="M28 56C26 40 32 24 48 14C40 30 38 44 40 56Z"/>'
               '<path d="M42 58C42 46 48 36 60 30C54 42 52 50 54 58Z"/>')
 CLAW = f'<svg class="claw" viewBox="0 0 64 64" aria-hidden="true" focusable="false">{CLAW_PATHS}</svg>'
-# The favicon is the top bar's mark as it looks in the light theme: olive claws (--olive) on the page's cream (--bg).
+# The favicon is the top bar's mark: olive claws (--olive) on the page's cream (--bg).
 FAVICON_OLIVE, FAVICON_CREAM = "#5b6b25", "#f6efdf"
 FAVICON = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" '
            f'fill="{FAVICON_CREAM}"/><g fill="{FAVICON_OLIVE}">{CLAW_PATHS}</g></svg>')
 
 # The logos of the models quoted on the opinions page: assets/models/<id>.svg, from Lobe Icons (MIT, licence file
-# alongside). Inlined, so no page loads anything from another site. They sit on a light tile (.mk) in both themes,
+# alongside). Inlined, so no page loads anything from another site. They sit on a light tile (.mk),
 # so the brand colours stay legible; the monochrome marks draw in currentColor.
 MODEL_ICONS = {o["id"]: open(os.path.join(HERE, "assets", "models", o["id"] + ".svg"), encoding="utf-8").read().strip()
                for o in C.OPINIONS}
@@ -120,12 +120,6 @@ CSS = """
 --olive:#5b6b25;--ember:#b63e15;--ember2:#e8501f;--ink:#15130f;
 --code-bg:#1d1b15;--code-fg:#efe8d8;--code-c:#9d9583;--code-s:#e9bd7c;--code-k:#f08a5d;--code-ax:#d7e48a;
 --chip:#efe2c4;--ok:#45601a;--ok-bg:#e3ead0;--gap:#7d5200;--gap-bg:#f6e3b5;--shadow:#15130f}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13140f;--bg2:#1a1c14;--card:#1c1e16;--fg:#efe9da;
---muted:#aaa48f;--line:#2f3224;--olive:#a6b85a;--ember:#f07a4f;--ember2:#ff8a5c;--code-bg:#0c0d09;--code-c:#958d7c;
---chip:#272a1e;--ok:#c2d36f;--ok-bg:#262c18;--gap:#f1c56a;--gap-bg:#33290f;--shadow:#000}}
-:root[data-theme="dark"]{--bg:#13140f;--bg2:#1a1c14;--card:#1c1e16;--fg:#efe9da;--muted:#aaa48f;--line:#2f3224;--olive:#a6b85a;
---ember:#f07a4f;--ember2:#ff8a5c;--code-bg:#0c0d09;--code-c:#958d7c;--chip:#272a1e;--ok:#c2d36f;--ok-bg:#262c18;
---gap:#f1c56a;--gap-bg:#33290f;--shadow:#000}
 html{scroll-padding-top:76px;-webkit-text-size-adjust:100%}*{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif}
 a{color:var(--ember)}a:hover{color:var(--ember2)}
@@ -150,14 +144,13 @@ h1,h2,h3{font-family:ui-serif,"New York","Iowan Old Style",Georgia,"Times New Ro
 h1{font-size:clamp(34px,5.6vw,62px);margin:0 auto 20px;max-width:18ch}
 .hero .sub{font-size:clamp(17px,2vw,20px);color:var(--muted);max-width:64ch;margin:0 auto 30px}
 .btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
-.btn{--edge:var(--shadow);--ew:2px;--eb:5px;--cut:var(--cut-s);display:inline-block;padding:14px 22px 17px;color:var(--fg);text-decoration:none;font-weight:700;font-size:15px;transition:transform .12s}
-.btn:hover{transform:translateY(-2px);--eb:7px;color:var(--fg)}
+.btn{--edge:var(--shadow);--ew:2px;--eb:5px;--cut:var(--cut-s);display:inline-block;padding:14px 22px 17px;color:var(--fg);text-decoration:none;font-weight:700;font-size:15px}
+.btn:hover{color:var(--fg)}
 .btn.primary{--fill:var(--ember2);color:#1a0c05}.btn.primary:hover{color:#1a0c05}
 
 @keyframes rise{from{opacity:0;transform:translateY(24px) scale(.98)}to{opacity:1;transform:none}}
 @media (max-width:720px){.hero .wrap{padding-top:20px;padding-bottom:56px}}
 .stats{background:var(--olive);color:#f6f1df}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .stats{background:#2b3315}}
 .stats ul{list-style:none;padding:30px 16px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px;max-width:1120px;margin:0 auto}
 .stats li{text-align:center}.stats b{display:block;font:800 clamp(30px,4vw,44px)/1 ui-serif,Georgia,serif;letter-spacing:-.02em;color:#fff3c9}
 .stats span{display:block;font-size:14px;margin-top:6px;opacity:.92}
@@ -195,19 +188,15 @@ details.fine li{margin:4px 0}
 .fgroups{display:grid;gap:34px;margin-top:30px}
 .fgroup h3{font-size:clamp(21px,2.4vw,26px);margin:0 0 14px}
 .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px}
-.fcard{padding:19px 19px 19px;display:flex;flex-direction:column;gap:8px;transition:transform .2s}
-.fcard:hover{transform:translateY(-2px);--edge:var(--olive)}
+.fcard{padding:19px 19px 19px;display:flex;flex-direction:column;gap:8px}
 .fcard b{font-size:16.5px;line-height:1.3}.fcard p{margin:0;font-size:15px;color:var(--muted)}
 .fcard p code{background:var(--chip);padding:1px 5px;border-radius:5px}
 .fcard .pill{align-self:flex-start}
 .pill.spec{color:var(--muted);background:var(--line)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .versus thead .us,:root:not([data-theme="light"]) .m.yes{color:#13140f}}
 .reasons{display:grid;grid-template-columns:minmax(0,1fr);gap:26px;margin-top:34px}.reason{min-width:0}
-.reason{padding:31px 31px 27px;transition:transform .2s}
-.reason:hover{transform:translateY(-3px);--edge:var(--olive)}
+.reason{padding:31px 31px 27px}
 .rhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .num{font:800 15px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#fff;background:var(--olive);clip-path:var(--chip-cut);padding:8px 10px}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .num{color:#13140f}}
 .pill{font-size:12.5px;font-weight:750;letter-spacing:.04em;text-transform:uppercase;clip-path:var(--chip-cut);padding:5px 10px}
 .pill.ships{color:var(--ok);background:var(--ok-bg)}.pill.gaps{color:var(--gap);background:var(--gap-bg)}
 h3{font-size:clamp(23px,2.7vw,30px);margin:14px 0 12px}
@@ -223,17 +212,17 @@ figcaption{font-size:13px;color:var(--muted);margin-top:8px}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
 .cites{margin-top:10px;font-size:13px;color:var(--muted)}.cites summary{cursor:pointer}.cites code{white-space:nowrap}
 .loop li,.fcard,.reason,details.fine,.btn,.opinion,.tcard,.roster a,.entry{position:relative;isolation:isolate}
-.loop li::before,.fcard::before,.reason::before,details.fine::before,.btn::before,.opinion::before,.tcard::before,.roster a::before,.entry::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--edge,var(--line));clip-path:var(--cut,var(--cut1));transition:background .2s}
+.loop li::before,.fcard::before,.reason::before,details.fine::before,.btn::before,.opinion::before,.tcard::before,.roster a::before,.entry::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--edge,var(--line));clip-path:var(--cut,var(--cut1))}
 .loop li::after,.fcard::after,.reason::after,details.fine::after,.btn::after,.opinion::after,.tcard::after,.roster a::after,.entry::after{content:"";position:absolute;inset:var(--ew,1px) var(--ew,1px) var(--eb,3px);z-index:-1;background:var(--fill,var(--card));clip-path:var(--cut,var(--cut1))}
 .fcard:nth-child(3n+2),.reason:nth-child(3n+2),.loop li:nth-child(3n+2),.btn:nth-child(2),.opinion:nth-child(3n+2),.tcard:nth-child(3n+2),.entry:nth-child(3n+2){--cut:var(--cut2)}.fcard:nth-child(3n),.reason:nth-child(3n),.loop li:nth-child(3n),.btn:nth-child(3),.opinion:nth-child(3n),.tcard:nth-child(3n),.entry:nth-child(3n){--cut:var(--cut3)}
 @media (max-width:600px){.reason{padding:23px 19px 21px}}
-:root{--mk-bg:#efe4cc}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--mk-bg:#e6dcc3}}:root[data-theme="dark"]{--mk-bg:#e6dcc3}
+:root{--mk-bg:#efe4cc}
 .mk{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;background:var(--mk-bg);color:#15130f;clip-path:var(--chip-cut)}
 .mk svg{width:62%;height:62%}
 .hero.page .wrap{padding-top:56px;padding-bottom:64px}.hero.page h1{max-width:20ch}
 .roster{list-style:none;padding:0;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:860px}
-.roster a{--cut:var(--chip-cut);--eb:3px;display:flex;align-items:center;gap:10px;padding:6px 16px 9px 7px;color:var(--fg);text-decoration:none;font-weight:700;font-size:15px;transition:transform .12s}
-.roster a:hover{transform:translateY(-2px);color:var(--fg);--edge:var(--olive)}.roster .mk{width:34px;height:34px}
+.roster a{--cut:var(--chip-cut);--eb:3px;display:flex;align-items:center;gap:10px;padding:6px 16px 9px 7px;color:var(--fg);text-decoration:none;font-weight:700;font-size:15px}
+.roster a:hover{color:var(--fg)}.roster .mk{width:34px;height:34px}
 .asks{list-style:none;padding:0;margin:26px 0 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 22px}
 .asks li{display:flex;gap:12px;align-items:flex-start;font:600 18px/1.35 ui-serif,"New York","Iowan Old Style",Georgia,serif}
 @media (max-width:900px){.asks{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:520px){.asks{grid-template-columns:minmax(0,1fr)}}
@@ -263,8 +252,7 @@ blockquote{margin:0}blockquote p{margin:0}
 .changes code{background:var(--chip);padding:1px 5px;border-radius:5px;font-size:.88em}
 @media (max-width:640px){.changes li{grid-template-columns:minmax(0,1fr)}.entry{padding:22px 19px 24px}.ehead{align-items:flex-start;flex-direction:column;gap:10px}}
 .tgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:30px}
-.tcard{margin:0;padding:20px 21px 23px;display:flex;flex-direction:column;gap:14px;transition:transform .2s}
-.tcard:hover{transform:translateY(-2px);--edge:var(--olive)}
+.tcard{margin:0;padding:20px 21px 23px;display:flex;flex-direction:column;gap:14px}
 .who{display:flex;align-items:center;gap:12px;line-height:1.25}.who a{color:var(--fg);text-decoration:none;font-weight:750}.who a:hover{color:var(--ember)}
 .who small{display:block;color:var(--muted);font-size:13.5px;font-weight:600}
 .tcard blockquote{font:600 17.5px/1.4 ui-serif,"New York","Iowan Old Style",Georgia,serif}
@@ -452,7 +440,7 @@ def head(title, description, path, og_title=None, og_description=None, verify=Fa
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{e(title)}</title>
 <meta name="description" content="{e(description)}">
-{verify_meta}<meta name="color-scheme" content="light dark">
+{verify_meta}<meta name="color-scheme" content="only light">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
