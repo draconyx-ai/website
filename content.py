@@ -515,6 +515,13 @@ PRIVACY = (
     "emails you open or links you click, and every update has an unsubscribe link. Questions: email us."
 )
 
+# The not-found page (404.html): Caddy serves it, with status 404, at any address on draconyx.ai that has no page
+# (README, "Not found"). The heading, one line and the way home; the signup form stays on the real pages.
+NOT_FOUND_TITLE = "Page not found: Draconyx"
+NOT_FOUND_HEADLINE = "Page not found"
+NOT_FOUND_LINE = "The address you asked for does not exist on draconyx.ai."
+NOT_FOUND_HOME = "Back to draconyx.ai"
+
 # Second opinions: what AI models said about the spec. Six models were given the specification (and the site)
 # between 29 October and 2 November 2026 (the dates of the saved answers) and asked the four questions below. The
 # questions went through a service that calls the models, so none knew who was asking (the spec itself carries the

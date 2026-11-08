@@ -3,8 +3,8 @@
 The Draconyx website.
 
 - `content.py`: every word on the site, the single source for `index.html`, `index.md`, `llms.txt`, the
-  opinions page `/what-models-think/` (verbatim quotes from AI models' answers on the spec; `OPINIONS`) and the
-  changelog page `/changelog/` (`CHANGELOG`, see below).
+  opinions page `/what-models-think/` (verbatim quotes from AI models' answers on the spec; `OPINIONS`), the
+  changelog page `/changelog/` (`CHANGELOG`, see below) and the not-found page `404.html` (`NOT_FOUND_*`, see below).
 - `build.py`: renders them into `dist/` (git-ignored). No external requests at runtime: no web fonts, trackers or
   scripts from other sites. The one script, the signup form's ALTCHA widget, is served from the site itself (see
   "Signup form" below).
@@ -102,6 +102,33 @@ is not repeated here):
 
 `CONTACT_URL` and `CONTACT_LINK` in `content.py` set the link and the words linked; `grep -r "info@draconyx" dist/`
 must find nothing.
+
+## Not found
+
+An address on draconyx.ai that has no file gets the not-found page, `404.html`, with status 404: the site's top bar,
+logo and footer, the heading "Page not found", one line, and a "Back to draconyx.ai" link to the home page (the words
+are `NOT_FOUND_*` in `content.py`; no signup form). draconyx.org and the www hosts redirect with the path kept, so a
+mistyped address on any of them ends there. Caddy serves the page from any depth, so every link and asset on it is
+root-relative. It has a robots `noindex` tag and no canonical, Markdown or link-preview tags, and it is not in
+`PAGES`, so the sitemap and IndexNow leave it out: a change to this page alone needs no `indexnow.py` run. Its few
+lines of layout CSS are passed to `head()` for this page only, so the other pages do not change. The rule, in the
+`draconyx.ai` site block:
+
+    # Not found: an address with no file gets the site's own page, with status 404 (website README, "Not found")
+    handle_errors 404 {
+    	import security_headers
+    	request_header -If-None-Match
+    	request_header -If-Modified-Since
+    	request_header -Range
+    	rewrite * /404.html
+    	file_server
+    }
+
+Caddy drops the response headers set before an error, so the error route imports `security_headers` again. The
+conditional and range headers are dropped because `file_server` would otherwise answer a revalidation of a cached
+404 (or a range request) with the 404 status and an empty or partial body: the blank page again. Errors other than
+404 keep Caddy's empty response. `/404.html` itself answers 200 (it is noindex, and nothing links to
+it).
 
 ## Changelog
 

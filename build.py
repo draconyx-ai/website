@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build draconyx.ai into dist/ from content.py: index.html, index.md, llms.txt, the opinions page
 (what-models-think/index.html and .md, logos inlined from assets/models/), the changelog page
-(changelog/index.html and .md), assets (the logo and the share image), favicon.svg,
+(changelog/index.html and .md), the not-found page (404.html), assets (the logo and the share image), favicon.svg,
 favicon.ico, apple-touch-icon.png, robots.txt, sitemap.xml, the IndexNow key file and any search-engine verification files.
 No external requests at runtime: no web fonts, trackers or scripts from other sites. The one script, the signup form's
 ALTCHA widget, is served from the site itself (ALTCHA_JS), and so is the challenge it fetches.
@@ -420,22 +420,17 @@ SHARE_IMAGE = "/assets/share-1200x630.png"
 SHARE_ALT = f"The Draconyx logo beside the headline: {C.HERO['headline']}"
 
 
-def head(title, description, path, og_title, og_description, verify=False):
+def head(title, description, path, og_title=None, og_description=None, verify=False, noindex=False, css=""):
     """Everything up to the skip link: meta, icons, the Markdown alternate (<path>index.md), the inlined CSS.
-    verify adds the webmaster consoles' ownership tags, which only the home page needs."""
+    verify adds the webmaster consoles' ownership tags, which only the home page needs. noindex is for the not-found
+    page, served at addresses that do not exist: a robots noindex tag instead of the canonical, the Markdown
+    alternate and the link-preview tags, which would all name such an address. css is appended to the shared CSS
+    for this page only, so the other pages stay as they are."""
     verify_meta = "".join(f'<meta name="{e(n)}" content="{e(v)}">\n' for n, v in VERIFY_META.items() if v) if verify else ""
-    return f"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{e(title)}</title>
-<meta name="description" content="{e(description)}">
-{verify_meta}<meta name="color-scheme" content="light dark">
-<link rel="icon" href="/favicon.ico" sizes="32x32">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="alternate" type="text/markdown" href="{path}index.md" title="This page as Markdown">
+    if noindex:
+        page_meta = '<meta name="robots" content="noindex">\n'
+    else:
+        page_meta = f"""<link rel="alternate" type="text/markdown" href="{path}index.md" title="This page as Markdown">
 <link rel="canonical" href="{SITE}{path}">
 <meta property="og:title" content="{e(og_title)}">
 <meta property="og:description" content="{e(og_description)}">
@@ -449,7 +444,19 @@ def head(title, description, path, og_title, og_description, verify=False):
 <meta name="twitter:title" content="{e(og_title)}">
 <meta name="twitter:description" content="{e(og_description)}">
 <meta name="twitter:image" content="{SITE}{SHARE_IMAGE}">
-<style>{CSS}</style>
+"""
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{e(title)}</title>
+<meta name="description" content="{e(description)}">
+{verify_meta}<meta name="color-scheme" content="light dark">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+{page_meta}<style>{CSS}{css}</style>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -518,10 +525,12 @@ def signup():
 
 
 def footer(md_path):
+    """The footer. md_path is the page's Markdown version; None (the not-found page has none) leaves that link out."""
     privacy = contact_html(C.PRIVACY)
+    md_link = f' &middot; <a href="{md_path}">This page as Markdown</a>' if md_path else ""
     return f"""<footer><div class="wrap">
 <span>{CLAW}Draconyx, a language designed by <a href="https://www.linkedin.com/in/filippofadda/" rel="author">Filippo F. Fadda</a>.</span>
-<span><a href="{C.CHANGELOG_URL}">Changelog</a> &middot; <a href="{md_path}">This page as Markdown</a> &middot; <a href="/llms.txt">llms.txt</a></span>
+<span><a href="{C.CHANGELOG_URL}">Changelog</a>{md_link} &middot; <a href="/llms.txt">llms.txt</a></span>
 <p class="privacy" id="privacy"><b>Privacy.</b> {privacy}</p>
 </div></footer>
 </body>
@@ -655,6 +664,31 @@ def build_changelog_md():
     return "\n".join(lines)
 
 
+# The not-found page, written as 404.html. Caddy serves it with status 404 at any address on draconyx.ai that has no
+# file (README, "Not found"), at any depth, so every link and asset on it is root-relative. It is not in PAGES, so the
+# sitemap and IndexNow leave it out. It fills the window, so a short page ends on the footer, not on blank cream.
+NOT_FOUND_FILE = "404.html"
+NOT_FOUND_CSS = ("body:has(.nf){display:flex;flex-direction:column;min-height:100vh}"
+                 "body:has(.nf) main{flex:1;display:flex;flex-direction:column}"
+                 ".hero.nf{flex:1;display:flex;align-items:center}.hero.nf .wrap{width:100%}"
+                 ".nf .logo{width:min(360px,100%)}")
+
+
+def build_not_found_html():
+    """The not-found page: the site's top bar and footer, the logo, a heading, one line and the way home. No signup
+    form, no Markdown version; noindex."""
+    return head(C.NOT_FOUND_TITLE, C.NOT_FOUND_LINE, None, noindex=True, css=NOT_FOUND_CSS) \
+        + topbar("/" + NOT_FOUND_FILE) + f"""<main id="main">
+<div class="hero page nf"><div class="wrap">
+<img class="logo" src="/assets/logo-640.webp" srcset="/assets/logo-640.webp 640w, /assets/logo-1200.webp 1200w" sizes="(max-width:392px) 100vw, 360px" width="640" height="427" alt="Draconyx: a dinosaur mascot above the Draconyx wordmark">
+<h1>{e(C.NOT_FOUND_HEADLINE)}</h1>
+<p class="sub">{e(C.NOT_FOUND_LINE)}</p>
+<div class="btns"><a class="btn primary" href="/">{e(C.NOT_FOUND_HOME)}</a></div>
+</div></div>
+</main>
+""" + footer(None)
+
+
 def build_md():
     lines = ["# Draconyx", "", f"> {C.HERO['headline']} {C.HERO['subhead']}", "",
              "## Every other language was built for humans", ""]
@@ -771,6 +805,7 @@ def main():
         C.OPINIONS_URL.strip("/") + "/index.md": build_opinions_md(),
         C.CHANGELOG_URL.strip("/") + "/index.html": build_changelog_html(),
         C.CHANGELOG_URL.strip("/") + "/index.md": build_changelog_md(),
+        NOT_FOUND_FILE: build_not_found_html(),
     }
     for name, text in files.items():
         os.makedirs(os.path.dirname(os.path.join(OUT, name)), exist_ok=True)
