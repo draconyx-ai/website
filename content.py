@@ -386,7 +386,7 @@ FEATURE_GROUPS = [
         ('Raft consensus as an ordinary type', '`Replicated<T, n>` keeps a value on a quorum of `n` nodes with linearizable reads and writes, inside the program: no external coordinator.', 'specified'),
         ('Live code swap in development, with checked state migration', 'In development, a running program loads a new version of a module beside the old one. The swap point is proven safe, state is handed over as a linear move, and migrations are functions the compiler checks. Release builds restart instead; the unikernel never swaps.', 'partial'),
         ('Native binaries', '`drx build` produces a native executable through the Rust bootstrap compiler\'s own code generator. The spec names one back end for the language, LLVM: `dev` and `test` builds run it without the optimizer, `release` and `proof` with it.', 'ships'),
-        ('An LLVM back end written in Draconyx', 'A code generator written in the language itself that lowers checked programs to LLVM, so the compiler needs no Rust code generator.', 'partial'),
+        ('An LLVM back end written in Draconyx', 'A code generator written in the language itself that lowers checked programs to LLVM, so that the compiler can build itself, and every program, with no Rust inside.', 'partial'),
         ('Unikernel and WebAssembly targets', 'The same source targets a unikernel that needs no OS underneath, or a WebAssembly module.', 'specified'),
     ]),
     ('Safety and effects', [

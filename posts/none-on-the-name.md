@@ -124,8 +124,8 @@ find_age?(name: String) -> Int:
 The result type is `Int`, the type of the value the function gives when it has one. When it has none, it returns
 `None`. There is no wrapper to build and none to take apart.
 
-The `?` is part of the name, so it is written at every call, and the caller handles the missing case right there,
-in one of two ways. With a fallback, `??`, whose right-hand side runs only when there is no value:
+The `?` is part of the name, so it is written at every call, and the caller handles the missing case right there.
+With a fallback, `??`, whose right-hand side runs only when there is no value:
 
 ```draconyx
 age = find_age?(name = "ada") ?? 0
@@ -141,7 +141,7 @@ describe(name: String) -> String:
         None -> "age unknown"
 ```
 
-The caller settles it on the spot, with `??` or with `match`. The checker refuses the rest:
+The checker refuses:
 
 - A call written without its `?`: `find_age(name = "ada")`.
 - A result used as a plain `Int`, with neither `??` nor `match`: `next = find_age?(name = "ada") + 1` in a function
@@ -161,10 +161,11 @@ struct User:
 
 Left out of a construction, a `?` field starts as `None`, so it needs no default.
 
-It is read like a call, with the `?` at every read, and settled the same way: `user.nickname? ?? "none"`, or
+It is read like a call, with the `?` at every read: `user.nickname? ?? "none"`, or
 `match nick = user.nickname?:`. A bare `user.nickname` is refused. A value goes in without the mark:
-`User(name = "ada", nickname = "Ada")`, and `ada.nickname = None` empties the field. A `?` call fills a `?` field as
-it is, `User(name = "bob", age = find_age?(name = "bob"))`, and the field holds `None` when there is no value.
+`User(name = "ada", nickname = "Ada")`, and `ada.nickname = None` empties the field. A `?` call or read may also go, as
+it is, into a `?` field: `User(name = "bob", age = find_age?(name = "bob"))` holds `None` when there is no value.
+Into a plain field it is refused.
 
 And the word is the same wherever the language means "no value". A function that gives nothing says so in its
 result type:
@@ -183,9 +184,10 @@ result.
 In Draconyx the call itself says `find_age?`. Whoever reads the line, a person in review or a model repairing it,
 sees the "maybe" where it matters, without opening another file.
 
-**It is handled where it happens.** A local always holds a value, and so does a parameter. A call's missing value
+**It is handled where it is seen.** A local always holds a value, and so does a parameter. A call's missing value
 cannot be stored in a local or passed as an argument to a function, to fail somewhere far from its cause. It is settled on
-the line that produced it, with `??` or `match`, and from then on the program deals in plain values.
+the line that produced it, with `??` or `match`, or kept in a `?` field, whose every read carries the mark again.
+Wherever a value may be missing, the line in front of you says so.
 
 **There is no word for "assume it is there".** Java's `get()` and Rust's `unwrap()` turn "maybe" into "surely" with
 one word and fail at run time when the guess is wrong. C++'s `*` does not even fail: on an empty optional the
