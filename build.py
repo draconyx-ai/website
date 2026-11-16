@@ -697,6 +697,10 @@ BLOG_CSS = (
     "font:500 20px/1.5 ui-serif,\"New York\",\"Iowan Old Style\",Georgia,serif}"
     ".post blockquote p{margin:0 0 12px}.post blockquote>:last-child{margin-bottom:0}"
     ".post a{text-underline-offset:2px}"
+    ".post .notice{margin:30px 0;padding:14px 18px 15px;background:var(--gap-bg);clip-path:var(--cut-s);font-size:16px;"
+    "line-height:1.55}.post .notice p{margin:0 0 8px}.post .notice>:last-child{margin-bottom:0}"
+    ".post .notice strong{color:var(--gap)}.post .notice code{background:var(--card)}"
+    ".post .notice+pre{margin-top:-18px}"
     ".post code{background:var(--chip);padding:1px 5px;border-radius:5px;font-size:.86em}"
     ".post pre{margin:30px 0;font-size:14px}.post pre code{background:none;padding:0;border-radius:0;font-size:inherit}"
     ".post img{display:block;max-width:100%;height:auto;margin:30px auto}"
@@ -828,6 +832,15 @@ def render_post(post):
                 body = e(code)
             label = f"Code sample ({e(lang)})" if lang else "Code sample"
             return f'<pre tabindex="0" role="region" aria-label="{label}"><code>{body}</code></pre>\n'
+
+        def block_quote(self, text):
+            # GitHub's alert syntax, "> [!WARNING]" on the quote's first line: a notice box, not a quotation. The
+            # Markdown copy keeps the syntax, which GitHub and most Markdown viewers show as an alert too.
+            m = re.match(r"<p>\[!WARNING\][ \t]*\n?", text)
+            if not m:
+                return super().block_quote(text)
+            body = re.sub(r"^<p>\s*</p>\n?", "", "<p>" + text[m.end():])
+            return f'<aside class="notice" role="note">\n{body}</aside>\n'
 
         def image(self, text, url, title=None):
             return super().image(text, url, title)[:-3] + ' loading="lazy" decoding="async">'
