@@ -524,6 +524,10 @@ BLOG_LLMS = "articles about the language, its design and its compiler, newest fi
 BLOG_EMPTY = "No posts yet."
 BLOG_BACK = "All posts"
 BLOG_FEED_LINK = "Atom feed"
+# The home page's blog section, between Status and Stay tuned: the latest published posts and a link to the blog.
+BLOG_HOME_KICKER = "From the blog"
+BLOG_HOME_LEDE = "Why the language works the way it does, one article at a time."
+BLOG_HOME_ALL = "Read the blog"
 
 # The not-found page (404.html): Caddy serves it, with status 404, at any address on draconyx.ai that has no page
 # (README, "Not found"). The heading, one line and the way home; the signup form stays on the real pages.

@@ -66,7 +66,9 @@ draconyx.org and the www hosts redirect to https://draconyx.ai.
 `/blog/` lists the articles, newest first, with date, title, summary and tags; each post is at `/blog/<slug>/`, with a
 Markdown copy at `/blog/<slug>/index.md`. `/blog/feed.xml` is an Atom feed of the full posts, linked from the head of
 every blog page. The blog is linked from the top bar (wide screens) and the footer of every page, and `llms.txt`, the
-sitemap (so IndexNow too) list it and its posts. The words around the posts (headline, lede, links) are `BLOG_*` in
+sitemap (so IndexNow too) list it and its posts. The home page's "From the blog" section, between Status and Stay
+tuned (and its Markdown copy), shows the three newest posts with date, title and summary, and a link to `/blog/`; it is
+left out when there are no published posts. The words around the posts (headline, lede, links) are `BLOG_*` in
 `content.py`; the posts' own words are their files.
 
 **Write.** One file per post, `posts/<slug>.md`. The file name is the address: lowercase letters and digits, words joined

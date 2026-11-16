@@ -299,7 +299,41 @@ CSS = (CSS.replace("@VMIN_MID@", str(180 + VCOL * len(C.VERSUS_LANGS)))
           .replace("@VMIN_PHONE@", str(150 + VCOL * len(C.VERSUS_LANGS))))
 
 
-def build_html():
+# The home page's blog section (latest_posts()): its own few lines of CSS, passed to head() for the home page only, so
+# the other pages do not change. The cards are the blog index's (.entry), with the title one level down (h3).
+HOME_POSTS = 3
+HOME_BLOG_CSS = (".latest{display:grid;gap:22px;max-width:860px;margin-top:30px}.latest .entry:hover{--edge:var(--olive)}"
+                 ".latest .ehead h3 a{color:var(--fg);text-decoration:none}.latest .ehead h3 a:hover{color:var(--ember)}"
+                 ".latest .psum{margin:14px 0 0;color:var(--muted);max-width:70ch}"
+                 ".latest .tags{margin:14px 0 0}")
+
+
+def latest_posts(posts):
+    """Home page section: the newest posts (date, title, summary), each linking to its page, then a link to the blog.
+    posts are load_posts()'s, the same the blog's index lists, so drafts appear only in a --drafts preview, marked.
+    Nothing at all when there are no posts."""
+    if not posts:
+        return ""
+    cards = []
+    for p in posts[:HOME_POSTS]:
+        y, m, d = (int(x) for x in p["date"].split("-"))
+        draft = '<p class="tags"><span class="pill gaps">Draft</span></p>' if p["draft"] else ""
+        cards.append(f'<article class="entry"><div class="ehead">'
+                     f'<time class="num" datetime="{p["date"]}">{d} {MONTHS[m - 1][:3]} {y}</time>'
+                     f'<h3><a href="{p["url"]}">{e(p["title"])}</a></h3></div>'
+                     f'<p class="psum">{md(p["summary"])}</p>{draft}</article>')
+    return f"""<section id="blog"><div class="wrap">
+<p class="kicker">{e(C.BLOG_HOME_KICKER)}</p>
+<h2>{e(C.BLOG_HEADLINE)}</h2>
+<p class="lede">{e(C.BLOG_HOME_LEDE)}</p>
+<div class="latest">{''.join(cards)}</div>
+<div class="btns start"><a class="btn" href="{C.BLOG_URL}">{e(C.BLOG_HOME_ALL)}</a></div>
+</div></section>
+
+"""
+
+
+def build_html(posts=()):
     reasons = []
     for i, r in enumerate(C.REASONS, 1):
         pill = ('<span class="pill ships">Ships today</span>' if r["state"] == "ships"
@@ -342,7 +376,7 @@ def build_html():
     return head(TITLE, "Draconyx is a programming language designed for its AI author: structured diagnostics with "
                 "edits, writes by definition name, laws checked by default, compile-time authority.", "/",
                 "Draconyx", f"{C.HERO['headline']} A programming language designed for its AI author.",
-                verify=True) + topbar("/") + f"""<main id="main">
+                verify=True, css=HOME_BLOG_CSS if posts else "") + topbar("/") + f"""<main id="main">
 <div class="hero"><div class="wrap">
 <img class="logo" src="/assets/logo-1200.webp" srcset="/assets/logo-640.webp 640w, /assets/logo-1200.webp 1200w" sizes="(max-width:760px) 100vw, 720px" width="1200" height="800" alt="Draconyx: a dinosaur mascot above the Draconyx wordmark">
 <p class="eyebrow">{e(C.HERO['eyebrow'])}</p>
@@ -407,7 +441,7 @@ def build_html():
 <div class="btns start"><a class="btn" href="{C.CHANGELOG_URL}">What changed: the changelog</a></div>
 </div></section>
 
-{signup()}</main>
+{latest_posts(posts)}{signup()}</main>
 """ + footer("/index.md")
 
 
@@ -1034,7 +1068,7 @@ def build_not_found_html():
 """ + footer(None)
 
 
-def build_md():
+def build_md(posts=()):
     lines = ["# Draconyx", "", f"> {C.HERO['headline']} {C.HERO['subhead']}", "",
              "## Every other language was built for humans", ""]
     lines += [p + "\n" for p in C.PROBLEM]
@@ -1067,6 +1101,11 @@ def build_md():
     lines += [f"Source: [{C.NAME_SOURCE[0]}]({C.NAME_SOURCE[1]})", "", f"## Where it stands (as of {C.AS_OF})", ""]
     lines += [f"- **{k}:** {v}" for k, v in C.STATUS]
     lines += ["", f"What changed, by date: [{C.CHANGELOG_TITLE}]({SITE}{C.CHANGELOG_URL})"]
+    if posts:  # the blog section, as on the page: the newest posts (drafts only in a --drafts preview, marked)
+        lines += ["", f"## {C.BLOG_HEADLINE}", "", C.BLOG_HOME_LEDE, ""]
+        lines += [f"- [{link_text(p['title'])}]({SITE}{p['url']}) ({long_date(p['date'])}"
+                  + (", draft" if p["draft"] else "") + f"): {p['summary']}" for p in posts[:HOME_POSTS]]
+        lines += ["", f"All posts: [{C.BLOG_TITLE}]({SITE}{C.BLOG_URL})"]
     lines += ["", f"## {C.SIGNUP_TITLE}", "", C.SIGNUP_LEAD, "", f"Subscribe: {C.LISTMONK_FORM_URL}", ""]
     lines += ["## Get in early", "", contact_md(C.INVOLVED), ""]
     lines += ["## Privacy", "", contact_md(C.PRIVACY), ""]
@@ -1164,7 +1203,7 @@ def main():
     for name in ("favicon.ico", "apple-touch-icon.png"):
         shutil.copyfile(os.path.join(HERE, "assets", name), os.path.join(OUT, name))
     files = {
-        "index.html": build_html(), "index.md": build_md(), "llms.txt": build_llms(posts), "favicon.svg": FAVICON,
+        "index.html": build_html(posts), "index.md": build_md(posts), "llms.txt": build_llms(posts), "favicon.svg": FAVICON,
         "robots.txt": f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n",
         "sitemap.xml": build_sitemap(posts),
         f"{INDEXNOW_KEY}.txt": INDEXNOW_KEY,
