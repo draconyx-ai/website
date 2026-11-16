@@ -4,7 +4,9 @@ The Draconyx website.
 
 - `content.py`: every word on the site, the single source for `index.html`, `index.md`, `llms.txt`, the
   opinions page `/what-models-think/` (verbatim quotes from AI models' answers on the spec; `OPINIONS`), the
-  changelog page `/changelog/` (`CHANGELOG`, see below) and the not-found page `404.html` (`NOT_FOUND_*`, see below).
+  changelog page `/changelog/` (`CHANGELOG`, see below), the not-found page `404.html` (`NOT_FOUND_*`, see below) and
+  the words around the blog (`BLOG_*`).
+- `posts/`: the blog's articles, one Markdown file per post (see "Blog" below).
 - `build.py`: renders them into `dist/` (git-ignored). No external requests at runtime: no web fonts, trackers or
   scripts from other sites. The one script, the signup form's ALTCHA widget, is served from the site itself (see
   "Signup form" below).
@@ -18,6 +20,18 @@ The Draconyx website.
 - `make_share.py`: regenerates the share image (see below).
 - `research-features-versus.json`: the evidence behind every cell of the comparison table.
 - `indexnow.py`: after a deploy, submits the live sitemap's URLs to IndexNow.
+- `requirements.txt`: the two libraries the blog needs, pinned: mistune (Markdown) and Pygments (code highlighting).
+  Everything else is standard library.
+
+Setup, once: a virtual environment in `.venv/` (git-ignored) with the pinned libraries.
+
+    python3 -m venv .venv
+    .venv/bin/python3 -m pip install -r requirements.txt
+
+Then activate it in each new shell, so `python3` below is the one that has them (or run `.venv/bin/python3 build.py`):
+
+    source .venv/bin/activate          # zsh, bash
+    source .venv/bin/activate.fish     # fish
 
 Build and preview:
 
@@ -46,6 +60,49 @@ the others; Google does not take part):
     python3 indexnow.py
 
 draconyx.org and the www hosts redirect to https://draconyx.ai.
+
+## Blog
+
+`/blog/` lists the articles, newest first, with date, title, summary and tags; each post is at `/blog/<slug>/`, with a
+Markdown copy at `/blog/<slug>/index.md`. `/blog/feed.xml` is an Atom feed of the full posts, linked from the head of
+every blog page. The blog is linked from the top bar (wide screens) and the footer of every page, and `llms.txt`, the
+sitemap (so IndexNow too) list it and its posts. The words around the posts (headline, lede, links) are `BLOG_*` in
+`content.py`; the posts' own words are their files.
+
+**Write.** One file per post, `posts/<slug>.md`. The file name is the address: lowercase letters and digits, words joined
+by single hyphens (`posts/errors-are-data.md` becomes `/blog/errors-are-data/`). It starts with front matter:
+
+    ---
+    title: Errors are data
+    date: 2026-11-20
+    summary: One sentence, shown on the blog's page, in link previews, in the feed and in llms.txt.
+    tags: diagnostics, agent daemon
+    draft: true
+    ---
+
+`title`, `date` (YYYY-MM-DD) and `summary` are required; `tags` (comma-separated, brackets optional; quote a tag
+whole if it holds a comma) and `draft` are not. The build stops, naming the file, on a missing or unknown key, a bad date or a bad file name. Then the body, in
+Markdown: headings start at `##` (the title is the page's only `#`), and lists, links, block quotes, tables (`| a |
+b |`), `~~strike~~` and raw HTML work. A fenced code block is highlighted at build time, in the site's code colours,
+with no script on the page: ```` ```draconyx ```` uses the site's own highlighter, any language
+[Pygments](https://pygments.org/languages/) knows (` ```python `, ` ```json `, ` ```sh `, ` ```console `) uses
+Pygments, and a block with no language stays plain. An unknown language name stops the build. Images and other files
+for a post go in `posts/<slug>/` and are copied next to the page (hidden files such as `.DS_Store` are not), so `![The loop](loop.png)` finds
+`posts/<slug>/loop.png`; give every image its alt text. Like `content.py`, a post states only what is true of main
+of the language repository, and never uses the language's earlier working title.
+
+**Preview.** A post with `draft: true` is left out of the build. `python3 build.py --drafts` builds drafts too, with a
+"Draft" mark and a robots `noindex` tag on their pages; even then they stay out of the feed, the sitemap and
+`llms.txt`. A drafts build is for looking at only (the build says so): rebuild without `--drafts` before a deploy.
+
+    python3 build.py --drafts
+    python3 -m http.server 8765 --directory dist      # then open http://localhost:8765/blog/
+
+**Publish.** Remove `draft: true` (or set it to `false`), set `date` to the publishing day, commit, then build without
+`--drafts`, deploy and run `indexnow.py`, as for any page change (see above). The sitemap's `lastmod` for a post is the
+date of the last commit to its file or its folder, or its `date` if later, so commit before you build; the blog's is the
+newest of the site's and its published posts'. `dist/blog/` is rebuilt whole
+each time, so a post removed or turned back into a draft disappears from it.
 
 ## Signup form
 

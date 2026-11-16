@@ -1,0 +1,3 @@
+# The blog's Markdown and code highlighting (README, "Setup" and "Blog"). Everything else in build.py is standard library.
+mistune==3.3.4
+Pygments==2.21.0

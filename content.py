@@ -1,5 +1,5 @@
-"""Site content for draconyx.ai: the single source for index.html, index.md, llms.txt, the opinions page and the
-changelog page.
+"""Site content for draconyx.ai: the single source for index.html, index.md, llms.txt, the opinions page, the
+changelog page and the words around the blog's posts (the posts themselves are in posts/).
 
 Reasons 1-8 were fact-checked against the spec and the compiler on 2026-10-18 (adversarial
 verifier per reason, code samples run through the compiler); reason 9 (context) and the name section were
@@ -514,6 +514,16 @@ PRIVACY = (
     "a confirmation email first and nothing else until you confirm, the list does not record your IP address or which "
     "emails you open or links you click, and every update has an unsubscribe link. Questions: email us."
 )
+
+# The blog (README, "Blog"): the words around the posts. Each post's own words are in its file in posts/.
+BLOG_URL = "/blog/"
+BLOG_TITLE = "Draconyx blog"
+BLOG_HEADLINE = "Notes on Draconyx"
+BLOG_LEDE = "Articles about the Draconyx language: its design, its compiler and the choices behind them, newest first."
+BLOG_LLMS = "articles about the language, its design and its compiler, newest first"
+BLOG_EMPTY = "No posts yet."
+BLOG_BACK = "All posts"
+BLOG_FEED_LINK = "Atom feed"
 
 # The not-found page (404.html): Caddy serves it, with status 404, at any address on draconyx.ai that has no page
 # (README, "Not found"). The heading, one line and the way home; the signup form stays on the real pages.

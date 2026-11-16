@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """Build draconyx.ai into dist/ from content.py: index.html, index.md, llms.txt, the opinions page
 (what-models-think/index.html and .md, logos inlined from assets/models/), the changelog page
-(changelog/index.html and .md), the not-found page (404.html), assets (the logo and the share image), favicon.svg,
+(changelog/index.html and .md), the blog (blog/index.html and .md, blog/feed.xml, and blog/<slug>/index.html and .md
+for each post in posts/), the not-found page (404.html), assets (the logo and the share image), favicon.svg,
 favicon.ico, apple-touch-icon.png, robots.txt, sitemap.xml, the IndexNow key file and any search-engine verification files.
 No external requests at runtime: no web fonts, trackers or scripts from other sites. The one script, the signup form's
 ALTCHA widget, is served from the site itself (ALTCHA_JS), and so is the challenge it fetches.
 
     python3 build.py            # writes dist/
+    python3 build.py --drafts   # also builds the posts marked draft: true, to preview them (never deploy this build)
     python3 indexnow.py         # after a deploy: tells IndexNow engines the sitemap URLs changed
 """
+import datetime
 import html
 import os
 import re
@@ -38,7 +41,8 @@ VERIFY_META = {
 # Verification files served at the site root: {filename: exact content}, as each engine's console gives them.
 VERIFY_FILES = {}
 # Pages listed in sitemap.xml and submitted to IndexNow: the canonical HTML pages only. /index.md and
-# /llms.txt are alternate formats of the same page, linked from it, and stay crawlable.
+# /llms.txt are alternate formats of the same page, linked from it, and stay crawlable. build_sitemap() adds the blog
+# and its published posts after these.
 PAGES = ["/", C.OPINIONS_URL, C.CHANGELOG_URL]
 MECH_LEDE = "Real mechanisms in a real compiler. Every sample on this page was run through it."
 e = html.escape
@@ -412,12 +416,14 @@ SHARE_IMAGE = "/assets/share-1200x630.png"
 SHARE_ALT = f"The Draconyx logo beside the headline: {C.HERO['headline']}"
 
 
-def head(title, description, path, og_title=None, og_description=None, verify=False, noindex=False, css=""):
+def head(title, description, path, og_title=None, og_description=None, verify=False, noindex=False, css="",
+         og_type="website", extra=""):
     """Everything up to the skip link: meta, icons, the Markdown alternate (<path>index.md), the inlined CSS.
     verify adds the webmaster consoles' ownership tags, which only the home page needs. noindex is for the not-found
     page, served at addresses that do not exist: a robots noindex tag instead of the canonical, the Markdown
     alternate and the link-preview tags, which would all name such an address. css is appended to the shared CSS
-    for this page only, so the other pages stay as they are."""
+    for this page only, so the other pages stay as they are. og_type is "article" for a blog post; extra is more
+    head tags for this page only (the blog's feed link, a post's date)."""
     verify_meta = "".join(f'<meta name="{e(n)}" content="{e(v)}">\n' for n, v in VERIFY_META.items() if v) if verify else ""
     if noindex:
         page_meta = '<meta name="robots" content="noindex">\n'
@@ -427,7 +433,7 @@ def head(title, description, path, og_title=None, og_description=None, verify=Fa
 <meta property="og:title" content="{e(og_title)}">
 <meta property="og:description" content="{e(og_description)}">
 <meta property="og:url" content="{SITE}{path}">
-<meta property="og:type" content="website">
+<meta property="og:type" content="{og_type}">
 <meta property="og:image" content="{SITE}{SHARE_IMAGE}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -448,7 +454,7 @@ def head(title, description, path, og_title=None, og_description=None, verify=Fa
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-{page_meta}<style>{CSS}{css}</style>
+{page_meta}{extra}<style>{CSS}{css}</style>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -463,7 +469,7 @@ def topbar(path):
         return ' aria-current="page"' if path == url else ""
     return f"""<header class="top"><div class="wrap">
 <a class="brand" href="/">{CLAW}<span>Draconyx</span></a>
-<nav aria-label="Sections"><a href="{home}#versus">Versus</a><a class="opt" href="{home}#why">Why</a><a class="opt" href="{home}#language">Language</a><a class="opt" href="{home}#name">Name</a><a href="{home}#status">Status</a><a class="opt" href="{C.CHANGELOG_URL}"{here(C.CHANGELOG_URL)}>Changelog</a><a class="opt" href="{C.OPINIONS_URL}"{here(C.OPINIONS_URL)}>Reviews</a><a href="/llms.txt">For agents</a></nav>
+<nav aria-label="Sections"><a href="{home}#versus">Versus</a><a class="opt" href="{home}#why">Why</a><a class="opt" href="{home}#language">Language</a><a class="opt" href="{home}#name">Name</a><a href="{home}#status">Status</a><a class="opt" href="{C.CHANGELOG_URL}"{here(C.CHANGELOG_URL)}>Changelog</a><a class="opt" href="{C.BLOG_URL}"{here(C.BLOG_URL)}>Blog</a><a class="opt" href="{C.OPINIONS_URL}"{here(C.OPINIONS_URL)}>Reviews</a><a href="/llms.txt">For agents</a></nav>
 </div></header>
 """
 
@@ -522,7 +528,7 @@ def footer(md_path):
     md_link = f' &middot; <a href="{md_path}">This page as Markdown</a>' if md_path else ""
     return f"""<footer><div class="wrap">
 <span>{CLAW}Draconyx, a language designed by <a href="https://www.linkedin.com/in/filippofadda/" rel="author">Filippo F. Fadda</a>.</span>
-<span><a href="{C.CHANGELOG_URL}">Changelog</a>{md_link} &middot; <a href="/llms.txt">llms.txt</a></span>
+<span><a href="{C.CHANGELOG_URL}">Changelog</a> &middot; <a href="{C.BLOG_URL}">Blog</a>{md_link} &middot; <a href="/llms.txt">llms.txt</a></span>
 <p class="privacy" id="privacy"><b>Privacy.</b> {privacy}</p>
 </div></footer>
 </body>
@@ -656,6 +662,340 @@ def build_changelog_md():
     return "\n".join(lines)
 
 
+# The blog (README, "Blog"): one Markdown file per post in posts/, rendered at /blog/<slug>/ with a Markdown copy
+# (/blog/<slug>/index.md), listed newest first at /blog/ and in the Atom feed /blog/feed.xml. A post's other files
+# (images) go in posts/<slug>/ and are copied next to it, hidden files (.DS_Store) left out. Posts marked draft: true are built only with --drafts.
+# Markdown and code highlighting use mistune and Pygments (requirements.txt), imported only when the blog is built,
+# so indexnow.py, which imports this file, still needs nothing but the standard library.
+POSTS_DIR = os.path.join(HERE, "posts")
+BLOG_FEED = C.BLOG_URL + "feed.xml"
+AUTHOR = ("Filippo F. Fadda", "https://www.linkedin.com/in/filippofadda/")  # as in the footer
+POST_KEYS = {"title", "date", "summary", "tags", "draft"}
+POST_SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+# Blog pages only, passed to head() like NOT_FOUND_CSS, so the other pages do not change. The reading column, the
+# article's own elements, and Pygments' token classes mapped onto the site's code colours. Pygments' classes carry the
+# prefix t- (PYGMENTS_PREFIX): bare, its number class "m" would be the comparison table's mark.
+BLOG_CSS = (
+    ".hero.page .meta{display:flex;flex-wrap:wrap;gap:8px 12px;justify-content:center;align-items:center;margin:0;"
+    "color:var(--muted);font-size:15px;font-weight:600}"
+    ".hero.page .meta+.feedlink{margin-top:18px}.feedlink{margin:0;font-size:15px;font-weight:600}"
+    ".pill.tag{color:var(--olive);background:color-mix(in srgb,var(--olive) 12%,transparent)}"
+    ".posts{display:grid;gap:22px;max-width:860px;margin:0 auto}"
+    ".posts .entry:hover{--edge:var(--olive)}.ehead h2{margin:0;font-size:clamp(21px,2.4vw,26px)}"
+    ".ehead h2 a{color:var(--fg);text-decoration:none}.ehead h2 a:hover{color:var(--ember)}"
+    ".entry .psum{margin:14px 0 0;color:var(--muted);max-width:70ch}.entry .tags{display:flex;flex-wrap:wrap;gap:8px;"
+    "margin:14px 0 0}"
+    ".posts-empty{max-width:860px;margin:0 auto}"
+    ".post{max-width:720px;margin:0 auto;font-size:18px;line-height:1.7;overflow-wrap:break-word}"
+    ".post>:first-child{margin-top:0}.post>:last-child{margin-bottom:0}"
+    ".post h2{font-size:clamp(26px,3.2vw,33px);margin:52px 0 14px;scroll-margin-top:80px}"
+    ".post h3{font-size:clamp(21px,2.5vw,25px);margin:38px 0 10px;scroll-margin-top:80px}"
+    ".post h4,.post h5,.post h6{font-size:18px;margin:30px 0 8px;scroll-margin-top:80px}"
+    ".post p,.post ul,.post ol{margin:0 0 22px}.post ul,.post ol{padding-left:26px}.post li{margin:6px 0}"
+    ".post li>ul,.post li>ol,.post li>p{margin:6px 0}.post li::marker{color:var(--olive);font-weight:700}"
+    ".post blockquote{margin:30px 0;padding:2px 0 2px 22px;border-left:4px solid var(--olive);"
+    "font:500 20px/1.5 ui-serif,\"New York\",\"Iowan Old Style\",Georgia,serif}"
+    ".post blockquote p{margin:0 0 12px}.post blockquote>:last-child{margin-bottom:0}"
+    ".post a{text-underline-offset:2px}"
+    ".post code{background:var(--chip);padding:1px 5px;border-radius:5px;font-size:.86em}"
+    ".post pre{margin:30px 0;font-size:14px}.post pre code{background:none;padding:0;border-radius:0;font-size:inherit}"
+    ".post img{display:block;max-width:100%;height:auto;margin:30px auto}"
+    ".post table{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;margin:30px 0;font-size:15.5px;"
+    "line-height:1.5}"
+    ".post th,.post td{padding:9px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}"
+    ".post thead th{background:var(--bg2);font-weight:750;border-bottom:2px solid var(--shadow)}"
+    ".post hr{border:0;border-top:1px solid var(--line);margin:44px 0}"
+    ".post-foot{max-width:720px;margin:48px auto 0;padding-top:20px;border-top:1px solid var(--line);font-size:15px;"
+    "font-weight:600}"
+    + ",".join(f"pre .t-{c}" for c in "c ch cm cp cpf c1 cs gp".split()) + "{color:var(--code-c)}"
+    + ",".join(f"pre .t-{c}" for c in "s sa sb sc dl sd s2 se sh si sx sr s1 ss".split()) + "{color:var(--code-s)}"
+    + ",".join(f"pre .t-{c}" for c in "k kc kd kn kp kr kt ow nt".split()) + "{color:var(--code-k)}"
+)
+PYGMENTS_PREFIX = "t-"
+
+
+def post_error(path, message):
+    sys.exit(f"{os.path.relpath(path, HERE)}: {message}")
+
+
+def unquote(value):
+    """A front-matter value, without the quotes it may be written in."""
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        return value[1:-1]
+    return value
+
+
+def read_post(path):
+    """One post: its front matter checked and parsed, its Markdown body, its slug (the file name)."""
+    slug = os.path.basename(path)[:-len(".md")]
+    if not POST_SLUG.fullmatch(slug):
+        post_error(path, "the file name is the address: lowercase letters, digits and single hyphens, such as "
+                         "my-first-post.md")
+    with open(path, encoding="utf-8-sig") as f:
+        text = f.read().replace("\r\n", "\n")
+    m = re.match(r"---\n(.*?)\n---[ \t]*(?:\n|$)", text, re.S)
+    if not m:
+        post_error(path, "it must start with front matter: a line ---, then title, date and summary, then ---")
+    meta = {}
+    for line in m.group(1).split("\n"):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        key, sep, value = line.partition(":")
+        key = key.strip()
+        if not sep or key not in POST_KEYS:
+            post_error(path, f"unknown front-matter line {line!r}; the keys are {', '.join(sorted(POST_KEYS))}")
+        if key in meta:
+            post_error(path, f"{key} is given twice")
+        meta[key] = unquote(value.strip())
+    for key in ("title", "date", "summary"):
+        if not meta.get(key):
+            post_error(path, f"the front matter needs a {key}")
+    try:
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", meta["date"]):
+            raise ValueError
+        datetime.date.fromisoformat(meta["date"])
+    except ValueError:
+        post_error(path, f"date {meta['date']!r} is not a date written YYYY-MM-DD")
+    tags = meta.get("tags", "").strip()
+    if tags.startswith("[") and tags.endswith("]"):
+        tags = tags[1:-1]
+    tags = [q2 or q1 or bare.strip() for q1, q2, bare in re.findall(r'\s*(?:"([^"]*)"|\'([^\']*)\'|([^,]+))\s*(?:,|$)', tags)]
+    tags = [t for t in tags if t]
+    if any('"' in t or "'" in t for t in tags):
+        post_error(path, f"tags {meta['tags']!r}: put each tag in quotes whole, or not at all")
+    draft = meta.get("draft", "false").lower()
+    if draft not in ("true", "false"):
+        post_error(path, f"draft is true or false, not {meta['draft']!r}")
+    return {"slug": slug, "path": path, "title": meta["title"], "date": meta["date"], "summary": meta["summary"],
+            "tags": tags, "draft": draft == "true", "body": text[m.end():].strip("\n") + "\n",
+            "url": f"{C.BLOG_URL}{slug}/"}
+
+
+def load_posts(drafts):
+    """The posts to build, newest first (same day: by title). Drafts only when drafts is true."""
+    if not os.path.isdir(POSTS_DIR):
+        return []
+    posts = [read_post(os.path.join(POSTS_DIR, n)) for n in sorted(os.listdir(POSTS_DIR)) if n.endswith(".md")]
+    posts = [p for p in posts if drafts or not p["draft"]]
+    posts.sort(key=lambda p: p["title"].lower())
+    posts.sort(key=lambda p: p["date"], reverse=True)
+    for p in posts:
+        p["html"] = render_post(p)
+    return posts
+
+
+def render_post(post):
+    """A post's Markdown body as HTML. Headings start at ## (the title is the page's h1) and get ids for anchors.
+    Code blocks are highlighted here, at build time: ```draconyx with the site's own highlighter, any other language
+    Pygments knows with Pygments, both in the site's code colours; a block with no language stays plain. Raw HTML in a
+    post is kept as written: posts are the site's own."""
+    try:
+        import mistune
+        import pygments
+        from pygments.formatters import HtmlFormatter
+        from pygments.lexers import get_lexer_by_name
+        from pygments.util import ClassNotFound
+    except ImportError:
+        sys.exit("the blog needs mistune and Pygments (README, \"Setup\"): python3 -m venv .venv, then "
+                 ".venv/bin/python3 -m pip install -r requirements.txt, then build with .venv/bin/python3 build.py")
+    seen = {"main", "post", "involved", "updates", "em", "nonce", "privacy"}  # the page's own ids
+
+    class Renderer(mistune.HTMLRenderer):
+        def heading(self, text, level, **attrs):
+            if level == 1:
+                post_error(post["path"], f"heading {text!r} is a level-1 heading: start at ## (the title is the h1)")
+            plain = html.unescape(re.sub(r"<[^>]+>", "", text))
+            base = re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-") or "section"
+            hid, n = base, 2
+            while hid in seen:
+                hid, n = f"{base}-{n}", n + 1
+            seen.add(hid)
+            return f'<h{level} id="{hid}">{text}</h{level}>\n'
+
+        def block_code(self, code, info=None):
+            lang = info.split()[0].lower() if info and info.strip() else ""
+            code = code[:-1] if code.endswith("\n") else code
+            if lang == "draconyx":
+                body = highlight("draconyx", code)
+            elif lang:
+                try:
+                    lexer = get_lexer_by_name(lang)
+                except ClassNotFound:
+                    post_error(post["path"], f"code block language {lang!r} is not one Pygments knows "
+                                             "(use draconyx, or a Pygments name such as python, json, sh or console)")
+                body = pygments.highlight(code, lexer, HtmlFormatter(nowrap=True, classprefix=PYGMENTS_PREFIX)).rstrip("\n")
+            else:
+                body = e(code)
+            label = f"Code sample ({e(lang)})" if lang else "Code sample"
+            return f'<pre tabindex="0" role="region" aria-label="{label}"><code>{body}</code></pre>\n'
+
+        def image(self, text, url, title=None):
+            return super().image(text, url, title)[:-3] + ' loading="lazy" decoding="async">'
+
+    to_html = mistune.create_markdown(renderer=Renderer(escape=False), plugins=["table", "strikethrough", "url"])
+    return to_html(post["body"])
+
+
+def post_meta(post):
+    """The line under a post's title: the date, a draft mark (preview builds only) and the tags."""
+    draft = '<span class="pill gaps">Draft</span>' if post["draft"] else ""
+    tags = "".join(f'<span class="pill tag">{e(t)}</span>' for t in post["tags"])
+    return f'<time datetime="{post["date"]}">{long_date(post["date"])}</time>{draft}{tags}'
+
+
+def blog_head(title, description, path, og_title, og_description, post=None):
+    """head() for the blog's pages: their CSS, the feed link, and for a post its type and date. A draft (built only
+    for a preview) is also noindex."""
+    extra = f'<link rel="alternate" type="application/atom+xml" href="{BLOG_FEED}" title="{e(C.BLOG_TITLE)}">\n'
+    if post:
+        extra += f'<meta property="article:published_time" content="{post["date"]}">\n'
+        for t in post["tags"]:
+            extra += f'<meta property="article:tag" content="{e(t)}">\n'
+        if post["draft"]:
+            extra += '<meta name="robots" content="noindex">\n'
+    return head(title, description, path, og_title, og_description, css=BLOG_CSS,
+                og_type="article" if post else "website", extra=extra)
+
+
+def build_blog_html(posts):
+    """The blog's index: every post, newest first, with its date, title, summary and tags."""
+    path = C.BLOG_URL
+    cards = []
+    for p in posts:
+        y, m, d = (int(x) for x in p["date"].split("-"))
+        draft = '<span class="pill gaps">Draft</span>' if p["draft"] else ""
+        tags = "".join(f'<span class="pill tag">{e(t)}</span>' for t in p["tags"])
+        tags = f'<p class="tags">{draft}{tags}</p>' if draft or tags else ""
+        cards.append(f'<article class="entry"><div class="ehead">'
+                     f'<time class="num" datetime="{p["date"]}">{d} {MONTHS[m - 1][:3]} {y}</time>'
+                     f'<h2><a href="{p["url"]}">{e(p["title"])}</a></h2></div>'
+                     f'<p class="psum">{md(p["summary"])}</p>{tags}</article>')
+    listing = (f'<div class="posts">{"".join(cards)}</div>' if cards
+               else f'<p class="note posts-empty">{e(C.BLOG_EMPTY)}</p>')
+    return blog_head(C.BLOG_TITLE, C.BLOG_LEDE, path, C.BLOG_TITLE, C.BLOG_LEDE) + topbar(path) + f"""<main id="main">
+<div class="hero page"><div class="wrap">
+<p class="eyebrow">Blog</p>
+<h1>{e(C.BLOG_HEADLINE)}</h1>
+<p class="sub">{e(C.BLOG_LEDE)}</p>
+<p class="feedlink"><a href="{BLOG_FEED}">{e(C.BLOG_FEED_LINK)}</a></p>
+</div></div>
+
+<section id="posts"><div class="wrap">
+{listing}
+</div></section>
+
+{signup()}</main>
+""" + footer(path + "index.md")
+
+
+def build_post_html(post):
+    """A post's page: the title, summary and date in the page's hero, then the article in a reading column."""
+    path = post["url"]
+    return blog_head(f"{post['title']}: {C.BLOG_TITLE}", post["summary"], path, post["title"], post["summary"],
+                     post) + topbar(path) + f"""<main id="main">
+<div class="hero page"><div class="wrap">
+<p class="eyebrow">Blog</p>
+<h1>{e(post["title"])}</h1>
+<p class="sub">{md(post["summary"])}</p>
+<p class="meta">{post_meta(post)}</p>
+</div></div>
+
+<section id="post"><div class="wrap">
+<article class="post">
+{post["html"]}</article>
+<p class="post-foot"><a href="{C.BLOG_URL}">{e(C.BLOG_BACK)}</a> &middot; <a href="{BLOG_FEED}">{e(C.BLOG_FEED_LINK)}</a></p>
+</div></section>
+
+{signup()}</main>
+""" + footer(path + "index.md")
+
+
+def link_text(text):
+    """Text for the [...] of a Markdown link: a bracket in a post's title must not end the link."""
+    return re.sub(r"([\\\[\]])", r"\\\1", text)
+
+
+def build_blog_md(posts):
+    lines = [f"# {C.BLOG_TITLE}", "", f"> {C.BLOG_LEDE}", ""]
+    lines += [f"- [{link_text(p['title'])}]({SITE}{p['url']}) ({long_date(p['date'])}): {p['summary']} "
+              f"([Markdown]({SITE}{p['url']}index.md))" for p in posts] or [C.BLOG_EMPTY]
+    lines += ["", f"Feed: [{C.BLOG_FEED_LINK}]({SITE}{BLOG_FEED})", "",
+              f"Home: [Draconyx]({SITE}/) · [llms.txt]({SITE}/llms.txt)", ""]
+    return "\n".join(lines)
+
+
+def build_post_md(post):
+    """A post as Markdown: the title, summary and date, then the body as written."""
+    meta = long_date(post["date"]) + "".join(f" · {t}" for t in post["tags"])
+    return "\n".join([f"# {post['title']}", "", f"> {post['summary']}", "", f"_{meta}_", "", post["body"].rstrip("\n"), "",
+                      f"Blog: [{C.BLOG_TITLE}]({SITE}{C.BLOG_URL}) · Home: [Draconyx]({SITE}/) · "
+                      f"[llms.txt]({SITE}/llms.txt)", ""])
+
+
+def post_lastmod(post):
+    """A post's sitemap date: the last commit to its file (and its folder), or its date if that is later."""
+    return max(filter(None, [post["date"], last_modified(os.path.relpath(post["path"], HERE),
+                                                         os.path.relpath(post["path"], HERE)[:-len(".md")])]))
+
+
+def atom_time(day):
+    return f"{day}T00:00:00Z"
+
+
+def build_feed(posts):
+    """The Atom feed: every published post, newest first, with its full text. Drafts never go in, even with
+    --drafts. xml:base makes the posts' relative links resolve in feed readers."""
+    posts = [p for p in posts if not p["draft"]]
+    updated = max([post_lastmod(p) for p in posts] or [last_modified() or datetime.date.today().isoformat()])
+    entries = "".join(
+        f"""<entry>
+<title>{e(p["title"])}</title>
+<link rel="alternate" type="text/html" href="{SITE}{p["url"]}"/>
+<id>{SITE}{p["url"]}</id>
+<published>{atom_time(p["date"])}</published>
+<updated>{atom_time(post_lastmod(p))}</updated>
+<summary>{e(p["summary"])}</summary>
+{"".join(f'<category term="{e(t)}"/>' for t in p["tags"])}<content type="html" xml:base="{SITE}{p["url"]}">{e(p["html"])}</content>
+</entry>
+""" for p in posts)
+    return f"""<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+<title>{e(C.BLOG_TITLE)}</title>
+<subtitle>{e(C.BLOG_LEDE)}</subtitle>
+<link rel="self" type="application/atom+xml" href="{SITE}{BLOG_FEED}"/>
+<link rel="alternate" type="text/html" href="{SITE}{C.BLOG_URL}"/>
+<id>{SITE}{C.BLOG_URL}</id>
+<updated>{atom_time(updated)}</updated>
+<author><name>{e(AUTHOR[0])}</name><uri>{e(AUTHOR[1])}</uri></author>
+<icon>{SITE}/apple-touch-icon.png</icon>
+{entries}</feed>
+"""
+
+
+def blog_files(posts):
+    """{dist path: text} for the blog: its index, its feed and each post, each page with its Markdown copy."""
+    base = C.BLOG_URL.strip("/")
+    files = {f"{base}/index.html": build_blog_html(posts), f"{base}/index.md": build_blog_md(posts),
+             f"{base}/feed.xml": build_feed(posts)}
+    for p in posts:
+        files[f"{base}/{p['slug']}/index.html"] = build_post_html(p)
+        files[f"{base}/{p['slug']}/index.md"] = build_post_md(p)
+    return files
+
+
+def copy_post_assets(posts):
+    """A post's own files, posts/<slug>/ (images and the like), go next to its page, dist/blog/<slug>/."""
+    for p in posts:
+        src = p["path"][:-len(".md")]
+        if not os.path.isdir(src):
+            continue
+        clash = {"index.html", "index.md"} & set(os.listdir(src))
+        if clash:
+            post_error(src, f"{', '.join(sorted(clash))} would overwrite the post's own page")
+        shutil.copytree(src, os.path.join(OUT, C.BLOG_URL.strip("/"), p["slug"]), dirs_exist_ok=True,
+                        ignore=shutil.ignore_patterns(".*"))  # no .DS_Store and the like
+
+
 # The not-found page, written as 404.html. Caddy serves it with status 404 at any address on draconyx.ai that has no
 # file (README, "Not found"), at any depth, so every link and asset on it is root-relative. It is not in PAGES, so the
 # sitemap and IndexNow leave it out. It fills the window, so a short page ends on the footer, not on blank cream.
@@ -734,7 +1074,9 @@ def build_opinions_md():
     return "\n".join(lines)
 
 
-def build_llms():
+def build_llms(posts=()):
+    """llms.txt. posts: the blog's published posts, newest first; drafts are never listed."""
+    posts = [p for p in posts if not p["draft"]]
     out = ["# Draconyx", "",
            "> A programming language designed for code written by AI models and used by AI agents. "
            f"Pre-release research project: a {C.STATS[0][0]}-page specification and a working compiler, "
@@ -754,30 +1096,51 @@ def build_llms():
             f"spec through a service, without knowing who was asking ([Markdown]({SITE}{C.OPINIONS_URL}index.md))",
             f"- [{C.CHANGELOG_TITLE}]({SITE}{C.CHANGELOG_URL}): what changed in the language, the spec and the "
             f"toolchain, dated, newest first ([Markdown]({SITE}{C.CHANGELOG_URL}index.md))",
+            f"- [{C.BLOG_TITLE}]({SITE}{C.BLOG_URL}): {C.BLOG_LLMS} ([Markdown]({SITE}{C.BLOG_URL}index.md), "
+            f"[Atom feed]({SITE}{BLOG_FEED}))",
             f"- [Email us]({C.CONTACT_URL}): design discussion, collaboration, model training or evaluation",
             f"- [Launch updates]({C.LISTMONK_FORM_URL}): mailing list for the launch and new features (double opt-in)", ""]
+    if posts:
+        out += ["## Blog", ""]
+        out += [f"- [{link_text(p['title'])}]({SITE}{p['url']}) ({p['date']}): {p['summary']} "
+                f"([Markdown]({SITE}{p['url']}index.md))" for p in posts] + [""]
     return "\n".join(out)
 
 
-def last_modified():
-    """Date of the last commit that touched what the pages are built from (W3C date), or None outside git."""
+def last_modified(*paths):
+    """Date of the last commit that touched paths (by default, what the pages are built from), as a W3C date, or None
+    outside git or before the first commit to them."""
     try:
-        out = subprocess.run(["git", "log", "-1", "--format=%cs", "--", "content.py", "build.py", "assets"],
+        out = subprocess.run(["git", "log", "-1", "--format=%cs", "--", *(paths or ("content.py", "build.py", "assets"))],
                              cwd=HERE or ".", capture_output=True, text=True, check=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return None
     return out or None
 
 
-def build_sitemap():
+def build_sitemap(posts=()):
+    """The canonical pages in PAGES, then the blog and its published posts (drafts never go in). A post's lastmod is
+    post_lastmod(); the blog's is the newest of the sources' and its posts'."""
     mod = last_modified()
     lastmod = f"<lastmod>{mod}</lastmod>" if mod else ""
     urls = "".join(f"<url><loc>{e(SITE + p)}</loc>{lastmod}</url>" for p in PAGES)
+    posts = [p for p in posts if not p["draft"]]
+    post_mods = [post_lastmod(p) for p in posts]
+    blog_mod = max(filter(None, [mod, *post_mods]), default=None)
+    urls += f"<url><loc>{e(SITE + C.BLOG_URL)}</loc>" + (f"<lastmod>{blog_mod}</lastmod>" if blog_mod else "") + "</url>"
+    urls += "".join(f"<url><loc>{e(SITE + p['url'])}</loc><lastmod>{m}</lastmod></url>" for p, m in zip(posts, post_mods))
     return ('<?xml version="1.0" encoding="UTF-8"?>\n'
             f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n')
 
 
 def main():
+    args = sys.argv[1:]
+    if set(args) - {"--drafts"}:
+        sys.exit("usage: python3 build.py [--drafts]")
+    drafts = "--drafts" in args
+    posts = load_posts(drafts)
+    # The blog is rebuilt whole, so a post removed or turned back into a draft leaves nothing behind.
+    shutil.rmtree(os.path.join(OUT, C.BLOG_URL.strip("/")), ignore_errors=True)
     os.makedirs(os.path.join(OUT, "assets"), exist_ok=True)
     for name in ("logo-1200.webp", "logo-640.webp", os.path.basename(SHARE_IMAGE)):
         shutil.copyfile(os.path.join(HERE, "assets", name), os.path.join(OUT, "assets", name))
@@ -788,9 +1151,9 @@ def main():
     for name in ("favicon.ico", "apple-touch-icon.png"):
         shutil.copyfile(os.path.join(HERE, "assets", name), os.path.join(OUT, name))
     files = {
-        "index.html": build_html(), "index.md": build_md(), "llms.txt": build_llms(), "favicon.svg": FAVICON,
+        "index.html": build_html(), "index.md": build_md(), "llms.txt": build_llms(posts), "favicon.svg": FAVICON,
         "robots.txt": f"User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n",
-        "sitemap.xml": build_sitemap(),
+        "sitemap.xml": build_sitemap(posts),
         f"{INDEXNOW_KEY}.txt": INDEXNOW_KEY,
         **VERIFY_FILES,
         C.OPINIONS_URL.strip("/") + "/index.html": build_opinions_html(),
@@ -798,12 +1161,17 @@ def main():
         C.CHANGELOG_URL.strip("/") + "/index.html": build_changelog_html(),
         C.CHANGELOG_URL.strip("/") + "/index.md": build_changelog_md(),
         NOT_FOUND_FILE: build_not_found_html(),
+        **blog_files(posts),
     }
+    copy_post_assets(posts)
     for name, text in files.items():
         os.makedirs(os.path.dirname(os.path.join(OUT, name)), exist_ok=True)
         with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
             f.write(text)
     print("built", ", ".join(f"{n} ({len(t.encode())} B)" for n, t in files.items()))
+    shown = [p["slug"] for p in posts if p["draft"]]
+    if shown:
+        print(f"DRAFTS INCLUDED ({', '.join(shown)}): a preview build, do not deploy this dist/")
 
 
 if __name__ == "__main__":
