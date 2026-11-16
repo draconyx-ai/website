@@ -3,7 +3,6 @@ title: "Nothing to hide: how Draconyx handles a missing value"
 date: 2026-11-16
 summary: "Java marks a missing value with null or an Optional, C++ with a null pointer or a std::optional, Rust with an Option in the type. Draconyx puts it on the name, where every call shows it and every caller has to deal with it."
 tags: design, types
-draft: true
 ---
 
 Every program meets a value that might not be there: a name with no age on record, a user with no nickname, a
