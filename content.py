@@ -289,7 +289,7 @@ label(payment_state: PaymentState) -> String:
         Captured -> "captured"
 # error[AX0601]: non-exhaustive match: missing `Refunded`""",
                    "A forgotten case is a compile error that names it."),
-        "cites": ["04-core-language:612-650", "11-type-system:591-621"],
+        "cites": ["04-core-language:612-650", "11-type-system:591-657"],
     },
     {
         "id": "determinism",
@@ -385,7 +385,8 @@ FEATURE_GROUPS = [
         ('Bundled distributed runtime', 'Cluster membership and failure detection come with every binary, and CRDTs are ordinary types: no ZooKeeper, no Consul, no sidecar.', 'ships'),
         ('Raft consensus as an ordinary type', '`Replicated<T, n>` keeps a value on a quorum of `n` nodes with linearizable reads and writes, inside the program: no external coordinator.', 'specified'),
         ('Live code swap in development, with checked state migration', 'In development, a running program loads a new version of a module beside the old one. The swap point is proven safe, state is handed over as a linear move, and migrations are functions the compiler checks. Release builds restart instead; the unikernel never swaps.', 'partial'),
-        ('Native binaries, and one back end: LLVM', '`drx build` produces a native executable through the Rust bootstrap compiler\'s back end. The language has one back end, LLVM, and the LLVM back end written in Draconyx builds a native program that links no Rust.', 'ships'),
+        ('Native binaries', '`drx build` produces a native executable through the Rust bootstrap compiler\'s own code generator. The spec names one back end for the language, LLVM: `dev` and `test` builds run it without the optimizer, `release` and `proof` with it.', 'ships'),
+        ('An LLVM back end written in Draconyx', 'A code generator written in the language itself that lowers checked programs to LLVM, so the compiler needs no Rust code generator.', 'partial'),
         ('Unikernel and WebAssembly targets', 'The same source targets a unikernel that needs no OS underneath, or a WebAssembly module.', 'specified'),
     ]),
     ('Safety and effects', [
@@ -486,9 +487,9 @@ STATUS = [
     ("Toolchain", "Lexer, parser, resolver, type checker, ownership checker, interpreter with law runner, canonical formatter, agent daemon and native code generation."),
     ("Agent daemon", "36 JSON-RPC methods, among them outline, get-def, slice, search, who-calls, what-breaks-if, put-def, put-defs, fork, verify, `delta-card` and `resume-card`."),
     ("Diagnostics", "262 codes, each with an explain entry; a test enforces the coverage."),
-    ("Self-hosting", "The lexer, parser, resolver, type checker and ownership checker are written in Draconyx itself, about 90,000 lines. As of 12 November 2026 each one gave the same output as its reference implementation on the whole shared test corpus. The binaries `drx build` makes come from the Rust bootstrap compiler's own back end; the LLVM back end, written in Draconyx, builds a native program that links no Rust."),
+    ("Self-hosting", "The lexer, parser, resolver, type checker and ownership checker are written in Draconyx itself, about 90,000 lines. As of 12 November 2026 each one gave the same output as its reference implementation on the whole shared test corpus. The binaries `drx build` makes come from the Rust bootstrap compiler's own code generator."),
     ("Native code", "`drx build` compiles a package to a native binary that prints and exits exactly as the interpreter runs it, on all 159 back-end unit programs."),
-    ("Design record", "439 design rulings ratified into the spec; six example packages, among them an online shop, event sourcing and FlashAttention, and a 4,925-line standard library generated from the spec."),
+    ("Design record", "439 design rulings ratified into the spec; five example packages, among them an online shop, event sourcing and FlashAttention, a gallery of 20 common patterns written beside Rust, C++, Zig, Java and Elixir, and a 4,925-line standard library generated from the spec."),
     ("Release", "Pre-release research project, first commit 20 July 2026. The first public release is the first compiler written entirely in Draconyx."),
 ]
 
