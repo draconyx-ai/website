@@ -155,8 +155,16 @@ A struct field that may be absent takes the same mark, on its name:
 struct User:
     """A user of the shop."""
     name: String
-    nickname?: String = None
+    nickname?: String
+    age?: Int
 ```
+
+Left out of a construction, a `?` field starts as `None`, so it needs no default.
+
+It is read like a call, with the `?` at every read, and settled the same way: `user.nickname? ?? "none"`, or
+`match nick = user.nickname?:`. A bare `user.nickname` is refused. A value goes in without the mark:
+`User(name = "ada", nickname = "Ada")`, and `ada.nickname = None` empties the field. A `?` call fills a `?` field as
+it is, `User(name = "bob", age = find_age?(name = "bob"))`, and the field holds `None` when there is no value.
 
 And the word is the same wherever the language means "no value". A function that gives nothing says so in its
 result type:
