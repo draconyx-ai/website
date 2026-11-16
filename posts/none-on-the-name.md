@@ -136,7 +136,7 @@ Or with a `match` that covers both cases. The head names the result, and inside 
 ```draconyx
 describe(name: String) -> String:
     """How old `name` is, in words."""
-    match age = find_age?(name = name):
+    match age = find_age?(name):
         ok   -> "{age} years"
         None -> "age unknown"
 ```
