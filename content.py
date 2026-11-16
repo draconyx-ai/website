@@ -5,10 +5,14 @@ Reasons 1-8 were fact-checked against the spec and the compiler on 2026-10-18 (a
 verifier per reason, code samples run through the compiler); reason 9 (context) and the name section were
 checked by the site review the same day. On 2026-11-02 every reason, feature, number and spec citation was
 re-checked against main of the language repository (fb4f8937), and the code samples were re-run through a
-compiler built from it. Keep it that way: change a claim only together with its citation.
+compiler built from it. On 2026-11-16 all of it was re-checked against main 05e74e38d1 (15 Nov). Since then the
+code samples are written in the syntax the language's owner ruled, even where that compiler does not accept it
+yet; a caption says "Checked with the compiler" only where a run on main accepted the sample as shown. Status
+pills follow the work: Ships when it is built or being tested, Partly built when started, In the spec when not.
+Keep it that way: change a claim only together with its citation.
 """
 
-AS_OF = "6 November 2026"
+AS_OF = "15 November 2026"
 # No page prints the contact address, where harvesters would collect it: the links go to /contact, which Caddy
 # redirects to a mailto: (README, "Contact"). CONTACT_LINK is the phrase linked to it, in INVOLVED and PRIVACY.
 CONTACT_URL = "https://draconyx.ai/contact"
@@ -33,7 +37,7 @@ HERO = {
 
 PROBLEM = [
     "Models now write code by the million lines, and they don't work like people. In the spec's words, a "
-    "model does not read the documentation first and then write correct code: it generates, observes and "
+    "language model does not read documentation and then write correct code: it generates, observes and "
     "repairs, hundreds of times, unattended.",
     "Python, Rust and Go hand that agent error text or half-structured JSON, make it patch files "
     "by string match, route it through tooling built around an editor cursor, and run its code where any import "
@@ -43,7 +47,7 @@ PROBLEM = [
     "machine-readable verdict.\u201d The compiler never calls a model, and its agent daemon is a "
     "deterministic oracle: same tree, same answer, every time.",
 ]
-PROBLEM_CITES = ["01-vision:71", "01-vision:77", "26-agent-interface:91-103"]
+PROBLEM_CITES = ["01-vision:71", "01-vision:79", "26-agent-interface:92-141"]
 
 # Each reason: title, body paragraphs, unlike, sample (kind, text, caption), cites, status tag.
 REASONS = [
@@ -54,33 +58,36 @@ REASONS = [
         "body": [
             "Every checker emits one Diagnostic value: a stable AXnnnn code, byte-precise spans, an "
             "explanation, and suggested edits. Each edit carries an applicability (`always` or `maybe`), can carry "
-            "`also` spans that apply all-or-nothing across files, and a `consequence`: the fact about the program "
-            "that the edit makes true.",
-            "When a name doesn't resolve, the spec's “hallucination contract” requires ranked candidates "
+            "`also` spans that apply all-or-nothing across files, and, where the checker knows it, a `consequence`: "
+            "the fact about the program that the edit makes true.",
+            "When a name, a label or a field doesn't resolve, the spec's “hallucination contract” requires ranked candidates "
             "to come back as `maybe` edits. A model repairs from data instead of parsing prose. "
             "`drx explain` answers for every code the toolchain can emit, and a test enforces it.",
         ],
         "ships": "Ships today: the JSON channel, the ownership checker's two-file edits with consequences, ranked candidates "
-                 "(by edit distance so far), explain for all 143 catalogued codes.",
+                 "(by fit at the use site, then edit distance, then import cost) for unknown names, labels and fields, "
+                 "explain for all 262 catalogued codes.",
         "unlike": "rustc's JSON has applicability but no per-edit consequence, and many diagnostics have no "
                   "code. CPython's “Did you mean” is prose. Go's compiler errors carry neither codes nor edits; fixes "
                   "come from gopls.",
         "sample": ("json", """$ drx check pkg --json
 {"code": "AX0234", "severity": "error",
  "message": "unresolved name `add_amount`",
- "primary_span": {"file": "src/money.ax", "start": [7,5], "end": [7,15],
-                  "bytes": [95,105]},
+ "primary_span": {"file": "src/money.ax", "start": [9,5], "end": [9,15],
+                  "bytes": [192,202]},
  "secondary_spans": [],
  "explanation": "a name resolves lexically: enclosing bindings, ...",
- "suggested_edits": [{"span": {..., "bytes": [95,105]},
+ "suggested_edits": [{"span": {..., "bytes": [192,202]},
    "replacement": "add_amounts", "applicability": "maybe",
-   "description": "replace `add_amount` with `add_amounts`"}]}""",
+   "description": "replace `add_amount` with `add_amounts`",
+   "consequence": "`add_amounts` names the def `pkg.money.add_amounts`"}],
+ "help": ["did you mean `add_amounts`?"]}""",
                    "Real compiler output, trimmed."),
-        "cites": ["25-tooling:9-26", "25-tooling:65-106", "25-tooling:143-165", "26-agent-interface:417-430"],
+        "cites": ["25-tooling:8-45", "25-tooling:84-123", "25-tooling:188-210", "26-agent-interface:620-645"],
     },
     {
         "id": "edit-by-name",
-        "state": "gaps",
+        "state": "ships",
         "title": "Edit by name. Never by line number.",
         "body": [
             "The agent daemon addresses code by qualified name (`inventory.reprice`), never by file and line. "
@@ -94,126 +101,125 @@ REASONS = [
         ],
         "ships": "Ships today in `drx serve` and `drx rpc`. The daemon re-reads the workspace before every write, "
                  "so a write whose `base` predates an edit made outside it is refused, and it stages every changed "
-                 "file before replacing any. Still owed: auto-import and canonical splicing of nested members.",
+                 "file before replacing any. A write adds the plain `use` line a new name needs in the same "
+                 "transaction, and nested members (variants, operations, laws) are spliced canonically by name.",
         "unlike": "Python, Rust and Go define no such write interface. Agents patch text by string "
                   "match, diff hunks or range-keyed LSP edits. Codemod tools (LibCST, rust-analyzer "
                   "SSR) are add-ons with no tree-hash precondition, no type check before the bytes land and no "
                   "impact report.",
         "sample": ("shell", """$ drx rpc . put-def '{"address": "inventory.reprice",
-    "base": "deadbeef", "text": "def reprice(...) -> Int: ..."}'
+    "base": "deadbeef", "text": "reprice(...) -> Int: ..."}'
 
 # the workspace moved since `base`: refused, with the current text
 {"code": -32000, "message": "the workspace has moved since `base`",
  "data": {"kind": "conflict", "detail": {"base": "deadbeef",
-   "current_tree": "19c75982...", "addresses": ["inventory.reprice"],
+   "current_tree": "def6ed83...", "addresses": ["inventory.reprice"],
    "current": [{"address": "shop.inventory.reprice",
-     "text": "def reprice(price: Int, pct: Int) -> Int:\\n    price + price * pct / 100\\n"}]}}}
+     "text": "reprice(price: Int, pct: Int) -> Int:\\n    \\"\\"\\"`price` raised by `pct` percent.\\"\\"\\"\\n    price + price * pct / 100\\n"}]}}}
 
 # a write that fails the check: same shape as success, nothing written
-{"tree": "19c75982...", "applied": false, "new_errors": 1,
+{"tree": "def6ed83...", "applied": false, "new_errors": 1,
  "diagnostics": [{"code": "AX1001",
    "message": "type mismatch: expected `Int`, found `String`"}],
  "impact": {"broken_consumers": [{"address": "shop.inventory.reprice",
    "codes": ["AX1001"]}]}}""", "Real daemon replies, abridged (hashes trimmed, fields elided)."),
-        "cites": ["26-agent-interface:66-89", "26-agent-interface:136-144", "26-agent-interface:442-524", "25-tooling:567"],
+        "cites": ["26-agent-interface:95-99", "26-agent-interface:188-196", "26-agent-interface:669-776", "32-agent-conformance:1106-1131", "25-tooling:881"],
     },
     {
         "id": "authority",
-        "state": "gaps",
+        "state": "ships",
         "title": "No global open(). Every service on the record.",
         "body": [
             "The rule is “no ambient permission”: there is no global `open` and no standard function that "
-            "reaches the world on its own authority. Every permission comes from the `System` passed into `main` "
-            "and flows down by explicit provision.",
+            "reaches the world on its own authority. Every permission descends from the `System` powerbox handed "
+            "to `main`, and code holds one only when it is handed one.",
             "The compiler works out which services each definition reaches, through callees and function "
-            "values. A gap is compile error AX0501, naming the whole call chain, and `drx outline` prints "
-            "each definition's uses and needs. A host can wrap an AI-written plan in `scope_to(...)` and know "
-            "from the outline exactly which services it can reach.",
+            "values. A service reached with no provider is compile error AX0501, naming the whole call chain, and "
+            "`drx outline` prints each definition's uses and needs. A host can hand an AI-written plan a narrowed "
+            "permission, such as a filesystem that `scope_to` confines to one directory, and read from the outline "
+            "exactly which services the plan reaches.",
         ],
-        "ships": "Ships today: AX0501 with call chains, uses/needs in the outline, and AX0241 for a standard handle "
-                 "such as `File(descriptor)` built outside its module. Still owed: refusing a handle built through a "
-                 "type alias, which comes before we claim “by construction”, and reporting a service reached only "
-                 "through a lambda passed to a standard function such as `map`.",
+        "ships": "Ships today: AX0501 with call chains, including a service reached through a function value passed "
+                 "to a standard function such as `map`; uses/needs in the outline; and AX0241 for a standard handle "
+                 "such as `File(descriptor)` built outside its module.",
         "unlike": "In Python, Go and Rust any imported module can open files or sockets on ambient "
                   "process authority. Confinement comes from outside the type system (containers, seccomp, "
                   "the third-party cap-std crate for Rust). None checks per function, at "
                   "compile time, what a function can reach.",
-        "sample": ("draconyx", """provide locally:
-    FileSystem = scope_to(filesystem = borrow system.filesystem, root = Path("/tmp/agent-sandbox"))
-    Clock      = system.clock
-in:
-    run_generated_plan()
-// If the plan reaches Network, compilation fails:
-//   error[AX0501]: Missing provider: service 'Network'
-//     required by  main
-//     reached from run_generated_plan
-//     reached from upload
-//     no 'provide Network' in any enclosing scope""", "Checked with the compiler."),
-        "cites": ["12-services-di-permissions:221-263", "12-services-di-permissions:83-106", "12-services-di-permissions:299-314", "09-modules:391-448", "26-agent-interface:259-264"],
+        "sample": ("shell", """error[AX0501]: Missing provider: service 'Network'
+  required by  main
+  reached from run_generated_plan
+  reached from upload""", "Real compiler output, trimmed."),
+        "cites": ["12-services-di-permissions:278-322", "12-services-di-permissions:122-145", "12-services-di-permissions:184-195", "12-services-di-permissions:401-414", "09-modules:441-500", "26-agent-interface:316-340"],
     },
     {
         "id": "tainted",
-        "state": "gaps",
+        "state": "ships",
         "title": "Prompt injection meets the type checker.",
         "body": [
             "`tainted` is a type qualifier. Model completions, console input, network reads and process "
             "arguments are born tainted at their standard-library signatures. A tainted value where a plain "
             "type is expected is compile error AX1022, and every parameter that steers what the program does "
-            "is such a position: a prompt's instruction, SQL identifiers, process arguments, permission-minting "
-            "arguments.",
+            "is such a position: a prompt's instruction, SQL identifiers, permission-minting arguments.",
             "The only way out is `endorse` with a mandatory rationale, so every place untrusted text becomes "
             "trusted is one line you can grep for.",
         ],
         "ships": "Ships today: AX1022 at every argument, field, return, binding and collection element; taint "
-                 "through field projection and type arguments, as in `List<tainted String>`; the prompt-instruction "
-                 "barrier. Specified, not yet built: the SQL and process-argument barriers, and taint through string "
-                 "interpolation and through a generic function's bare type parameter.",
+                 "through field projection, type arguments such as `List<tainted String>`, and string interpolation; "
+                 "the prompt-instruction barrier; and a tainted path given to `scope_to`.",
         "unlike": "Python, Go and Rust treat model output as a plain string. A newtype can imitate "
                   "a taint marker by convention, but the standard library never marks its sources and nothing "
                   "makes unwrapping state a reason. Real defences are runtime libraries or separate analysers "
                   "such as CodeQL and Semgrep.",
-        "sample": ("draconyx", """def hijacked(email: tainted String) -> Prompt:
-    // AX1022: `instruction` is an unmarked String,
-    // a control-plane position no tainted value may occupy
-    prompt(instruction = email, data = [])
+        "sample": ("draconyx", """hijacked(email: tainted String) -> Prompt:
+    \"\"\"A prompt that wrongly makes the email its instruction.\"\"\"
+    prompt(instruction = email, data = [])  # AX1022: `instruction` is an unmarked String
 
-def summarize(transfer email: tainted String) -> Prompt:
-    prompt(instruction = "Summarize the message.", data = [transfer email])  // OK""", "Checked with the compiler."),
-        "cites": ["12-services-di-permissions:471-528"],
+summarize(take email: tainted String) -> Prompt:
+    \"\"\"A prompt that asks for a summary, with the email kept as data.\"\"\"
+    prompt(instruction = "Summarize the message.", data = [take email])""",
+                   "Checked with the compiler."),
+        "cites": ["12-services-di-permissions:599-658"],
     },
     {
         "id": "laws",
-        "state": "gaps",
+        "state": "ships",
         "title": "Laws are checked. Not trusted.",
         "body": [
-            "Capabilities carry algebraic laws as syntax, and a law with no mode is checked. `drx test` "
+            "Concepts carry algebraic laws as syntax, and a law with no mode is checked. `drx test` "
             "synthesizes a property test for it, draws inputs from a fixed seed, shrinks any failure to a "
             "minimal counter-example and records it in a regression file that later runs replay first. "
-            "A violation fails the run. In the spec, release builds also require checked laws to pass; skipping "
-            "one takes an explicit `trust`, and the test target warns about each.",
-            "Dispatch picks implementations by the laws a type asserts, so the spec counts a false law as a "
-            "miscompilation. An obligation the toolchain could not evaluate is reported as a “coverage shortfall” "
+            "A violation fails the run, and a release build refuses to build until every checked law passes. "
+            "Skipping a law takes an explicit `trust`, and the test run reports each trusted law as unverified.",
+            "Dispatch picks implementations by the laws a type keeps, so a false law would be a silent "
+            "miscompilation. Laws decide membership instead: a type that breaks one is no member of the concept, "
+            "and the report names every site that rested on it. An obligation the toolchain could not evaluate is reported as a “coverage shortfall” "
             "naming its cause, never as a pass, and fails the run unless `--allow-unsupported` is given; a "
             "`todo()` body gets its own `UNIMPLEMENTED` verdict instead of a fake failure.",
         ],
-        "ships": "Ships today in the v0 toolchain, through `drx test` and `drx verify`. Specified, not yet built: "
-                 "release builds gated on laws, and the violation report that lists every site resting on the law "
-                 "and offers exactly two repairs.",
+        "ships": "Ships today: `drx check` checks laws to decide membership, `drx test` and `drx verify` run every "
+                 "obligation, a release build with a failing law builds nothing, and the violation report names each "
+                 "site resting on the law and offers exactly two repairs.",
         "unlike": "Python, Rust and Go state laws like Ord/Hash consistency only in documentation; "
                   "the compiler never sees them. Property testing is a third-party library (Hypothesis, "
                   "proptest) or, in Go, stdlib testing/quick and fuzzing, and someone must restate each law as a "
                   "test by hand.",
-        "sample": ("draconyx", """capability Monoid:
-    def add(transfer self: Self, transfer other: Self) -> Self
-    def zero() -> Self
-    law associative: add(self = add(self = left, other = middle), other = right)
-        == add(self = left, other = add(self = middle, other = right))
-    law identity: add(self = value, other = zero()) == value
+        "sample": ("draconyx", """concept Monoid<T>:
+    \"\"\"Values with an `add` that can be regrouped and a `zero` that changes nothing.\"\"\"
+    add(left: T, right: T) -> T
+    zero() -> T
+    law associative(left: T, middle: T, right: T) checked:
+        add(left = add(left = left, right = middle), right = right) == add(left = left, right = add(left = middle, right = right))
+    law identity(value: T) checked:
+        add(left = value, right = zero()) == value
 
-def median(values: List<Float>) -> Float:
-    todo()  // verdict UNIMPLEMENTED, not a failure
-example median(values = [1.0, 3.0, 2.0]) == 2.0""", "Checked with the compiler."),
-        "cites": ["13-law-verification:4-97", "13-law-verification:320-346", "13-law-verification:401-410", "10-capabilities:101-114"],
+median(values: List<Float>) -> Float:
+    \"\"\"The middle value of `values` once sorted.\"\"\"
+    todo()  # verdict UNIMPLEMENTED, not a failure
+
+example median(values = [1.0, 3.0, 2.0]) == 2.0""",
+                   "A concept with two checked laws, and an example on a function whose body is `todo()`."),
+        "cites": ["13-law-verification:4-96", "13-law-verification:339-363", "13-law-verification:524-539", "10-abstractions:83-102", "10-abstractions:230-252"],
     },
     {
         "id": "calls",
@@ -223,42 +229,45 @@ example median(values = [1.0, 3.0, 2.0]) == 2.0""", "Checked with the compiler."
             "Named arguments are mandatory whenever a declared function with two or more arguments is called by its "
             "name; an unlabelled one is AX0256 unless it is a name matching its label, and the error lists the "
             "callee's labels. Ownership is spelled the same at both ends of a "
-            "call: unmarked is read-only, `borrow` is exclusive mutation, `transfer` consumes. A mismatch is "
-            "AX0306, and using a value after it moved is AX0312.",
+            "call: unmarked is read-only, `borrow` is exclusive mutation, `take` consumes. A wrong verb is AX0306, "
+            "a consumption left unspelled is AX0321, and using a value after it moved is AX0312.",
             "Called by its name, a declared function can't have its arguments swapped by position, a mislabelled "
             "argument shows on the call line, and a mutation or consumption the argument list doesn't spell won't "
             "compile, so an agent reads what happens to each argument from the call alone. The exception is a "
             "pipeline: a stage may borrow the value piped into it and mutate it without `borrow` being written, "
-            "though it consumes a named value only when `transfer` is.",
+            "though it consumes a named value only when `take` is.",
         ],
-        "ships": "Ships today: all three diagnostics.",
+        "ships": "Ships today: all four diagnostics.",
         "unlike": "Rust and Go have no named arguments, so `resize(height, width)` compiles and looks right. "
                   "Python's keywords are optional unless the author opts in. Rust marks `&mut` but not a move, and method calls auto-borrow "
                   "their receiver unmarked. Go passes slices, maps and pointers unmarked while the callee "
                   "mutates through them.",
-        "sample": ("draconyx", """def open(url: String, timeout: Duration) -> Result<Connection>
-def close(transfer conn: Connection) -> Unit
-def send(borrow conn: Connection, request: Request) -> Result<Unit>
+        "sample": ("draconyx", """open(url: String, timeout: Duration) -> Connection
+close(take conn: Connection) -> None
+send(borrow conn: Connection, request: Request) -> None
 
-def ping_once(address: String, ping: Request) -> Result<Unit>:
-    let conn = open(url = address, timeout = seconds(5))?
-    send(borrow conn, request = ping)?  // mutation is spelled here
-    close(transfer conn)  // consumption is spelled here
-    close(transfer conn)  // AX0312: use of moved value `conn`
-    Ok(unit)""", "Checked with the compiler."),
-        "cites": ["05-syntax-conventions:3-4", "04-core-language:251-272", "04-core-language:1650-1666", "04-core-language:1707-1741", "07-memory-model:253-285"],
+ping_once(address: String, ping: Request) -> None:
+    \"\"\"Opens a connection to `address`, sends `ping` once and closes it.\"\"\"
+    conn = ^open(url = address, timeout = seconds(5))    # a failure goes up to the caller
+    ^send(borrow conn, request = ping)                    # mutation is spelled here
+    close(take conn)                                      # consumption is spelled here
+    close(take conn)                                      # AX0312: use of moved value `conn`""",
+                   "What happens to each argument, and which calls can fail, read off the call lines."),
+        "cites": ["05-syntax-conventions:3-4", "04-core-language:290-311", "04-core-language:1992-2004", "04-core-language:2030-2046", "04-core-language:2127-2162", "07-memory-model:376-413"],
     },
     {
         "id": "failure",
         "state": "ships",
         "title": "No exceptions. No missing arms. No mercy.",
         "body": [
-            "There are no exceptions and no try/catch. Failure is `Ok/Err`, and `?` has an exact desugaring into a "
-            "match. A panic is for bugs only, no construct catches it locally, and every panicking operation "
-            "has a total twin that returns `Option`.",
+            "There are no exceptions and no try/catch. The signature says what a function gives; the body says "
+            "how it fails, with `fail`, and the compiler infers what it fails with. Every call that can fail is "
+            "marked: handled on the spot with `fail` arms in a `match`, or passed up with a prefix `^`. A panic is "
+            "for bugs only, nothing catches it on the spot, and every operation that can stop the program has a "
+            "total twin that gives no value instead.",
             "`match` is checked with the constructor-matrix algorithm: a missing case is error AX0601, naming the "
             "uncovered constructors, and a redundant arm is error AX0602, not a warning. An agent sees every "
-            "recoverable failure in a call's type and gets an exact to-do list for any case it missed.",
+            "call that can fail where it is made, and gets an exact to-do list for any case it missed.",
         ],
         "ships": "Ships today: AX0601 and AX0602 as errors.",
         "unlike": "In Python and C++ exceptions are invisible in signatures: you meet them in production. "
@@ -266,18 +275,21 @@ def ping_once(address: String, ping: Request) -> Result<Unit>:
                   "on the spot, and an unreachable arm is only a warn-by-default lint. In Draconyx a redundant arm is "
                   "a hard error.",
         "sample": ("draconyx", """enum PaymentState:
+    \"\"\"Where a payment stands.\"\"\"
     Pending
-    Authorized(Money)
-    Captured(Money)
+    Authorized(amount: Money)
+    Captured(amount: Money)
     Refunded(reason: String, amount: Money)
 
-def label(payment_state: PaymentState) -> String:
+label(payment_state: PaymentState) -> String:
+    \"\"\"A one-word label for `payment_state`.\"\"\"
     match payment_state:
-        Pending       -> "pending"
-        Authorized(_) -> "authorized"
-        Captured(_)   -> "captured"
-// error[AX0601]: non-exhaustive match: missing `Refunded(_, _)`""", "Checked with the compiler."),
-        "cites": ["04-core-language:544-643", "11-type-system:546-609"],
+        Pending -> "pending"
+        Authorized -> "authorized"
+        Captured -> "captured"
+# error[AX0601]: non-exhaustive match: missing `Refunded`""",
+                   "A forgotten case is a compile error that names it."),
+        "cites": ["04-core-language:612-650", "11-type-system:591-621"],
     },
     {
         "id": "determinism",
@@ -298,18 +310,19 @@ def label(payment_state: PaymentState) -> String:
                   "authority model. rust-analyzer routinely runs cargo, build scripts and proc macros.",
         "sample": ("json", """→ {"jsonrpc": "2.0", "id": 1, "method": "initialize"}
 ← {"jsonrpc": "2.0", "id": 1, "result": {"protocol": "jsonrpc-2.0/ndjson",
-   "toolchain": "25bb73aed9ee4627...", "tree": "c002b18c7945ac6c...",
-   "methods": ["delete-def", "delta-card", "diagnostics", "drop-fork", "fork", ...],
+   "toolchain": "1f80fbc8e1c003a0...", "tree": "1902a039f0cc11b1...",
+   "methods": ["audit-trust", "call-path", "callees", "delete-def", "delta-card", ...],
    "authority": ["read: the workspace source tree",
      "read: the synthesized standard library",
      "write: workspace source under the package root",
+     "write: derived state under the package root's .draconyx/ (law verdicts, compiled summaries)",
      "no network", "no home directory", "no process spawning"]}}""",
                    "Real daemon handshake, abridged."),
-        "cites": ["26-agent-interface:31-61", "26-agent-interface:91-134", "25-tooling:501-522"],
+        "cites": ["26-agent-interface:30-79", "26-agent-interface:138-186", "25-tooling:786-791", "32-agent-conformance:468-489"],
     },
     {
         "id": "context",
-        "state": "gaps",
+        "state": "ships",
         "title": "Every surprise in the language, on one 2,000-token card.",
         "body": [
             "Draconyx doesn't wait for models to learn it from the internet: the toolchain brings the knowledge "
@@ -322,24 +335,23 @@ def label(payment_state: PaymentState) -> String:
             "the language departs from what a model expects; the resume card lets an agent pick up work where "
             "it left off.",
         ],
-        "ships": "Ships today: outline, slice, search, `delta-card` and `resume-card` as daemon methods, each card "
-                 "measured over its own text. Card contents are partial: the dialect grammar cards the spec requires "
-                 "are not emitted yet. Token budgets use a declared bytes/4 estimate until the specified reference "
-                 "tokenizer is pinned.",
+        "ships": "Ships today: outline, slice, search, `delta-card` and `resume-card` as daemon methods. Every card "
+                 "is measured over its own text with the pinned reference tokenizer, `o200k_base`: the delta card "
+                 "comes to 1,057 of its 2,000 tokens.",
         "unlike": "Assembling context is the agent framework's job (repository maps, embeddings, file reads); "
                   "the language defines no briefing format and no token budget.",
         "sample": None,
-        "cites": ["26-agent-interface:213", "26-agent-interface:259-264", "26-agent-interface:681", "26-agent-interface:336-354", "26-agent-interface:772-773", "26-agent-interface:298-306"],
+        "cites": ["26-agent-interface:254-274", "26-agent-interface:317-363", "26-agent-interface:516-525", "26-agent-interface:146-150", "26-agent-interface:931-982", "26-agent-interface:1086-1098", "26-agent-interface:379-396"],
     },
 ]
 
 # Big numbers for the stats band (all from STATUS, as of AS_OF).
 STATS = [
-    ("567", "pages of normative spec"),
-    ("63k", "lines of compiler written in Draconyx"),
-    ("143", "diagnostic codes, each explained"),
+    ("733", "pages of specification"),
+    ("90k", "lines of compiler written in Draconyx"),
+    ("262", "diagnostic codes, each explained"),
     ("5", "compiler stages also written in the language"),
-    ("335", "design rulings ratified"),
+    ("439", "design rulings ratified"),
 ]
 
 # The loop the language is built for (spec 01-vision:71: generate, observe, repair).
@@ -353,42 +365,45 @@ LOOP = [
 # The whole language: (group title, [(name, pitch, status)]). status: ships | partial | specified.
 FEATURE_GROUPS = [
     ('Types and algebra', [
-        ('Capabilities: named, but never declared', 'Write the functions and the type conforms. No impl blocks, and no two modules can give one type two meanings.', 'ships'),
-        ('Algebraic laws as code, property-tested by default', 'In C++ and Rust, associativity is a line in the docs. In Draconyx it is a `law` line, and a false one fails `drx test` with a shrunk counter-example.', 'partial'),
-        ('Dispatch on algebra', 'Write the parallel reduction once. The compiler picks it only for types that assert the laws that make it correct.', 'ships'),
-        ('Generics that infer the hard parts', 'Variance, associated types and const-generic shapes are worked out by the compiler, not annotated by the model.', 'partial'),
+        ('Concepts: named, but never declared', "Write the functions and the type has the concept, as long as it keeps the concept's laws. No impl blocks, and no two modules can give one type two meanings.", 'ships'),
+        ('Algebraic laws as code, property-tested by default', 'In C++ and Rust, associativity is a line in the docs. In Draconyx it is a `law` line in a concept, and a type that breaks it fails `drx test` with a shrunk counter-example.', 'ships'),
+        ('Dispatch on algebra', 'Write the parallel reduction once. The compiler picks it only for types that keep the laws that make it correct.', 'ships'),
+        ('Generics that infer the hard parts', 'Variance and const-generic shapes are worked out by the compiler, not annotated by the model.', 'ships'),
     ]),
     ('Memory and ownership', [
         ('Ownership spelled at both ends', 'Every handover at a call is written where the value is given and again where it is taken, so a model never has to guess who owns what.', 'ships'),
         ('Borrow checking with zero lifetime syntax', "Rust-grade memory safety without a single `'a`: you never write a lifetime, and the compiler works out every one.", 'ships'),
         ('Views inferred, not annotated', 'Put a borrow in a struct and it becomes a safe view on its own: no keyword, no lifetime parameter.', 'ships'),
-        ('No garbage collector, deterministic drops', 'No tracing GC and no pauses: each value is freed the moment its last owner lets go.', 'partial'),
+        ('No garbage collector, deterministic drops', 'No tracing GC and no pauses: each value is freed the moment its last owner lets go.', 'ships'),
     ]),
     ('Concurrency and distribution', [
-        ('Data-race freedom by construction', 'No Send, no Sync, no annotations: the ownership authorities you already write decide what may cross a task boundary.', 'partial'),
-        ('Structured concurrency with `with nursery`', "Tasks can't leak, and child tasks may mutably borrow the parent's data with no locks.", 'partial'),
-        ('Move-only channels and a fair, replayable `select`', 'Every message exists in exactly one place at a time, and `select` timeouts run on a Clock you can fast-forward in tests.', 'partial'),
-        ('Actors and OTP supervision without exceptions', 'Erlang-style let-it-crash supervision trees, with errors staying plain Ok/Err data.', 'partial'),
-        ('Remote values that cannot hide failure', 'In Draconyx a network call never looks like a local call: `remote` is in the type, and every way it can fail is a value you have to match on.', 'partial'),
-        ('Bundled distributed runtime', 'Cluster membership, Raft consensus and CRDTs live in every binary as ordinary types: no ZooKeeper, no Consul, no sidecar.', 'specified'),
-        ('Hot code swap with checked state migration', 'Erlang-style hot swap for compiled code: the swap point is proven safe, state is handed over as a linear move, and migrations are functions the compiler checks.', 'specified'),
-        ('Native binaries today; unikernel and Wasm next', '`drx build` produces a native executable; the same source targets a unikernel that needs no OS underneath, or a WebAssembly module.', 'partial'),
+        ('Data-race freedom by construction', 'No annotations to write: sendability is inferred from the ownership authorities you already write, and it decides what may cross a task boundary.', 'ships'),
+        ('Structured concurrency', 'Several tasks run together through an ordinary standard-library function that takes the functions to run. The first failure stops the rest.', 'ships'),
+        ('Move-only channels and a fair, replayable `select`', 'Every message exists in exactly one place at a time, and `select` timeouts run on a Clock you can fast-forward in tests.', 'ships'),
+        ('Actors and let-it-crash supervision', 'Erlang-style actors under supervision trees that restart what crashed, with no exceptions anywhere.', 'ships'),
+        ('Remote values that cannot hide the network', 'In Draconyx a network call never looks like a local call: `remote` is in the type, and reading a remote value as if it were local is a compile error.', 'ships'),
+        ('Bundled distributed runtime', 'Cluster membership and failure detection come with every binary, and CRDTs are ordinary types: no ZooKeeper, no Consul, no sidecar.', 'ships'),
+        ('Raft consensus as an ordinary type', '`Replicated<T, n>` keeps a value on a quorum of `n` nodes with linearizable reads and writes, inside the program: no external coordinator.', 'specified'),
+        ('Live code swap in development, with checked state migration', 'In development, a running program loads a new version of a module beside the old one. The swap point is proven safe, state is handed over as a linear move, and migrations are functions the compiler checks. Release builds restart instead; the unikernel never swaps.', 'partial'),
+        ('Native binaries, and one back end: LLVM', '`drx build` produces a native executable through the Rust bootstrap compiler\'s back end. The language has one back end, LLVM, and the LLVM back end written in Draconyx builds a native program that links no Rust.', 'ships'),
+        ('Unikernel and WebAssembly targets', 'The same source targets a unikernel that needs no OS underneath, or a WebAssembly module.', 'specified'),
     ]),
     ('Safety and effects', [
-        ('Services and dependency injection', 'Declare a service, `provide` it once in main, and every function underneath can use it. You get no constructor plumbing, no effect rows, and a compile error if a provider is missing.', 'ships'),
-        ('Object-capability permissions (no ambient authority)', "No global `open` and no importable `Network`: the only way code gets authority is to be handed it. Starting from main's `System` powerbox, it can only be narrowed, never widened.", 'partial'),
-        ('`tainted`: a typed defense against prompt injection', "Model output, console input and the command line are born `tainted`. Passing one to an unmarked parameter, or to a prompt's instruction slot, is compile error AX1022.", 'partial'),
-        ('`trust` blocks: unsafe code that names its reason', 'Draconyx has no `unsafe`. It has `trust "why this holds":`, where every unchecked call site carries a mandatory written rationale an auditor can grep.', 'partial'),
+        ('Services and dependency injection', 'A function uses a service without anyone passing it in. You get no constructor plumbing, no effect rows, and a compile error when nothing above a function supplies a service it uses.', 'ships'),
+        ('Object-capability permissions (no ambient authority)', "No global `open` and no importable `Network`: the only way code gets authority is to be handed it. Starting from main's `System` powerbox, it can only be narrowed, never widened.", 'ships'),
+        ('`tainted`: a typed defense against prompt injection', "Model output, console input and the command line are born `tainted`. Passing one to an unmarked parameter, or to a prompt's instruction slot, is compile error AX1022.", 'ships'),
+        ('`trust` blocks: unsafe code that names its reason', 'Draconyx has no `unsafe`. It has `trust "why this holds":`, where every unchecked call site carries a mandatory written rationale an auditor can grep.', 'ships'),
         ('With blocks: one keyword for receiver, destructuring and scoped release', "One `with` covers Python's context managers, Rust's RAII and multi-value destructuring, even at the end of a pipeline.", 'ships'),
     ]),
     ('AI and numerics', [
-        ('Shapes and named axes in the type', "A tensor's dtype, axis names and sizes belong to its type, so a tensor passed where a signature declares another shape fails at compile time, before any array is allocated. The standard library's tensor functions check only the dtype so far.", 'partial'),
-        ('grad, vmap, jit as typed function transforms, with schedules certified by laws', 'Autodiff, auto-batching and fusion are plain functions over functions, and schedule rewrites are gated by laws instead of being trusted.', 'specified'),
-        ('Hygienic, typed dialects (macros, elab, comptime)', 'Dialects extend the syntax with Racket-grade hygiene and type-directed elaboration, without textual macros.', 'specified'),
+        ('Shapes and named axes in the type', "A tensor's dtype, axis names and sizes belong to its type, so a tensor passed where a signature declares another shape fails at compile time, before any array is allocated.", 'ships'),
+        ('grad and vmap as typed function transforms, with schedules certified by laws', 'Autodiff and auto-batching are plain functions over functions, and schedule rewrites are gated by laws instead of being trusted.', 'ships'),
+        ('`jit`: captured and fused array code', '`jit` is a function transform in the same family as `grad` and `vmap`: it captures a computation as a lazy array graph and fuses it, and it composes with both.', 'specified'),
+        ('Hygienic, typed dialects (macros, elab, comptime)', 'Dialects extend the syntax with Racket-grade hygiene and type-directed elaboration, without textual macros.', 'ships'),
     ]),
 ]
 
-# Head-to-head: only rows where Draconyx ships today. Cells verified per language (2026-10-18).
+# Head-to-head: only rows where Draconyx ships today. Cells verified per language (2026-11-16).
 VERSUS_LANGS = ['Draconyx', 'Python', 'Java', 'Kotlin', 'C#', 'C++', 'Rust', 'Go', 'Swift', 'Zig', 'Elixir', 'Haskell', 'Mojo']
 VERSUS = [
     ('Every error has a code and an explain entry, with JSON repair edits from the compiler itself', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'no', 'no', 'part', 'no']),
@@ -419,7 +434,7 @@ VERSUS_NOTES = {
     'C#': [
         'Every error has a code and an explain entry: Every Roslyn diagnostic has a stable CSxxxx ID, and analyzers/code fixes ship in the SDK (dotnet format applies them). There is no built-in explain command; explanations live in the docs on learn.microsoft.com.',
         'Mutation and moves spelled in the argument list of every call: `ref`/`out` (and optionally `in`) must be written at the call site. Mutation through reference-type arguments and receivers is unmarked, and there is no move semantics.',
-        'Missing and redundant match arms both rejected: A subsumed/unreachable arm is an error (CS8510 in switch expressions, CS8120 in switch statements). A non-exhaustive switch expression is only warning CS8509, switch statements get no exhaustiveness check, and there are no closed union types even in C# 14.',
+        'Missing and redundant match arms both rejected: A subsumed/unreachable arm is an error (CS8510 in switch expressions, CS8120 in switch statements). A non-exhaustive switch expression is only warning CS8509, even over the union types C# 15 added, and switch statements get no exhaustiveness check.',
     ],
     'C++': [
         'Every error has a code and an explain entry: There is no single reference compiler. MSVC gives errors stable codes (C2065, C2440...) with an online docs entry for each, but it has no built-in explain command. Clang and GCC emit machine-readable fix-its (clang -fdiagnostics-parseable-fixits; GCC -fdiagnostics-format=json/sarif), but GCC and Clang errors have no stable numeric codes.',
@@ -440,15 +455,15 @@ VERSUS_NOTES = {
         'Ownership and borrows checked at compile time: Swift uses ARC, not a tracing GC. It has no stable lifetime syntax (@lifetime for ~Escapable is still experimental). ~Copyable types reject use-after-consume statically.',
     ],
     'Zig': [
-        "Mutation and moves spelled in the argument list of every call: This goes against the rule's 'no' on purpose. Zig parameters are immutable, so a caller has to write &x at the call site to let a callee mutate a local, much like Rust's &mut. Method receivers auto-take the address, an already-held pointer passes unmarked, and moves don't exist.",
+        "Mutation and moves spelled in the argument list of every call: Zig parameters are immutable, so a caller has to write &x at the call site to let a callee mutate a local, much like Rust's &mut. Method receivers auto-take the address, an already-held pointer passes unmarked, and moves don't exist.",
         'Missing and redundant match arms both rejected: On an enum or tagged-union switch, a missing prong is a compile error, so is a duplicate prong, and so is an else prong once every case is handled. (Integer switches need an else.)',
     ],
     'Haskell': [
-        "Every error has a code and an explain entry: Since 9.6, GHC tags most diagnostics with [GHC-nnnnn] codes, and -fdiagnostics-as-json emits them, but GHC ships no explain command. The Haskell Foundation's separate error index documents only about 141 codes, and the JSON hints are prose strings, not machine-applicable repair edits.",
+        "Every error has a code and an explain entry: Since 9.6, GHC tags most diagnostics with [GHC-nnnnn] codes, and -fdiagnostics-as-json emits them, but GHC ships no explain command. The Haskell Foundation's separate error index documents only about 130 GHC codes, and the JSON hints are prose strings, not machine-applicable repair edits.",
         'Missing and redundant match arms both rejected: -Woverlapping-patterns (redundant arms) is on by default and -Wincomplete-patterns (missing arms) comes with -W or -Wall, but both are warnings; rejecting a match takes -Werror or -Werror=incomplete-patterns.',
     ],
     'Mojo': [
-        "Named arguments required at every multi-argument call of a declared function by its name: Mojo supports Python-style keyword-only parameters (after `*` in the signature), so an author can opt in to required labels, as in Python. The default is optional. The rule's draft lists Mojo as no, but scoring it the same as Python means part.",
+        "Named arguments required at every multi-argument call of a declared function by its name: Mojo supports Python-style keyword-only parameters (after `*` in the signature), so an author can opt in to required labels, as in Python. The default is optional, so Mojo scores the same as Python.",
         'Mutation and moves spelled in the argument list of every call: Ownership transfer is written `buffer^` at the call site, but passing to a `mut` parameter is unmarked.',
         "Ownership and borrows checked at compile time: Static move and borrow checking (use-after-move, argument exclusivity, and reference-invalidation diagnostics in 1.0), ASAP destruction with no tracing GC, but explicit origin parameters (Mojo's lifetimes) exist. That is two of three.",
     ],
@@ -467,14 +482,14 @@ NAME_SOURCE = ("Attic Inscriptions Online, ML 86: decree to republish Draco's la
                "https://atticinscriptions.com/inscription/ML/86")
 
 STATUS = [
-    ("Specification", "31 normative sections, a 567-page PDF with 575 code blocks that the corpus tool turns into test oracles."),
+    ("Specification", "32 sections, a 733-page PDF with 668 code blocks that the corpus tool pulls into the compiler's tests."),
     ("Toolchain", "Lexer, parser, resolver, type checker, ownership checker, interpreter with law runner, canonical formatter, agent daemon and native code generation."),
-    ("Agent daemon", "20 JSON-RPC methods, among them outline, get-def, slice, search, put-def, put-defs, fork, verify, `delta-card` and `resume-card`."),
-    ("Diagnostics", "143 codes, each with an explain entry; a test enforces the coverage."),
-    ("Self-hosting", "The lexer, parser, resolver, type checker and ownership checker are written in Draconyx itself, about 63,700 lines, and each agrees with its reference implementation on the whole shared test corpus. The back end is still written in Rust."),
-    ("Latest full gate", "6 November 2026, all green on the shared test corpus: lexer 798/798, parser 1684/1684, resolver 1361/1361, type checker 1517/1517, ownership 1517/1517, native code vs interpreter 151/151."),
-    ("Design record", "335 numbered rulings ratified into the spec; four example packages, among them an online shop, event sourcing and FlashAttention, and a 3,553-line standard library generated from the spec."),
-    ("Release", "Pre-release research project, first commit 20 July 2026. The first public release comes when the first compiler written entirely in Draconyx is ready."),
+    ("Agent daemon", "36 JSON-RPC methods, among them outline, get-def, slice, search, who-calls, what-breaks-if, put-def, put-defs, fork, verify, `delta-card` and `resume-card`."),
+    ("Diagnostics", "262 codes, each with an explain entry; a test enforces the coverage."),
+    ("Self-hosting", "The lexer, parser, resolver, type checker and ownership checker are written in Draconyx itself, about 90,000 lines. As of 12 November 2026 each one gave the same output as its reference implementation on the whole shared test corpus. The binaries `drx build` makes come from the Rust bootstrap compiler's own back end; the LLVM back end, written in Draconyx, builds a native program that links no Rust."),
+    ("Native code", "`drx build` compiles a package to a native binary that prints and exits exactly as the interpreter runs it, on all 159 back-end unit programs."),
+    ("Design record", "439 design rulings ratified into the spec; six example packages, among them an online shop, event sourcing and FlashAttention, and a 4,925-line standard library generated from the spec."),
+    ("Release", "Pre-release research project, first commit 20 July 2026. The first public release is the first compiler written entirely in Draconyx."),
 ]
 
 
@@ -551,7 +566,7 @@ OPINIONS_LEDE = ("We gave the Draconyx specification to six AI models and asked 
                  "None knew who was asking.")
 OPINIONS_METHOD = (
     "The questions went through a service that calls each model. Asked between "
-    "29 October and 2 November 2026. The excerpts are verbatim: \u201c\u2026\u201d marks a cut, and [Draconyx] stands "
+    "29 October and 2 November 2026, on the spec as it stood then. The excerpts are verbatim: \u201c\u2026\u201d marks a cut, and [Draconyx] stands "
     "where an answer used the language's earlier working title."
 )
 OPINIONS_CREDITS = "Logos are trademarks of their owners and only identify the models quoted."
@@ -664,6 +679,142 @@ CHANGELOG_NOTE = (
     "those before 18 October 2026, when the language took its name."
 )
 CHANGELOG = [
+    {"date": "2026-11-15", "title": "One LLVM back end; drx publish, tune and replay; cluster substrate and Merged values", "items": [
+        ("Native code", "The spec now names one code generator, LLVM: `dev` and `test` builds run it without the optimizer, `release` and `proof` with it. The tier contract binds the release optimizer, so a release build prints, byte for byte, what a `dev` build of the same program prints and exits with the same status. `Float` arithmetic is IEEE 754 binary64 at every tier with no fast-math, and the only law-driven rewrites are a catalogue of three over folds (split fold, strided accumulation, parallel reduction), each consuming only exact laws at or above the target's minimum mode.",
+         "78100e8e6f b6ea2a21e8 05e74e38d1"),
+        ("Toolchain", "`drx publish` is new. A path dependency is `AX0202`, and a missing version, or one below the minimum that the changes to the public surface since the last published bundle force, is `AX0203`. The package must also match its lock, check, and pass verification at `release`. `--dry-run <dir>` writes the bundle (package card, compiled summaries, surface and trust records, source) into a local registry directory, and a package card over its budget is published whole with the warning `AX0204`.",
+         "c43dbc0333 05e74e38d1"),
+        ("Toolchain", "`drx tune` enumerates an `@autotune` block's search space in source order and decides every law gate before measuring: a candidate whose gate fails is reported with its code, such as `AX0701`, and never runs. The fastest measured candidate is written as a `_pinned` schedule, with a `[[schedule]]` row in an existing `draconyx.lock`, while `drx bench` runs the same search and writes nothing. `drx run --record <dir>` records a run's service traffic and a hash of every training step, and `drx replay` re-runs the program from that recording alone, up to a given step, and reports the first step whose hash differs.",
+         "480cba9888 a37dfdd841"),
+        ("Syntax", "A module that activates a dialect with `use extension` now parses that dialect's forms where they are written. Each dialect is checked when it loads, and so are the dialects one module activates against each other, under eight new codes from `AX0901` to `AX0908`, such as two dialects reserving one keyword (`AX0907`). `drx gen schema` writes a PostgreSQL database's tables as a checked-in module of `Query` `table` declarations. A column outside its type map is `AX0826`, and `--check` reports drift as `AX0827`.",
+         "874319ac1b a17b82d388 a89858fef4 05e74e38d1"),
+        ("Agent daemon", "Several clients can now reach one workspace daemon at once, each on its own connection, and `initialize` gives each a client identity. A fork's one writer is the client that created it. A write, `drop-fork` or `merge-fork` from any other client is the new error kind `fork-writer-held`, and asking for an identity another live connection holds is `client-identity-held`.",
+         "dee41152cb 05e74e38d1"),
+        ("Standard library", "Every binary now carries a cluster substrate: SWIM membership with gossip, failure detection decided by majority, joining through one seed address, and 256 shards rebalanced on every join and leave. The `[deploy]` key `cluster` switches it on, `cluster_seed` and `cluster_listen` give its addresses, and the environment can override each. `std.dist` gains `Merged<T>`, a replicated `Mergeable` value whose writes and reads are local on either side of a partition and whose replicas converge through `T`'s own `merge` once the partition heals.",
+         "65f5ad3483 8b8a2c3129 05e74e38d1"),
+        ("Safety", "Each `[native]` library's `[permissions]` row is now checked by the library's mode. An `in_process` library whose row is missing or is a list is `AX0830`, with an edit that writes `\"unbounded\"`, and `\"unbounded\"` on any other row is `AX0831`. A sandboxed or isolated library with no row is budgeted to nothing.",
+         "95fdce7632 05e74e38d1"),
+        ("Types", "An explicit `from` whose argument already has the target type is now the identity conversion and needs no conversion function. A `from` into a type with no conversion from the argument's type is now one `AX0420` naming the missing conformance, such as `From<Int>`, instead of `AX1001` beside `AX1007`. `Pytree` is now derived structurally: a struct, tuple, `List` or `Array` through which a tensor is reachable is one, so the standard library's tree walks and checkpoint functions carry their `Pytree` bounds.",
+         "3f571790a6 515008468a"),
+    ]},
+    {"date": "2026-11-14", "title": "Cloning a type parameter's value needs a Clone bound", "items": [
+        ("Types", "`clone x` on a value of a type parameter now needs `where T: Clone`. Without the bound it is `AX0420` at the operand (\"type parameter `T` has no `Clone` bound\"). Before, it checked clean and an instantiation could copy a type with no `Clone`.",
+         "3c40ae6654"),
+    ]},
+    {"date": "2026-11-13", "title": "Generators with yield; naming rules enforced; a pinned solver discharges laws", "items": [
+        ("Syntax", "A function declared `-> Generator<T>` now gives its values one at a time with `yield`, and `for` walks the generator a call returns. The call runs none of the body: each step runs it to the next `yield`. `yield` is a reserved word; a `yield` outside a generator is `AX0452`, and a generator body that gives back any value other than another generator is `AX0453`.",
+         "8b27780556 4b466065b7 8e68f1088e 4da3ce9068 a3c91e95c4"),
+        ("Syntax", "The compiler now checks naming rules as errors. Types and constructors are UpperCamel, and every value name, `const`s included, is lower_snake (`AX1201`). No type may take the name of a prelude type (`AX1216`), and a function's leading word must keep its promise: an `is_` function returns `Bool`, and an `into_` function takes its first parameter with `take` (`AX1205`). The standard constants are now `int_min` and `int_max`.",
+         "65cab49641 c8dea6338b"),
+        ("Types", "`some C` is removed: written in a type it is `AX0296`, and a function returns its named type instead, so std's iterators are named types such as `Chars`. `any C` now appears only inside data and as a result whose type is decided at run time. A parameter of type `any C` is `AX0434`, and an `any C` result that always returns one type gets the warning `AX0435`.",
+         "e67465e676 5f62f6da94"),
+        ("Laws", "At the `release` and `proof` targets, a solver pinned in the toolchain now discharges each `proven` law that its own proof does not close, and a law it cannot prove fails the build (`AX0711`). At those targets `drx check` now also asks a solver to prove each refinement the checker left open, reporting `AX1057` for one it cannot prove, and dev and test builds check such refinements at run time. A law's `proof:` block is now checked: a goal left open is `AX0722`, and a proof that is not total, such as one that appeals to its own law, is `AX0745` to `AX0748`.",
+         "796b0853a9 ab7f5ce4f3 0593f9c4d2 da2132bc1b 1a922c9256 347e5948ec b8ec8d5b9d 1c8cbcb40b"),
+        ("Safety", "The manifest's `[permissions]` table is now enforced. A dependency that reaches a permission its row does not grant is `AX0507`, and grants narrow along the dependency graph, because a package passes on only what it holds. The new `drx add` writes a dependency's row and asks which permissions to grant, and `drx run` now gives `main` a sandboxed `System` by default, whose `Network` records and refuses every request; `--live` gives it the full powerbox.",
+         "9f221f0c4e 4308769dc4 6543ee3d01 63b97d7c9d a02dbdd69c"),
+        ("Toolchain", "The new `drx lock` writes `draconyx.lock`, which pins the toolchain and every path dependency by hash; an input that no longer matches it is `AX0822`, and a `release` or `proof` build then builds nothing. The compiler now checks the manifest's `edition` (`AX0212` for an unknown one), and `drx migrate --edition` moves a package between editions. A package can order its modules in `[[layer]]` tables in `draconyx.toml`, where a reference up a layer is `AX0817`, and a module under an `internal/` folder can be reached only from inside its parent's subtree (`AX0281`).",
+         "601c775ba8 e395aade1c 876ce64507 a02dbdd69c d06914af48"),
+        ("Agent daemon", "The agent daemon now serves `rename-def`, which rewrites every reference to a definition in one transaction. It also serves `why-conformance` and `why-not`, which use recorded witnesses to explain why a type does or does not conform to an abstraction. `callees`, `call-path` and `provenance` answer questions that otherwise mean reading one definition after another, `search` and `outline` now cover the standard library and dependencies, and a `put-def` now adds, in the same write, the plain `use` line its definition needs when exactly one import fits.",
+         "2c4965bc46 00aa0c1d6e c8b1df645a c4d32d5874 aac5396e8f 3be2d03cd5 aa592f1689"),
+        ("Types", "The standard tensor operations, such as `matmul`, the reductions and `transpose`, now check shapes at each call: a `matmul` whose inner axes disagree is `AX1001`, naming the axis and both extents, and each result carries its computed shape on to the next operation. A `?` axis now stands for an extent known only at run time, and the checker types `as_static` as opening it to a fixed size.",
+         "4c2394274d ec44aac8e6"),
+    ]},
+    {"date": "2026-11-11", "title": "Consts computed at build time; match arms narrow; remote enforced; drx fix", "items": [
+        ("Types", "A `const` initializer is now evaluated once, at build time, and may call only pure functions: one that reaches a service, a permission, an `extern` or a `trust global` is `AX0442`. One that traps is `AX0443`, one that exceeds the evaluation quota `AX0444`, one the build cannot evaluate `AX0445`, and consts that read each other `AX0446`. The spec now defines these rules in a Constants paragraph.",
+         "55c52cf0e3 abb5798f3d 72c5ddaea0 639cade1d3"),
+        ("Types", "A `match` arm on a variant with named fields may now name just the variant (`Refunded ->`). Inside it, the matched value is narrowed to that variant, so its fields are read with `.` (`payment.amount`). Reading another variant's field, or reading after a write to the value, is `AX1002`. A `match` over a call whose arms read payload fields is the new `AX0450`, with an edit that names the value first.",
+         "f1c6de4cc7"),
+        ("Safety", "`remote` is now enforced: a field read on a remote value is `AX0447`, a `remote T` used where a plain `T` is expected is `AX0448`, and `share` or `watch` of a remote value is `AX0308`. The value a `sandboxed` or `isolated` foreign call returns is now `tainted`, like network input, so it reaches an unmarked position only through `endorse` (`AX1022`).",
+         "5e7a534d75 1070efdade"),
+        ("Toolchain", "`drx fix` now applies every suggested edit marked `always` as one transaction, writing all files or none, and then checks again. A `maybe` edit is applied only when it is passed back with `--edits`. More diagnostics now carry edits, and each `maybe` edit states its consequence: `AX0601` adds the missing arms, `AX1003` the missing fields, `AX0321` offers `share`, `take` or `clone`, and `AX1005` and `AX1008` write the annotation or label.",
+         "36d9d5df42 597d14d38b cde84b5a89"),
+        ("Laws", "`drx build`, `drx test` and `drx verify` now take `--target` with `dev`, `test`, `release`, `proof` or a profile from the manifest's `[targets]` table; an unknown target is `AX0727`. `dev` runs no law, `release` fails on a failing law, witness or test, and `proof` also refuses each `trust` or `checked` law and each `proven` law not discharged. The new `drx suggest-laws` proposes laws for a module's operations and keeps only those that hold on every sample it runs.",
+         "2f6d192640 14ef278690"),
+        ("Agent daemon", "The agent daemon now serves `who-conforms`, `what-conforms`, `explain`, `explain-dispatch`, `suggest-laws` and `audit-trust`. `drx audit trust` prints the last of these: every `trust` block, conformance and global, with its rationale, module and hash. The spec now has an appendix that fixes the interface's method names, payload schemas, error kinds and framing.",
+         "359210ee8c 4d4fa94a70 bd1e303d66 57fbd6d187 46c44d85a6"),
+        ("Native code", "An `extern \"C\"` function in `in_process` mode now runs in `drx run` and in built binaries. The library is opened or linked and called directly, with `Int`, `Float`, `Bool`, `Byte` and `Ptr` values crossing the boundary. Any other parameter type, or more than six integer or eight `Float` parameters, is the new `AX0811`, which `drx run` and `drx build` report before any code runs.",
+         "39c9a0adf1"),
+        ("Standard library", "`graphemes`, `words`, `sentences`, `normalize`, `to_upper`, `to_lower` and `trim` now follow Unicode 17.0.0, the same in the interpreter and in native code. Segmentation follows UAX #29, and `normalize` handles NFC, NFD, NFKC and NFKD. `std.text` gains `is_whitespace`, `is_xid_start`, `is_xid_continue` and `general_category`.",
+         "ecde22152b e97de4826c"),
+    ]},
+    {"date": "2026-11-09", "title": "Abstraction defaults now fill bare bounds", "items": [
+        ("Types", "An abstraction's default type arguments now apply wherever the abstraction is named: in a `where` bound, a `require` clause and a `when` arm, as in a type. Given `abstraction Shl<Rhs = Int>`, a bare `where T: Shl` is now `where T: Shl<Int>`, so `value << 1` checks, and a type that shifts by a `String` meets neither. The spec now says so.",
+         "8056dbd98e"),
+    ]},
+    {"date": "2026-11-08", "title": "New comment, function and binding forms; failure inferred; lock order checked", "items": [
+        ("Syntax", "`#` now starts a comment, and a `\"\"\"` block is a declaration's documentation: directly under a function's header, first in a type's body, or directly above a `const`. A block anywhere else is the new `AX0439`, and an unclosed one is `AX0104`. The spec now defines both forms.",
+         "a1fce4aec0"),
+        ("Syntax", "A function can now be declared without `def`, as `find(id: Int) -> User:`; declared this way it writes its result type, and a function that gives nothing writes `-> None` (leaving it out is `AX0264`). `@export` and `@strict` now mark a declaration, one per line above it; in a module that writes `@export`, an item without it is hidden from other packages, and exporting a function that shows a hidden type is `AX0240`.",
+         "8a9d07b6cb 01e4eda343"),
+        ("Syntax", "Inside a function, the first `=` on a name not in scope now declares it, without `let`: `count = 0`, `rate: Float = 0.05`. Declaring such a name again in its scope, or shadowing it with another binder, is the new `AX1029`, and a name declared this way whose value no path reads, such as the typo `totl = total + 1`, is the new `AX0319`.",
+         "095ca9411d"),
+        ("Syntax", "Compound assignment (`+=`, `-=`, `*=` and the others) and the statements `x++` and `x--` now exist; `y = x++` is `AX0268`, and `drx fmt` now writes `x = x + y` as `x += y`. `**` is now a power (`-x ** 2` is `-(x ** 2)`), `~x` a bitwise NOT, and `not in` the negated `in`.",
+         "b319d6bab2"),
+        ("Types", "A function can now fail by writing `fail value` in its body, with nothing about failure in its signature: the checker infers which functions can fail, through function values too. A call that can fail is handled where it is written, by a `match` with `ok` and `fail` arms, or its failure is passed up to the caller; a call that does neither is the new `AX1040`. `drx run` and built binaries both run these forms.",
+         "23d18bd6cc 79d99b0df2 eb10f75e74 a217e1158b 8eaae3c359"),
+        ("Concurrency", "A lock is not re-entrant, and the checker now refuses taking a lock again while the same task holds it, directly or through a chain of calls (the new `AX1055`). Taking two locks in opposite orders anywhere in a program, which can leave two tasks waiting on each other forever, is the new `AX1056`, and the spec now has a section on lock order. At run time a lock is now held until its guard ends, in `drx run` and in built binaries.",
+         "909edf34f9 ecda0ec027"),
+        ("Safety", "Process-global mutable state is now declared with `trust global`, which replaces `trust static` (`AX0296`, with the repair), and only in a module the root manifest lists in `proof-allowlist`; anywhere else it is the new `AX0285`. Assigning to a global now runs in `drx run` and in built binaries. A dependency whose `[dependencies]` row says `trust = false` may now hold no trust code at all (`AX0807`).",
+         "f4f764f621 b1952f0fe2"),
+        ("Standard library", "`Console.print` and `Console.write` now cannot fail: output that never reaches its stream, through a broken pipe or a full disk, is lost output, the program runs to its end, and the run exits 1 with a lost-output message. `Map` and `Set` now have `is_empty` and `clear`; a `for` loop over a `Map`, `OrdMap` or `OrdSet` now works, borrowing or with `take`, and a plain `for` over a `Set` now borrows instead of asking for a copy.",
+         "ac786ae944 606c34e307"),
+    ]},
+    {"date": "2026-11-07", "title": "Taint follows computation; raw pointers stay in trust; law shapes checked", "items": [
+        ("Safety", "A value computed from a `tainted` or `secret` one now keeps its marker through arithmetic, comparison and logic operators, pattern binders, destructuring and field reads, and a `tainted` one through string interpolation, so each of these routes is `AX1022` or `AX1023` where the value meets an unmarked position. Branching on such a value stays legal. `endorse` and `declassify` now refuse a view as their value (`AX0438`), and new `to_bytes` and `to_string` overloads keep the marker on the owned copy.",
+         "d2ace5dd81 9e98365d4d"),
+        ("Safety", "A raw `Ptr<T>` can now be created only inside a `trust` block (`AX0721` elsewhere), and neither a `Ptr` nor a struct holding one is `Sendable` or `Foreign` unless a trust conformance vouches for it. A trust conformance of `Sendable` on a generic type now holds only where its type arguments are `Sendable`.",
+         "38169150b3"),
+        ("Standard library", "A live `FileSystem` now has a root, the package root under `drx run` and the launch directory for a built binary, and nothing leaves it: host-absolute paths, paths with a `..` component and symbolic links that lead out of the root are refused. `drx run --fs-root <dir>` anchors it elsewhere, and the new `FileSystem.kind` says what a path names, following links.",
+         "d35ea5168d 2761388dfd"),
+        ("Laws", "A law's shape is now checked at `drx check`: a verification mode on a `pass_rate` law is `AX0716`, a rate outside (0, 1] `AX0717`, a bare predicate body without `pass_rate` `AX0718`, a rate or tolerance that is not a `Float` literal `AX0719`, and a qualifier that disagrees with the body's operator `AX0720`. Inside a law body a free variable no longer supplies the argument label it spells, so `minus(left, right) == minus(right, left)` is `AX0256` instead of a law that compares a call with itself.",
+         "5def3eea4f c9a29c65aa"),
+        ("Types", "An integer literal outside its type's range, such as an `Int` outside the signed 64-bit range or a `Byte` above 255, is now the compile error `AX0436`; before, it ran as 0 or as an `Int`. A `\\u{...}` escape naming a surrogate or a value above `10FFFF` is now `AX0106` in a character literal too, and a map literal with `Float` keys is refused (`AX0421`).",
+         "3304450521"),
+        ("Types", "A refinement `v in 0..4096` over integer-literal bounds now means `0 <= v and v < 4096`, so the two spellings are one type with one content hash, and a guard written one way proves the other. Two refinements are now the same type only when the names in their predicates also resolve to the same things, not merely when their text matches.",
+         "1239e342d9 d627a31268"),
+        ("Interpreter", "A run of consecutive statement-level `when` arms now runs as one cascade, in `drx run` and in built binaries: the first arm whose test holds runs, and none need hold. Such a statement now discards its arm's value, and a `break` or `continue` with no loop around it in the same function is the new `AX0430`.",
+         "25c5d0eaf9"),
+        ("Toolchain", "Content hashes now cover five parts of a definition they missed: tuple labels, the verb of a `for` loop or a lambda parameter, a lambda parameter's default, `trust def`, and a written type the compiler keeps less of, such as `@heap Grid<Int, Int>`. A closure hash now also moves when a `const`, a field default, a chosen witness or a standard-library item it reads changes.",
+         "a1f07d53fe b666b65b0f"),
+    ]},
+    {"date": "2026-11-06", "title": "Abstractions met by inference; generic functions without type lists; laws decide membership", "items": [
+        ("Types", "A type now satisfies an abstraction when functions with its operations exist for it in any module the program uses; `extend` blocks and the `include`, `!include` and `asserts` clauses are removed (`AX0296`, with a fix). A function may have the body `derived` for `compare`, `hash`, `generate` and `shrink`. Two modules that each supply the same abstraction's operations for one type are `AX0422`, settled by a `[conformances]` row in `draconyx.toml`.",
+         "b930b3568c"),
+        ("Types", "A function now declares no `<...>` list: a single capital letter in its signature is a type variable, and a single lowercase letter in a size position a size variable. A call writes no type arguments, and a variable nothing fixes by the end of the statement holding the call is `AX1025`. Axes are passed as labeled arguments, as in `softmax(tensor = logits, over = classes)`.",
+         "e9b4daad17"),
+        ("Laws", "A type is now a member of an abstraction only when it has the operations and breaks none of the laws, which the build checks and caches. A bound at a type that breaks a law is `AX0432` with the counterexample, a bound at a type with no generator for a law is `AX0433`, and a function in the package that makes its type break a law is the warning `AX0714`. Law qualifiers such as `Add associative` are removed (`AX0296`); std declares `AssociativeAdd` and `CommutativeAdd` instead.",
+         "9ddf3df8c7 b930b3568c"),
+        ("Types", "Two overloads of one name whose parameter types are the same and that differ only in their labels, such as `area(rect: Rect)` beside `area(shape: Rect)`, are now `AX1027`. A bound now also supplies the operations of the abstractions its abstraction requires, so under `where T: HasPerimeter` a function can call `area`.",
+         "81bec1e471 b9b8e2f6e2"),
+        ("Ownership", "Once a `match` arm is taken, the scrutinee's borrow now ends at the last use of the arm's binders, so an arm can write the map it looked in. Assigning a whole new value to a `borrow` parameter, as in `counter = counter + 1`, now reaches the caller, in `drx run` and in built binaries.",
+         "5cf63da831 4075b3b36c"),
+        ("Standard library", "An empty `{}` now builds a `Set` where a `Set` is expected, `len` takes a `Map` or a `Set`, and a `Str` shows as its text. `replace` and `int_of_text` now also take a `String`, and `FileSystem.read_to_string` reads a whole file as text. `Array` now has a generator and a shrinker, so std's `Sequence` law is checked for it at a fixed size.",
+         "2659ca296d 5984f90694"),
+        ("Agent daemon", "`get-def`, `put-def` and `delete-def` now treat a definition as ending at its own last line, so a write no longer removes the comments or the doc block of the definition below it, and a definition inserted after another lands above that doc block.",
+         "a7d7282ab3"),
+        ("Toolchain", "A Tree-sitter grammar and a Zed extension now color Draconyx source in the Zed editor.",
+         "36aa653813"),
+    ]},
+    {"date": "2026-11-05", "title": "drx test refuses ownership errors; daemon names the keys it ignored", "items": [
+        ("Testing", "`drx test` and `drx verify` now refuse a package with ownership errors, as `drx run` and `drx build` do, printing the diagnostics as `drx check` prints them. A refused package now exits 3, so it can be told apart from a failed obligation, and `--force` runs the obligations anyway.",
+         "8fefeeaa9d"),
+        ("Syntax", "A line that begins with `and(` or `or(`, with no space, now starts a new statement calling a function of that name instead of continuing the previous line as a boolean operator. `and (` and `or (` still continue the line.",
+         "e0f35708a4"),
+        ("Agent daemon", "Every daemon answer now ends with `ignored`, the request keys it did not honour, such as a misspelt key or a value of the wrong type, and `initialize` now lists every error kind. The new `new-def` adds a definition to a module.",
+         "e4582e4792"),
+    ]},
+    {"date": "2026-11-04", "title": "Agent daemon write lock freed on a crash; takeovers reported", "items": [
+        ("Agent daemon", "The workspace write lock is now held by an operating-system lock where the file system supports one, so a crashed daemon's lock is free at once and a running daemon keeps its lock however long it idles. A daemon that has lost the lock now fails its next write with `write-lock-lost`, and a write that takes a lock over says so in `reclaimed_lock`.",
+         "78dfa60846"),
+    ]},
+    {"date": "2026-11-03", "title": "Keywords renamed to abstraction, require, take and watch; overload families told apart", "items": [
+        ("Syntax", "The keywords are now `abstraction` (was `capability`), `require` (was `requires`), and `take` and `watch` for the owning and non-owning verbs (were `transfer` and `observe`). An old word where no name can stand is `AX0296`, with a fix that writes the new one; elsewhere it is an ordinary name. std's `take` on a list is now `remove_at`.",
+         "2cf0db7488"),
+        ("Types", "Two definitions of one name and label set are now `AX0233` unless they answer one operation of an abstraction or service for different types or arguments, as two `from(value: HttpError)` into two error types do. Each member of such a family now has its own address, so a call runs the member its types select and an `Int` binding can no longer hold a `Float`.",
+         "8afa42a584"),
+        ("Laws", "A failing law over `Float` now reports small, readable counterexamples such as `0.0, 0.0, 1.0`: the shrinker tries the simplest candidates first, by a fixed order that puts short decimals before long ones and finite values before infinities and NaN.",
+         "da7841b9e5"),
+    ]},
     {"date": "2026-11-02", "title": "User-built standard handles refused; secret values lose Show; consts copied", "items": [
         ("Safety", "The checker now refuses standard handles built by user code: a literal of a standard-library "
                    "`strict` type, such as `File(descriptor)`, `Task` or `Sender`, is `AX0241`, and writing a field "

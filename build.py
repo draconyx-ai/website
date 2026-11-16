@@ -44,7 +44,7 @@ VERIFY_FILES = {}
 # /llms.txt are alternate formats of the same page, linked from it, and stay crawlable. build_sitemap() adds the blog
 # and its published posts after these.
 PAGES = ["/", C.OPINIONS_URL, C.CHANGELOG_URL]
-MECH_LEDE = "Real mechanisms in a real compiler. Every sample on this page was run through it."
+MECH_LEDE = "Real mechanisms, each one enforced by the toolchain."
 e = html.escape
 # The signup form's bot check (README, "Signup form"): the ALTCHA widget, MIT, pinned. It is dist/altcha.umd.cjs of the
 # npm package altcha@2.3.0, byte-identical to the altcha.umd.js that listmonk v6.2.0 serves; licence alongside.
@@ -79,16 +79,17 @@ def quote(text):
     return f"“{md(text)}”"
 
 
-KEYWORDS = {"def", "let", "match", "enum", "capability", "law", "provide", "locally", "in", "example",
-            "transfer", "borrow", "tainted", "if", "else", "for", "return", "struct"}
+# The language's keywords in the ruled syntax (no def or let; concepts; take; comments start with #).
+KEYWORDS = {"concept", "law", "checked", "example", "take", "borrow", "tainted", "endorse", "trust", "match",
+            "enum", "struct", "if", "else", "for", "in", "return", "when", "otherwise", "fail", "use", "yield"}
 
 
 def highlight(kind, text):
-    """Tiny, safe highlighter: comments, strings, keywords, AX codes. Escapes everything."""
+    """Tiny, safe highlighter: # comments, strings, keywords, AX codes. Escapes everything."""
     out = []
     for line in text.split("\n"):
         code, comment = line, ""
-        m = re.search(r"(//.*$)" if kind == "draconyx" else r"((?:^|\s)#\s.*$)", line)
+        m = re.search(r"((?:^|\s)#\s.*$)", line)
         if m:
             code, comment = line[: m.start(1)], line[m.start(1):]
         parts = re.split(r'("(?:[^"\\]|\\.)*")', code)
@@ -421,7 +422,7 @@ def build_html(posts=()):
 <section id="language"><div class="wrap">
 <p class="kicker">The whole language</p>
 <h2>Built for agents. Complete for everything else.</h2>
-<p class="lede">One language from the type system to the cluster: ownership without a garbage collector, capabilities with laws, structured concurrency, remote values, a numerical core. Every card says exactly where it stands.</p>
+<p class="lede">One language from the type system to the cluster: ownership without a garbage collector, concepts with laws, structured concurrency, remote values, a numerical core. Every card says exactly where it stands.</p>
 <div class="fgroups">{fgroups}</div>
 </div></section>
 
@@ -1132,7 +1133,7 @@ def build_llms(posts=()):
     out = ["# Draconyx", "",
            "> A programming language designed for code written by AI models and used by AI agents. "
            f"Pre-release research project: a {C.STATS[0][0]}-page specification and a working compiler, "
-           "public at the first release. Each mechanism below states what ships today and what is only specified.", "",
+           "public at the first release. Each mechanism below says whether it ships, is partly built or is in the spec.", "",
            f"Status as of {C.AS_OF}: " + " ".join(f"{k}: {v}" for k, v in C.STATUS), "",
            "## Mechanisms", ""]
     for r in C.REASONS:
