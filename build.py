@@ -136,7 +136,7 @@ header.top .wrap{display:flex;align-items:center;justify-content:space-between;h
 .brand{display:flex;align-items:center;gap:10px;color:var(--fg);text-decoration:none;font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:17px}
 .claw{width:26px;height:26px;fill:var(--olive)}
 nav a{display:inline-block;padding:10px 0;color:var(--muted);text-decoration:none;font-size:15px;font-weight:550;margin-left:20px}nav a:hover{color:var(--fg)}
-nav{white-space:nowrap}@media (max-width:720px){nav a.opt{display:none}}@media (max-width:420px){nav a{margin-left:12px;font-size:14px}.brand{font-size:15px}}
+nav{white-space:nowrap}@media (max-width:720px){nav a.opt{display:none}}@media (max-width:480px){nav a.nr{display:none}}@media (max-width:420px){nav a{margin-left:12px;font-size:14px}.brand{font-size:15px}}
 .hero{position:relative;overflow:hidden;background:
  radial-gradient(1100px 520px at 50% 108%,color-mix(in srgb,var(--olive) 30%,transparent),transparent 70%),
  radial-gradient(700px 360px at 8% 0%,color-mix(in srgb,var(--ember2) 16%,transparent),transparent 70%),var(--bg)}
@@ -503,7 +503,7 @@ def topbar(path):
         return ' aria-current="page"' if path == url else ""
     return f"""<header class="top"><div class="wrap">
 <a class="brand" href="/">{CLAW}<span>Draconyx</span></a>
-<nav aria-label="Sections"><a href="{home}#versus">Versus</a><a class="opt" href="{home}#why">Why</a><a class="opt" href="{home}#language">Language</a><a class="opt" href="{home}#name">Name</a><a href="{home}#status">Status</a><a class="opt" href="{C.CHANGELOG_URL}"{here(C.CHANGELOG_URL)}>Changelog</a><a class="opt" href="{C.BLOG_URL}"{here(C.BLOG_URL)}>Blog</a><a class="opt" href="{C.OPINIONS_URL}"{here(C.OPINIONS_URL)}>Reviews</a><a href="/llms.txt">For agents</a></nav>
+<nav aria-label="Sections"><a href="{home}#versus">Versus</a><a class="opt" href="{home}#why">Why</a><a class="opt" href="{home}#language">Language</a><a class="opt" href="{home}#name">Name</a><a class="nr" href="{home}#status">Status</a><a class="opt" href="{C.CHANGELOG_URL}"{here(C.CHANGELOG_URL)}>Changelog</a><a href="{C.BLOG_URL}"{here(C.BLOG_URL)}>Blog</a><a class="opt" href="{C.OPINIONS_URL}"{here(C.OPINIONS_URL)}>Reviews</a><a href="/llms.txt">For agents</a></nav>
 </div></header>
 """
 
