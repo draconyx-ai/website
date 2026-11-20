@@ -7,7 +7,9 @@ checked by the site review the same day. On 2026-11-02 every reason, feature, nu
 re-checked against main of the language repository (fb4f8937), and the code samples were re-run through a
 compiler built from it. On 2026-11-16 all of it was re-checked against main 05e74e38d1 (15 Nov). Since then the
 code samples are written in the syntax the language's owner ruled, even where that compiler does not accept it
-yet; a caption says "Checked with the compiler" only where a run on main accepted the sample as shown. Status
+yet; a caption says "Checked with the compiler" only where a run on main accepted the sample as shown. On
+2026-11-20 every Draconyx sample moved to `//` comments and `@doc` docs above what they document, each function's
+doc listing every parameter; main's compiler accepts neither yet, so no Draconyx sample carries that caption. Status
 pills follow the work: Ships when it is built or being tested, Partly built when started, In the spec when not.
 Keep it that way: change a claim only together with its citation.
 """
@@ -108,21 +110,21 @@ REASONS = [
                   "SSR) are add-ons with no tree-hash precondition, no type check before the bytes land and no "
                   "impact report.",
         "sample": ("shell", """$ drx rpc . put-def '{"address": "inventory.reprice",
-    "base": "deadbeef", "text": "reprice(...) -> Int: ..."}'
+    "base": "deadbeef", "text": "@doc \\"\\"\\"...\\"\\"\\"\\nreprice(...) -> Int: ..."}'
 
 # the workspace moved since `base`: refused, with the current text
 {"code": -32000, "message": "the workspace has moved since `base`",
  "data": {"kind": "conflict", "detail": {"base": "deadbeef",
    "current_tree": "def6ed83...", "addresses": ["inventory.reprice"],
    "current": [{"address": "shop.inventory.reprice",
-     "text": "reprice(price: Int, pct: Int) -> Int:\\n    \\"\\"\\"`price` raised by `pct` percent.\\"\\"\\"\\n    price + price * pct / 100\\n"}]}}}
+     "text": "@doc \\"\\"\\"\\nRaises `price` by `pct` percent.\\n\\n  * price - the price to raise\\n  * pct - the percentage to raise it by\\n\\"\\"\\"\\nreprice(price: Int, pct: Int) -> Int:\\n    price + price * pct / 100\\n"}]}}}
 
 # a write that fails the check: same shape as success, nothing written
 {"tree": "def6ed83...", "applied": false, "new_errors": 1,
  "diagnostics": [{"code": "AX1001",
    "message": "type mismatch: expected `Int`, found `String`"}],
  "impact": {"broken_consumers": [{"address": "shop.inventory.reprice",
-   "codes": ["AX1001"]}]}}""", "Real daemon replies, abridged (hashes trimmed, fields elided)."),
+   "codes": ["AX1001"]}]}}""", "Daemon replies, abridged (hashes trimmed, fields elided; the definition's text shown in the current doc syntax)."),
         "cites": ["26-agent-interface:95-99", "26-agent-interface:188-196", "26-agent-interface:669-776", "32-agent-conformance:1106-1131", "25-tooling:881"],
     },
     {
@@ -171,14 +173,22 @@ REASONS = [
                   "a taint marker by convention, but the standard library never marks its sources and nothing "
                   "makes unwrapping state a reason. Real defences are runtime libraries or separate analysers "
                   "such as CodeQL and Semgrep.",
-        "sample": ("draconyx", """hijacked(email: tainted String) -> Prompt:
-    \"\"\"A prompt that wrongly makes the email its instruction.\"\"\"
-    prompt(instruction = email, data = [])  # AX1022: `instruction` is an unmarked String
+        "sample": ("draconyx", """@doc \"\"\"
+Builds a prompt that wrongly makes the email its instruction.
 
+  * email - the email, as received
+\"\"\"
+hijacked(email: tainted String) -> Prompt:
+    prompt(instruction = email, data = [])  // AX1022: `instruction` is an unmarked String
+
+@doc \"\"\"
+Builds a prompt that asks for a summary, with the email kept as data.
+
+  * email - the email to summarize
+\"\"\"
 summarize(take email: tainted String) -> Prompt:
-    \"\"\"A prompt that asks for a summary, with the email kept as data.\"\"\"
     prompt(instruction = "Summarize the message.", data = [take email])""",
-                   "Checked with the compiler."),
+                   "The tainted email as the instruction is compile error AX1022; kept as data, it is allowed."),
         "cites": ["12-services-di-permissions:599-658"],
     },
     {
@@ -204,8 +214,8 @@ summarize(take email: tainted String) -> Prompt:
                   "the compiler never sees them. Property testing is a third-party library (Hypothesis, "
                   "proptest) or, in Go, stdlib testing/quick and fuzzing, and someone must restate each law as a "
                   "test by hand.",
-        "sample": ("draconyx", """concept Monoid<T>:
-    \"\"\"Values with an `add` that can be regrouped and a `zero` that changes nothing.\"\"\"
+        "sample": ("draconyx", """@doc \"\"\"Values with an `add` that can be regrouped and a `zero` that changes nothing.\"\"\"
+concept Monoid<T>:
     add(left: T, right: T) -> T
     zero() -> T
     law associative(left: T, middle: T, right: T) checked:
@@ -213,9 +223,13 @@ summarize(take email: tainted String) -> Prompt:
     law identity(value: T) checked:
         add(left = value, right = zero()) == value
 
+@doc \"\"\"
+Finds the middle value of `values` once they are sorted.
+
+  * values - the values, in any order
+\"\"\"
 median(values: List<Float>) -> Float:
-    \"\"\"The middle value of `values` once sorted.\"\"\"
-    todo()  # verdict UNIMPLEMENTED, not a failure
+    todo()  // verdict UNIMPLEMENTED, not a failure
 
 example median(values = [1.0, 3.0, 2.0]) == 2.0""",
                    "A concept with two checked laws, and an example on a function whose body is `todo()`."),
@@ -246,12 +260,17 @@ example median(values = [1.0, 3.0, 2.0]) == 2.0""",
 close(take conn: Connection) -> None
 send(borrow conn: Connection, request: Request) -> None
 
+@doc \"\"\"
+Opens a connection to `address`, sends `ping` once and closes it.
+
+  * address - the address to connect to
+  * ping - the request to send
+\"\"\"
 ping_once(address: String, ping: Request) -> None:
-    \"\"\"Opens a connection to `address`, sends `ping` once and closes it.\"\"\"
-    conn = ^open(url = address, timeout = seconds(5))    # a failure goes up to the caller
-    ^send(borrow conn, request = ping)                    # mutation is spelled here
-    close(take conn)                                      # consumption is spelled here
-    close(take conn)                                      # AX0312: use of moved value `conn`""",
+    conn = ^open(url = address, timeout = seconds(5))    // a failure goes up to the caller
+    ^send(borrow conn, request = ping)                    // mutation is spelled here
+    close(take conn)                                      // consumption is spelled here
+    close(take conn)                                      // AX0312: use of moved value `conn`""",
                    "What happens to each argument, and which calls can fail, read off the call lines."),
         "cites": ["05-syntax-conventions:3-4", "04-core-language:290-311", "04-core-language:1992-2004", "04-core-language:2030-2046", "04-core-language:2127-2162", "07-memory-model:376-413"],
     },
@@ -262,34 +281,63 @@ ping_once(address: String, ping: Request) -> None:
         "body": [
             "There are no exceptions and no try/catch. The signature says what a function gives; the body says "
             "how it fails, with `fail`, and the compiler infers what it fails with. Every call that can fail is "
-            "marked: handled on the spot with `fail` arms in a `match`, or passed up with a prefix `^`. A panic is "
+            "marked: handled on the spot by arms in a `match` that name its failures, or passed up with a prefix `^`. A panic is "
             "for bugs only, nothing catches it on the spot, and every operation that can stop the program has a "
             "total twin that gives no value instead.",
-            "`match` is checked with the constructor-matrix algorithm: a missing case is error AX0601, naming the "
-            "uncovered constructors, and a redundant arm is error AX0602, not a warning. An agent sees every "
-            "call that can fail where it is made, and gets an exact to-do list for any case it missed.",
+            "Each kind of value is its own type, and a function that handles several kinds is written once for "
+            "each. Values of different kinds stand side by side as `any T`, and putting a kind into `any T` when "
+            "a function called on those values has no version for it is error AX0420, reported right there and "
+            "naming the function and the type. A redundant `match` arm is error AX0602, not a warning. An agent "
+            "sees every call that can fail where it is made, and gets an exact to-do list for any kind it missed.",
         ],
-        "ships": "Ships today: AX0601 and AX0602 as errors.",
+        "ships": "Ships today: AX0420 for a kind with no function, and AX0602 for a redundant arm.",
         "unlike": "In Python and C++ exceptions are invisible in signatures: you meet them in production. "
                   "Go hands you `err` and hopes you check it. Rust comes closest, but `catch_unwind` can catch a panic "
                   "on the spot, and an unreachable arm is only a warn-by-default lint. In Draconyx a redundant arm is "
                   "a hard error.",
-        "sample": ("draconyx", """enum PaymentState:
-    \"\"\"Where a payment stands.\"\"\"
-    Pending
-    Authorized(amount: Money)
-    Captured(amount: Money)
-    Refunded(reason: String, amount: Money)
+        "sample": ("draconyx", """@doc \"\"\"A payment the bank has not answered yet.\"\"\"
+type Pending
 
-label(payment_state: PaymentState) -> String:
-    \"\"\"A one-word label for `payment_state`.\"\"\"
-    match payment_state:
-        Pending -> "pending"
-        Authorized -> "authorized"
-        Captured -> "captured"
-# error[AX0601]: non-exhaustive match: missing `Refunded`""",
-                   "A forgotten case is a compile error that names it."),
-        "cites": ["04-core-language:612-650", "11-type-system:591-657"],
+@doc \"\"\"A payment the bank has set aside.\"\"\"
+type Authorized:
+    amount: Money
+
+@doc \"\"\"A payment given back to the customer.\"\"\"
+type Refunded:
+    reason: String
+    amount: Money
+
+@doc \"\"\"
+Writes a pending payment's state on the receipt.
+
+  * payment - the pending payment
+\"\"\"
+label(payment: Pending) -> String:
+    "pending"
+
+@doc \"\"\"
+Writes an authorized payment's state on the receipt.
+
+  * payment - the authorized payment
+\"\"\"
+label(payment: Authorized) -> String:
+    "authorized {payment.amount}"
+
+@doc \"\"\"
+Writes the state of every payment of the day on the receipt.
+
+  * payments - the day's payments
+\"\"\"
+receipt(payments: List<any T>) -> None:
+    for payment in payments:
+        print(label(payment))
+
+@doc \"\"\"Writes the receipt of a day with a pending payment and a refund.\"\"\"
+main() -> None:
+    receipt([Pending(), Refunded(reason = "damaged", amount = Money(cents = 1200))])
+    // error AX0420: `Refunded` is put into `any T` here, but no `label` takes a `Refunded`""",
+                   "A forgotten kind is a compile error that names it."),
+        "cites": ["04-core-language:612-650", "11-type-system:133-138", "11-type-system:591-657", "11-type-system:1216-1297"],
     },
     {
         "id": "determinism",
@@ -373,7 +421,7 @@ FEATURE_GROUPS = [
     ('Memory and ownership', [
         ('Ownership spelled at both ends', 'Every handover at a call is written where the value is given and again where it is taken, so a model never has to guess who owns what.', 'ships'),
         ('Borrow checking with zero lifetime syntax', "Rust-grade memory safety without a single `'a`: you never write a lifetime, and the compiler works out every one.", 'ships'),
-        ('Views inferred, not annotated', 'Put a borrow in a struct and it becomes a safe view on its own: no keyword, no lifetime parameter.', 'ships'),
+        ('Views inferred, not annotated', 'Put a borrow in a type with fields and the type becomes a safe view on its own: no keyword, no lifetime parameter.', 'ships'),
         ('No garbage collector, deterministic drops', 'No tracing GC and no pauses: each value is freed the moment its last owner lets go.', 'ships'),
     ]),
     ('Concurrency and distribution', [

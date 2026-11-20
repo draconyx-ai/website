@@ -114,8 +114,12 @@ a panic.
 In Draconyx the mark is a `?` on the function's name:
 
 ```draconyx
+@doc """
+Looks up the age of `name`, which may be unknown.
+
+  * name - the name of the person
+"""
 find_age?(name: String) -> Int:
-    """The age of `name`, if it is known."""
     if name == "ada":
         return 36
     return None
@@ -134,8 +138,12 @@ age = find_age?(name = "ada") ?? 0
 Or with a `match` that covers both cases. The head names the result, and inside the `ok` arm `age` holds the value:
 
 ```draconyx
+@doc """
+Describes in words how old `name` is.
+
+  * name - the name of the person
+"""
 describe(name: String) -> String:
-    """How old `name` is, in words."""
     match age = find_age?(name):
         ok   -> "{age} years"
         None -> "age unknown"
@@ -149,11 +157,11 @@ The checker refuses:
 - A `match` with no `None` arm.
 - `None` stored in a local, passed to a function parameter or compared.
 
-A struct field that may be absent takes the same mark, on its name:
+A field that may be absent takes the same mark, on its name:
 
 ```draconyx
-struct User:
-    """A user of the shop."""
+@doc """A user of the shop."""
+type User:
     name: String
     nickname?: String
     age?: Int
@@ -171,8 +179,12 @@ And the word is the same wherever the language means "no value". A function that
 result type:
 
 ```draconyx
+@doc """
+Stops the task if `amount` is negative.
+
+  * amount - the amount to check
+"""
 check_amount(amount: Int) -> None:
-    """Stops the task if `amount` is negative."""
     assert(amount >= 0)
 ```
 

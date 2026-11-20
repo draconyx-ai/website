@@ -79,33 +79,55 @@ def quote(text):
     return f"“{md(text)}”"
 
 
-# The language's keywords in the ruled syntax (no def or let; concepts; take; comments start with #).
+# The language's keywords in the ruled syntax (no def or let; concepts; take; comments start with //).
 KEYWORDS = {"concept", "law", "checked", "example", "take", "borrow", "tainted", "endorse", "trust", "match",
-            "enum", "struct", "if", "else", "for", "in", "return", "when", "otherwise", "fail", "use", "yield"}
+            "type", "any", "if", "else", "for", "in", "return", "when", "otherwise", "fail", "use", "yield"}
+# A Draconyx line in pieces: a closed """ text, a """ text left open to the end of the line (a doc that goes on
+# below), a "string", or a // comment to the end of the line. Found left to right, so a // inside a string is text.
+DRX_TOKENS = re.compile(r'("""[^\n]*?"""|"""[^\n]*$|"(?:[^"\\]|\\.)*"|//.*$)')
 
 
 def highlight(kind, text):
-    """Tiny, safe highlighter: # comments, strings, keywords, AX codes. Escapes everything."""
-    out = []
+    """Tiny, safe highlighter. Draconyx: // comments, strings, @doc texts (one line, or over several lines),
+    decorators, keywords, AX codes. Shell and JSON: # comments, strings, AX codes. Escapes everything."""
+    def plain(p):
+        p = e(p)
+        if kind == "draconyx":
+            p = re.sub(r"(?<!@)\b(" + "|".join(sorted(KEYWORDS)) + r")\b", r'<span class="k">\1</span>', p)
+            p = re.sub(r"(?<![\w@])(@[A-Za-z_]\w*)", r'<span class="k">\1</span>', p)
+        return re.sub(r"\b(AX\d{4})\b", r'<span class="ax">\1</span>', p)
+
+    def note(c):
+        return '<span class="c">' + re.sub(r"\b(AX\d{4})\b", r'<span class="ax">\1</span>', e(c)) + "</span>"
+
+    out, in_doc = [], False  # in_doc: inside a Draconyx """ text that a line above opened
     for line in text.split("\n"):
-        code, comment = line, ""
-        m = re.search(r"((?:^|\s)#\s.*$)", line)
-        if m:
-            code, comment = line[: m.start(1)], line[m.start(1):]
-        parts = re.split(r'("(?:[^"\\]|\\.)*")', code)
         buf = []
-        for i, p in enumerate(parts):
-            if i % 2 == 1:
-                buf.append(f'<span class="s">{e(p)}</span>')
+        if in_doc:
+            end = line.find('"""')
+            if end < 0:
+                out.append(f'<span class="s">{e(line)}</span>' if line else "")
                 continue
-            p = e(p)
-            if kind == "draconyx":
-                p = re.sub(r"\b(" + "|".join(sorted(KEYWORDS)) + r")\b", r'<span class="k">\1</span>', p)
-            p = re.sub(r"\b(AX\d{4})\b", r'<span class="ax">\1</span>', p)
-            buf.append(p)
-        if comment:
-            c = re.sub(r"\b(AX\d{4})\b", r'<span class="ax">\1</span>', e(comment))
-            buf.append(f'<span class="c">{c}</span>')
+            buf.append(f'<span class="s">{e(line[:end + 3])}</span>')
+            line, in_doc = line[end + 3:], False
+        if kind == "draconyx":
+            for i, p in enumerate(DRX_TOKENS.split(line)):
+                if i % 2 == 0:
+                    buf.append(plain(p))
+                elif p.startswith("//"):
+                    buf.append(note(p))
+                else:
+                    buf.append(f'<span class="s">{e(p)}</span>')
+                    in_doc = p.startswith('"""') and (len(p) < 6 or not p.endswith('"""'))
+        else:
+            code, comment = line, ""
+            m = re.search(r"((?:^|\s)#\s.*$)", line)
+            if m:
+                code, comment = line[: m.start(1)], line[m.start(1):]
+            for i, p in enumerate(re.split(r'("(?:[^"\\]|\\.)*")', code)):
+                buf.append(f'<span class="s">{e(p)}</span>' if i % 2 else plain(p))
+            if comment:
+                buf.append(note(comment))
         out.append("".join(buf))
     return "\n".join(out)
 

@@ -91,7 +91,9 @@ with no script on the page: ```` ```draconyx ```` uses the site's own highlighte
 Pygments, and a block with no language stays plain. An unknown language name stops the build. Images and other files
 for a post go in `posts/<slug>/` and are copied next to the page (hidden files such as `.DS_Store` are not), so `![The loop](loop.png)` finds
 `posts/<slug>/loop.png`; give every image its alt text. Like `content.py`, a post states only what is true of main
-of the language repository, and never uses the language's earlier working title.
+of the language repository, and never uses the language's earlier working title. The one exception, as in
+`content.py`: its Draconyx samples are written in the syntax the language's owner ruled, which main's compiler may not
+accept yet.
 
 **Preview.** A post with `draft: true` is left out of the build. `python3 build.py --drafts` builds drafts too, with a
 "Draft" mark and a robots `noindex` tag on their pages; even then they stay out of the feed, the sitemap and
