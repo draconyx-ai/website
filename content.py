@@ -30,6 +30,9 @@ SPEC_PDF = None  # "/draconyx-spec.pdf" once the renamed spec is published
 HERO = {
     "eyebrow": "The programming language for AI authors",
     "headline": "Built for the machines that write your code.",
+    # The page's <h1>: the headline with the name in front, so the main heading says what the site is. The headline
+    # alone stays in the link previews, the share image and the Markdown copy.
+    "h1": "Draconyx: the programming language built for the machines that write your code.",
     "subhead": (
         "Python, Rust and Go were designed for a human at a keyboard. Draconyx was designed for the "
         "model in the loop: errors that come back as data, edits addressed by name and checked before they land, "

@@ -26,7 +26,7 @@ import content as C  # noqa: E402
 HERE = os.path.dirname(__file__)
 OUT = os.path.join(HERE, "dist")
 SITE = "https://draconyx.ai"
-TITLE = "Draconyx: a programming language designed for its AI author"
+TITLE = "Draconyx: a programming language for AI coding agents"
 
 # Search engines. The IndexNow key is public by design: it is served as /<key>.txt and proves that
 # submissions come from the site's owner (https://www.indexnow.org/documentation).
@@ -258,6 +258,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
 .mk{display:inline-grid;place-items:center;flex:none;width:44px;height:44px;background:var(--mk-bg);color:#15130f;clip-path:var(--chip-cut)}
 .mk svg{width:62%;height:62%}
 .hero.page .wrap{padding-top:56px;padding-bottom:64px}.hero.page h1{max-width:20ch}
+.hero:not(.page) h1{max-width:26ch;text-wrap:balance}
 .roster{list-style:none;padding:0;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:860px}
 .roster a{--cut:var(--chip-cut);--eb:3px;display:flex;align-items:center;gap:10px;padding:6px 16px 9px 7px;color:var(--fg);text-decoration:none;font-weight:700;font-size:15px}
 .roster a:hover,.roster a:focus-visible{color:var(--fg);--edge:var(--olive)}.roster .mk{width:34px;height:34px}
@@ -405,14 +406,14 @@ def build_html(posts=()):
     status = "".join(f"<dt>{e(k)}</dt><dd>{md(v)}</dd>" for k, v in C.STATUS)
     spec = f'<a class="btn" href="{e(C.SPEC_PDF)}">Read the spec (PDF)</a>' if C.SPEC_PDF else ""
 
-    description = ("Draconyx is a programming language designed for its AI author: structured diagnostics with edits, "
-                   "writes by definition name, laws checked by default, compile-time authority.")
+    description = ("Draconyx is a programming language designed for AI coding agents. Its compiler gives structured "
+                   "diagnostics with edits and checks laws by default.")
     return head(TITLE, description, "/", SITE_NAME, f"{C.HERO['headline']} A programming language designed for its AI author.",
                 verify=True, css=HOME_BLOG_CSS if posts else "", extra=structured_data(description)) + topbar("/") + f"""<main id="main">
 <div class="hero"><div class="wrap">
 <img class="logo" src="/assets/logo-1200.webp" srcset="/assets/logo-640.webp 640w, /assets/logo-1200.webp 1200w" sizes="(max-width:760px) 100vw, 720px" width="1200" height="800" alt="Draconyx: a dinosaur mascot above the Draconyx wordmark">
 <p class="eyebrow">{e(C.HERO['eyebrow'])}</p>
-<h1>{e(C.HERO['headline'])}</h1>
+<h1>{e(C.HERO['h1'])}</h1>
 <p class="sub">{e(C.HERO['subhead'])}</p>
 <div class="btns"><a class="btn primary" href="#versus">See it beat the rest</a>{spec}<a class="btn" href="#updates">Get launch updates</a><a class="btn" href="/llms.txt">For AI agents: llms.txt</a></div>
 </div></div>
