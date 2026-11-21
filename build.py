@@ -1154,7 +1154,7 @@ def build_llms(posts=()):
     posts = [p for p in posts if not p["draft"]]
     out = ["# Draconyx", "",
            "> A programming language designed for code written by AI models and used by AI agents. "
-           f"Pre-release research project: a {C.STATS[0][0]}-page specification and a working compiler, "
+           f"In development: a {C.STATS[0][0]}-page specification and a working compiler, "
            "public at the first release. Each mechanism below says whether it ships, is partly built or is in the spec.", "",
            f"Status as of {C.AS_OF}: " + " ".join(f"{k}: {v}" for k, v in C.STATUS), "",
            "## Mechanisms", ""]

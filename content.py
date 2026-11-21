@@ -538,7 +538,7 @@ STATUS = [
     ("Self-hosting", "The lexer, parser, resolver, type checker and ownership checker are written in Draconyx itself, about 90,000 lines. As of 12 November 2026 each one gave the same output as its reference implementation on the whole shared test corpus. The binaries `drx build` makes come from the Rust bootstrap compiler's own code generator."),
     ("Native code", "`drx build` compiles a package to a native binary that prints and exits exactly as the interpreter runs it, on all 159 back-end unit programs."),
     ("Design record", "439 design rulings ratified into the spec; five example packages, among them an online shop, event sourcing and FlashAttention, a gallery of 20 common patterns written beside Rust, C++, Zig, Java and Elixir, and a 4,925-line standard library generated from the spec."),
-    ("Release", "Pre-release research project, first commit 20 July 2026. The first public release is the first compiler written entirely in Draconyx."),
+    ("Release", "In development, first commit 20 July 2026. The first public release is the first compiler written entirely in Draconyx."),
 ]
 
 
