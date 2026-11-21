@@ -28,7 +28,7 @@ ALTCHA_CHALLENGE_URL = "/altcha-challenge"
 SPEC_PDF = None  # "/draconyx-spec.pdf" once the renamed spec is published
 
 HERO = {
-    "eyebrow": "The programming language for AI authors",
+    "eyebrow": "The programming language for AI authors.",
     "headline": "Built for the machines that write your code.",
     # The page's <h1>: the headline with the name in front, so the main heading says what the site is. The headline
     # alone stays in the link previews, the share image and the Markdown copy.
@@ -151,10 +151,27 @@ REASONS = [
                   "process authority. Confinement comes from outside the type system (containers, seccomp, "
                   "the third-party cap-std crate for Rust). None checks per function, at "
                   "compile time, what a function can reach.",
-        "sample": ("shell", """error[AX0501]: Missing provider: service 'Network'
-  required by  main
-  reached from run_generated_plan
-  reached from upload""", "Real compiler output, trimmed."),
+        "sample": ("drx", """$ drx check plan
+
+
+┃ ERROR  src/main.ax, line 15
+┃
+┃     main(take system: System) -> None:
+┃     ^^^^
+┃
+┃ `main` reaches the service `Network`, but nothing provides it.
+┃
+┃ `main` calls `run_generated_plan` on line 16, which calls
+┃ `upload` on line 13, which uses `Network` on line 7. No scope
+┃ on that path has a `provide Network`.
+┃
+┃ Add `provide Network = ...` in `main`, or wrap the call in
+┃ `provide locally: Network = ... in: ...`.
+┃
+┃ (AX0501. For more, run: drx explain AX0501)
+
+
+1 error in 1 file. The package was not built.""", "How drx reports it."),
         "cites": ["12-services-di-permissions:278-322", "12-services-di-permissions:122-145", "12-services-di-permissions:184-195", "12-services-di-permissions:401-414", "09-modules:441-500", "26-agent-interface:316-340"],
     },
     {
@@ -166,27 +183,27 @@ REASONS = [
             "arguments are born tainted at their standard-library signatures. A tainted value where a plain "
             "type is expected is compile error AX1022, and every parameter that steers what the program does "
             "is such a position: a prompt's instruction, SQL identifiers, permission-minting arguments.",
-            "The only way out is `endorse` with a mandatory rationale, so every place untrusted text becomes "
-            "trusted is one line you can grep for.",
+            "The only way out is `validate`, into a refinement type: the same type with a named rule, as in "
+            "`type Email = String when email_is_valid`. So every place untrusted text becomes trusted is one call you "
+            "can grep for. How it checks the value is under Safety and effects, in the `validate` card.",
         ],
         "ships": "Ships today: AX1022 at every argument, field, return, binding and collection element; taint "
                  "through field projection, type arguments such as `List<tainted String>`, and string interpolation; "
-                 "the prompt-instruction barrier; and a tainted path given to `scope_to`.",
+                 "the prompt-instruction barrier; a tainted path given to `scope_to`; and tainted output from started "
+                 "programs and from `sandboxed` and `isolated` foreign calls.",
         "unlike": "Python, Go and Rust treat model output as a plain string. A newtype can imitate "
                   "a taint marker by convention, but the standard library never marks its sources and nothing "
-                  "makes unwrapping state a reason. Real defences are runtime libraries or separate analysers "
+                  "makes code go through the check. Python's `LiteralString` and Java's Error Prone "
+                  "`@CompileTimeConstant` let a checker demand program-written text at a chosen sink, but nothing "
+                  "marks where outside text comes from. Other defences are runtime libraries or separate analysers "
                   "such as CodeQL and Semgrep.",
-        "sample": ("draconyx", """@doc \"\"\"
-Builds a prompt that wrongly makes the email its instruction.
-
+        "sample": ("draconyx", """@doc \"\"\"Builds a prompt that wrongly makes the email its instruction.
   * email - the email, as received
 \"\"\"
 hijacked(email: tainted String) -> Prompt:
     prompt(instruction = email, data = [])  // AX1022: `instruction` is an unmarked String.
 
-@doc \"\"\"
-Builds a prompt that asks for a summary, with the email kept as data.
-
+@doc \"\"\"Builds a prompt that asks for a summary, with the email kept as data.
   * email - the email to summarize
 \"\"\"
 summarize(take email: tainted String) -> Prompt:
@@ -226,9 +243,7 @@ concept Monoid<T>:
     law identity(value: T) checked:
         add(left = value, right = zero()) == value
 
-@doc \"\"\"
-Finds the middle value of `values` once they are sorted.
-
+@doc \"\"\"Finds the middle value of `values` once they are sorted.
   * values - the values, in any order
 \"\"\"
 median(values: List<Float>) -> Float:
@@ -263,9 +278,7 @@ example median(values = [1.0, 3.0, 2.0]) == 2.0""",
 close(take conn: Connection) -> None
 send(borrow conn: Connection, request: Request) -> None
 
-@doc \"\"\"
-Opens a connection to `address`, sends `ping` once and closes it.
-
+@doc \"\"\"Opens a connection to `address`, sends `ping` once and closes it.
   * address - the address to connect to
   * ping - the request to send
 \"\"\"
@@ -310,32 +323,25 @@ type Refunded:
     reason: String
     amount: Money
 
-@doc \"\"\"
-Writes a pending payment's state on the receipt.
-
+@doc \"\"\"Writes a pending payment's state on the receipt.
   * payment - the pending payment
 \"\"\"
 label(payment: Pending) -> String:
     "pending"
 
-@doc \"\"\"
-Writes an authorized payment's state on the receipt.
-
+@doc \"\"\"Writes an authorized payment's state on the receipt.
   * payment - the authorized payment
 \"\"\"
 label(payment: Authorized) -> String:
     "authorized {payment.amount}"
 
-@doc \"\"\"
-Writes the state of every payment of the day on the receipt.
-
+@doc \"\"\"Writes the state of every payment of the day on the receipt.
   * payments - the day's payments
 \"\"\"
 receipt(payments: List<any T>) -> None:
     for payment in payments:
         print(label(payment))
 
-@doc \"\"\"Writes the receipt of a day with a pending payment and a refund.\"\"\"
 main() -> None:
     receipt([Pending(), Refunded(reason = "damaged", amount = Money(cents = 1200))])
     // error AX0420: `Refunded` is put into `any T` here, but no `label` takes a `Refunded`.""",
@@ -398,11 +404,11 @@ main() -> None:
 
 # Big numbers for the stats band (all from STATUS, as of AS_OF).
 STATS = [
-    ("733", "pages of specification"),
-    ("90k", "lines of compiler written in Draconyx"),
-    ("262", "diagnostic codes, each explained"),
-    ("5", "compiler stages also written in the language"),
-    ("439", "design rulings ratified"),
+    ("733", "pages of specification."),
+    ("90k", "lines of compiler written in Draconyx."),
+    ("262", "diagnostic codes, each explained."),
+    ("5", "compiler stages also written in the language."),
+    ("439", "design rulings ratified."),
 ]
 
 # The loop the language is built for (spec 01-vision:71: generate, observe, repair).
@@ -420,6 +426,7 @@ FEATURE_GROUPS = [
         ('Algebraic laws as code, property-tested by default', 'In C++ and Rust, associativity is a line in the docs. In Draconyx it is a `law` line in a concept, and a type that breaks it fails `drx test` with a shrunk counter-example.', 'ships'),
         ('Dispatch on algebra', 'Write the parallel reduction once. The compiler picks it only for types that keep the laws that make it correct.', 'ships'),
         ('Generics that infer the hard parts', 'Variance and const-generic shapes are worked out by the compiler, not annotated by the model.', 'ships'),
+        ('Calling itself unchanged is a build error', "A function that calls itself with its parameters unchanged, by its name or through its operator (`left - right` inside `sub`), is a build error on any path, even when another path ends. Recursion with changed values is allowed. Rust, Swift and Clang (with `-Wall`) warn only when every path calls itself; Java never warns.", 'partial'),
     ]),
     ('Memory and ownership', [
         ('Ownership spelled at both ends', 'Every handover at a call is written where the value is given and again where it is taken, so a model never has to guess who owns what.', 'ships'),
@@ -443,8 +450,9 @@ FEATURE_GROUPS = [
     ('Safety and effects', [
         ('Services and dependency injection', 'A function uses a service without anyone passing it in. You get no constructor plumbing, no effect rows, and a compile error when nothing above a function supplies a service it uses.', 'ships'),
         ('Object-capability permissions (no ambient authority)', "No global `open` and no importable `Network`: the only way code gets authority is to be handed it. Starting from main's `System` powerbox, it can only be narrowed, never widened.", 'ships'),
-        ('`tainted`: a typed defense against prompt injection', "Model output, console input and the command line are born `tainted`. Passing one to an unmarked parameter, or to a prompt's instruction slot, is compile error AX1022.", 'ships'),
-        ('`trust` blocks: unsafe code that names its reason', 'Draconyx has no `unsafe`. It has `trust "why this holds":`, where every unchecked call site carries a mandatory written rationale an auditor can grep.', 'ships'),
+        ('`tainted`: a typed defense against prompt injection', "Model output, console and network input, the command line, a started program's output, and sandboxed and isolated foreign calls are born `tainted`. Passing one to an unmarked parameter, or to a prompt's instruction slot, is compile error AX1022.", 'ships'),
+        ('`validate`: the way out of `tainted` is a check', "`validate` lets tainted input into a refinement type, such as `type Email = String when email_is_valid`, only by running its named rule. A failure is handled on the spot; for a type with fields or a call, `Invalid` lists every field or parameter that failed, with each type's doc as its message.", 'specified'),
+        ('`trust` blocks: unsafe code, held to seven powers', "Draconyx has no `unsafe`. `trust` unlocks exactly seven operations the compiler cannot check, such as calling a trusted function or making a raw pointer, and nothing else: inside a `trust:` block, ownership and borrow checks still run. `drx audit trust` lists every trusted block with its module, location and code hash, and the doc of the function around it says what it vouches for.", 'ships'),
         ('With blocks: one keyword for receiver, destructuring and scoped release', "One `with` covers Python's context managers, Rust's RAII and multi-value destructuring, even at the end of a pipeline.", 'ships'),
     ]),
     ('AI and numerics', [
@@ -458,17 +466,17 @@ FEATURE_GROUPS = [
 # Head-to-head: only rows where Draconyx ships today. Cells verified per language (2026-11-16).
 VERSUS_LANGS = ['Draconyx', 'Python', 'Java', 'Kotlin', 'C#', 'C++', 'Rust', 'Go', 'Swift', 'Zig', 'Elixir', 'Haskell', 'Mojo']
 VERSUS = [
-    ('Every error has a code and an explain entry, with JSON repair edits from the compiler itself', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'no', 'no', 'part', 'no']),
-    ("Edits addressed by definition name, type-checked before they're written", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Compiler-computed map of the services each function reaches, through the whole call chain', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Model output typed untrusted at its standard-library source', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ("Algebraic laws property-tested by default by the compiler's own test command", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Named arguments required at every multi-argument call of a declared function by its name', ['yes', 'part', 'no', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'no', 'no', 'part']),
-    ('Mutation and moves spelled in the argument list of every call', ['yes', 'no', 'no', 'no', 'part', 'part', 'part', 'no', 'part', 'part', 'no', 'no', 'part']),
-    ('Missing and redundant match arms both rejected, on every match', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'yes', 'no', 'part', 'no']),
-    ('Deterministic agent protocol: same source tree, byte-identical answers', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Ownership and borrows checked at compile time, with no tracing garbage collector and no lifetime annotations', ['yes', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'part', 'no', 'no', 'no', 'part']),
-    ('Generic code dispatches on the algebraic laws a type satisfies, with arm totality checked', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Every error has a code and an explain entry, with JSON repair edits from the compiler itself.', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'no', 'no', 'part', 'no']),
+    ("Edits addressed by definition name, type-checked before they're written.", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Compiler-computed map of the services each function reaches, through the whole call chain.', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Model output typed untrusted at its standard-library source.', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ("Algebraic laws property-tested by default by the compiler's own test command.", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Named arguments required at every multi-argument call of a declared function by its name.', ['yes', 'part', 'no', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'no', 'no', 'part']),
+    ('Mutation and moves spelled in the argument list of every call.', ['yes', 'no', 'no', 'no', 'part', 'part', 'part', 'no', 'part', 'part', 'no', 'no', 'part']),
+    ('Missing and redundant match arms both rejected, on every match.', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'yes', 'no', 'part', 'no']),
+    ('Deterministic agent protocol: same source tree, byte-identical answers.', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Ownership and borrows checked at compile time, with no tracing garbage collector and no lifetime annotations.', ['yes', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'part', 'no', 'no', 'no', 'part']),
+    ('Generic code dispatches on the algebraic laws a type satisfies, with arm totality checked.', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
 ]
 # The fine print for every "part"/"yes" a competitor gets, so nobody has to take our word for it.
 VERSUS_NOTES = {

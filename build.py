@@ -89,11 +89,56 @@ def quote(text):
 
 
 # The language's keywords in the ruled syntax (no def or let; concepts; take; comments start with //).
-KEYWORDS = {"concept", "law", "checked", "example", "take", "borrow", "tainted", "endorse", "trust", "match",
-            "type", "any", "if", "else", "for", "in", "return", "when", "otherwise", "fail", "use", "yield"}
+KEYWORDS = {"concept", "law", "checked", "example", "take", "borrow", "clone", "tainted", "endorse", "trust", "match",
+            "type", "any", "if", "else", "for", "in", "return", "when", "otherwise", "fail", "use", "yield", "super", "extend"}
 # A Draconyx line in pieces: a closed """ text, a """ text left open to the end of the line (a doc that goes on
 # below), a "string", or a // comment to the end of the line. Found left to right, so a // inside a string is text.
 DRX_TOKENS = re.compile(r'("""[^\n]*?"""|"""[^\n]*$|"(?:[^"\\]|\\.)*"|//.*$)')
+
+
+def drx_report(text):
+    """drx's terminal report in its own style, from the plain text (one block per problem, each line of a block
+    starting with ┃): the bar becomes ONE left border, the ERROR badge, the file and line in bold, the code
+    highlighted, the ^^^ marks red, `code` in a sentence shown without its backticks in the name colour, the
+    reference grey, the recap's count red and bold. Escapes everything."""
+    out, block = [], []
+
+    def sentence(line):
+        return re.sub(r"`([^`]+)`", r'<span class="d-name">\1</span>', e(line))
+
+    def flush():
+        if block:
+            out.append('<span class="d-bar">' + "\n".join(x or "<span></span>" for x in block) + "</span>")
+            block.clear()
+
+    for line in text.split("\n"):
+        if not line.startswith("┃"):
+            flush()
+            if line.startswith("$ "):
+                out.append('<span class="d-prompt">$</span> ' + e(line[2:]))
+            else:
+                m = re.match(r"(\d+ errors?)(.*)$", line)
+                out.append(f'<span class="d-count">{e(m.group(1))}</span>{e(m.group(2))}' if m else e(line))
+            continue
+        body = line[2:] if line.startswith("┃ ") else line[1:]
+        m = re.match(r"ERROR  (.*)$", body)
+        if m:
+            block.append(f'<span class="d-badge"> ERROR </span>  <span class="d-loc">{e(m.group(1))}</span>')
+        elif re.fullmatch(r" +\^+", body):
+            block.append(f'<span class="d-marks">{e(body)}</span>')
+        elif body.startswith("    "):
+            block.append(highlight("draconyx", body))
+        elif re.fullmatch(r"\(AX\d{4}\. .*\)", body):
+            block.append(f'<span class="d-ref">{e(body)}</span>')
+        else:
+            block.append(sentence(body))
+    flush()
+    html_out = ""
+    for i, piece in enumerate(out):
+        if i and not piece.startswith('<span class="d-bar">') and not out[i - 1].startswith('<span class="d-bar">'):
+            html_out += "\n"
+        html_out += piece
+    return html_out
 
 
 def highlight(kind, text):
@@ -227,7 +272,7 @@ details.fine li{margin:4px 0}
 .fcard{padding:19px 19px 19px;display:flex;flex-direction:column;gap:8px}
 .fcard:hover{--edge:var(--olive)}
 .fcard b{font-size:16.5px;line-height:1.3}.fcard p{margin:0;font-size:15px;color:var(--muted)}
-.fcard p code{background:var(--chip);padding:1px 5px;border-radius:5px}
+.fcard p code,.fcard b code{background:var(--chip);padding:1px 5px;border-radius:5px}
 .fcard .pill{align-self:flex-start}
 .pill.spec{color:var(--muted);background:var(--line)}
 .reasons{display:grid;grid-template-columns:minmax(0,1fr);gap:26px;margin-top:34px}.reason{min-width:0}
@@ -246,6 +291,8 @@ figure{margin:18px 0 0;min-width:0}
 pre{margin:0;background:var(--code-bg);color:var(--code-fg);clip-path:var(--cut2);padding:18px 20px;overflow-x:auto;
 font:13.5px/1.6 ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;tab-size:4}
 pre .c{color:var(--code-c)}pre .s{color:var(--code-s)}pre .k{color:var(--code-k)}pre .ax{color:var(--code-ax);font-weight:700}
+pre .d-bar{display:block;border-left:3px solid #cd3131;padding-left:calc(2ch - 3px)}pre .d-badge{color:#fff;background:#cd3131;font-weight:700}
+pre .d-loc,pre .d-count{font-weight:700}pre .d-count,pre .d-marks{color:#cd3131}pre .d-ref,pre .d-prompt{color:#8a8a8a}pre .d-name{color:#afd7ff}
 figcaption{font-size:13px;color:var(--muted);margin-top:8px}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
 .cites{margin-top:10px;font-size:13px;color:var(--muted)}.cites summary{cursor:pointer}.cites code{white-space:nowrap}
@@ -376,7 +423,8 @@ def build_html(posts=()):
         if r["sample"]:
             kind, code, cap = r["sample"]
             fig = (f'<figure><pre tabindex="0" role="region" aria-label="{e(r["title"])}: example"><code>'
-                   f'{highlight(kind, code)}</code></pre><figcaption>{e(cap)}</figcaption></figure>')
+                   f'{drx_report(code) if kind == "drx" else highlight(kind, code)}</code></pre>'
+                   f'<figcaption>{e(cap)}</figcaption></figure>')
         reasons.append(
             f'<article class="reason" id="{r["id"]}"><div class="rhead"><span class="num">{i:02d}</span>{pill}</div>'
             f'<h3>{e(r["title"])}</h3><div class="rbody">{body}<p class="ships-line">{md(r["ships"])}</p>'
@@ -390,14 +438,14 @@ def build_html(posts=()):
         "<tr><th scope=\"row\">" + e(row) + "</th>" + "".join(
             f'<td{" class=\"us\"" if i == 0 else ""}>{marks[v][0]}<span class="vh">{marks[v][1]}</span></td>'
             for i, v in enumerate(vals)) + "</tr>" for row, vals in C.VERSUS)
-    vnote = ("<details class=\"fine\"><summary>Why \u201cpartly\u201d? The fine print, language by language</summary>"
+    vnote = ("<details class=\"fine\"><summary>Why \u201cpartly\u201d? The fine print, language by language.</summary>"
              + "".join(f"<h4>{e(l)}</h4><ul>" + "".join(f"<li>{md(n)}</li>" for n in ns) + "</ul>"
                        for l, ns in C.VERSUS_NOTES.items()) + "</details>")
     status_pill = {"ships": '<span class="pill ships">Ships</span>', "partial": '<span class="pill gaps">Partly built</span>',
                    "specified": '<span class="pill spec">In the spec</span>'}
     fgroups = "".join(
         f'<div class="fgroup"><h3>{e(g)}</h3><div class="fgrid">' + "".join(
-            f'<div class="fcard">{status_pill[st]}<b>{e(n)}</b><p>{md(pt)}</p></div>' for n, pt, st in items)
+            f'<div class="fcard">{status_pill[st]}<b>{md(n)}</b><p>{md(pt)}</p></div>' for n, pt, st in items)
         + "</div></div>" for g, items in C.FEATURE_GROUPS)
     stats = "".join(f"<li><b>{e(n)}</b><span>{e(t)}</span></li>" for n, t in C.STATS)
     loop = "".join(f'<li><i class="n" aria-hidden="true">{i}</i><b>{e(t)}</b><span>{e(d)}</span>'
@@ -411,7 +459,7 @@ def build_html(posts=()):
     return head(TITLE, description, "/", SITE_NAME, f"{C.HERO['headline']} A programming language designed for its AI author.",
                 verify=True, css=HOME_BLOG_CSS if posts else "", extra=structured_data(description)) + topbar("/") + f"""<main id="main">
 <div class="hero"><div class="wrap">
-<img class="logo" src="/assets/logo-1200.webp" srcset="/assets/logo-640.webp 640w, /assets/logo-1200.webp 1200w" sizes="(max-width:760px) 100vw, 720px" width="1200" height="800" alt="Draconyx: a dinosaur mascot above the Draconyx wordmark">
+<img class="logo" src="/assets/logo-1200.webp" srcset="/assets/logo-640.webp 640w, /assets/logo-1200.webp 1200w" sizes="(max-width:760px) 100vw, 720px" width="1200" height="800" alt="Draconyx: a dinosaur mascot above the Draconyx wordmark.">
 <p class="eyebrow">{e(C.HERO['eyebrow'])}</p>
 <h1>{e(C.HERO['h1'])}</h1>
 <p class="sub">{e(C.HERO['subhead'])}</p>
@@ -645,7 +693,7 @@ def build_opinions_html():
                    for i, q in enumerate(C.OPINIONS_QUESTIONS, 1))
     cards = []
     for o in C.OPINIONS:
-        by = f'By {e(o["maker"])}' + (f' &middot; {e(o["note"])}' if o.get("note") else "")
+        by = f'By {e(o["maker"])}' + (f' &middot; {e(o["note"])}.' if o.get("note") else "")
         quotes = "".join(f'<li><span class="qtag">{e(t)}</span><blockquote><p>{quote(q)}</p></blockquote></li>'
                          for t, q in o["quotes"])
         cards.append(
@@ -1110,7 +1158,7 @@ def build_not_found_html():
     return head(C.NOT_FOUND_TITLE, C.NOT_FOUND_LINE, None, noindex=True, css=NOT_FOUND_CSS) \
         + topbar("/" + NOT_FOUND_FILE) + f"""<main id="main">
 <div class="hero page nf"><div class="wrap">
-<img class="logo" src="/assets/logo-640.webp" srcset="/assets/logo-640.webp 640w, /assets/logo-1200.webp 1200w" sizes="(max-width:392px) 100vw, 360px" width="640" height="427" alt="Draconyx: a dinosaur mascot above the Draconyx wordmark">
+<img class="logo" src="/assets/logo-640.webp" srcset="/assets/logo-640.webp 640w, /assets/logo-1200.webp 1200w" sizes="(max-width:392px) 100vw, 360px" width="640" height="427" alt="Draconyx: a dinosaur mascot above the Draconyx wordmark.">
 <h1>{e(C.NOT_FOUND_HEADLINE)}</h1>
 <p class="sub">{e(C.NOT_FOUND_LINE)}</p>
 <div class="btns"><a class="btn primary" href="/">{e(C.NOT_FOUND_HOME)}</a></div>
@@ -1138,7 +1186,7 @@ def build_md(posts=()):
         lines += [f"**Status:** {r['ships']}", "", f"**Elsewhere:** {r['unlike']}", ""]
         if r["sample"]:
             kind, code, cap = r["sample"]
-            lang = {"draconyx": "", "json": "json", "shell": "sh"}[kind]
+            lang = {"draconyx": "", "json": "json", "shell": "sh", "drx": "text"}[kind]
             lines += [f"```{lang}", code, "```", f"_{cap}_", ""]
         lines += [f"Spec references: {', '.join(r['cites'])}", ""]
     lines += ["## The whole language", ""]
@@ -1147,17 +1195,17 @@ def build_md(posts=()):
         lines += [f"### {g}", ""] + [f"- **{n}** ({names[st]}): {pt}" for n, pt, st in items] + [""]
     lines += ["## Six AI models read the spec", "", C.OPINIONS_LEDE, ""]
     lines += [f"- **{o['name']}** ({o['maker']}): \u201c{o['headline']}\u201d" for o in C.OPINIONS]
-    lines += ["", f"Their answers, question by question: [{C.OPINIONS_HEADLINE}]({SITE}{C.OPINIONS_URL})", ""]
+    lines += ["", f"Their answers, question by question: [{C.OPINIONS_HEADLINE}]({SITE}{C.OPINIONS_URL}).", ""]
     lines += ["## Dragon claw, written law", ""] + [p + "\n" for p in C.NAME]
-    lines += [f"Source: [{C.NAME_SOURCE[0]}]({C.NAME_SOURCE[1]})", "", f"## Where it stands (as of {C.AS_OF})", ""]
+    lines += [f"Source: [{C.NAME_SOURCE[0]}]({C.NAME_SOURCE[1]}).", "", f"## Where it stands (as of {C.AS_OF})", ""]
     lines += [f"- **{k}:** {v}" for k, v in C.STATUS]
-    lines += ["", f"What changed, by date: [{C.CHANGELOG_TITLE}]({SITE}{C.CHANGELOG_URL})"]
+    lines += ["", f"What changed, by date: [{C.CHANGELOG_TITLE}]({SITE}{C.CHANGELOG_URL})."]
     if posts:  # the blog section, as on the page: the newest posts (drafts only in a --drafts preview, marked)
         lines += ["", f"## {C.BLOG_HEADLINE}", "", C.BLOG_HOME_LEDE, ""]
         lines += [f"- [{link_text(p['title'])}]({SITE}{p['url']}) ({long_date(p['date'])}"
                   + (", draft" if p["draft"] else "") + f"): {p['summary']}" for p in posts[:HOME_POSTS]]
-        lines += ["", f"All posts: [{C.BLOG_TITLE}]({SITE}{C.BLOG_URL})"]
-    lines += ["", f"## {C.SIGNUP_TITLE}", "", C.SIGNUP_LEAD, "", f"Subscribe: {C.LISTMONK_FORM_URL}", ""]
+        lines += ["", f"All posts: [{C.BLOG_TITLE}]({SITE}{C.BLOG_URL})."]
+    lines += ["", f"## {C.SIGNUP_TITLE}", "", C.SIGNUP_LEAD, "", f"Subscribe: [{C.LISTMONK_FORM_URL}]({C.LISTMONK_FORM_URL}).", ""]
     lines += ["## Get in early", "", contact_md(C.INVOLVED), ""]
     lines += ["## Privacy", "", contact_md(C.PRIVACY), ""]
     return "\n".join(lines)
@@ -1192,21 +1240,21 @@ def build_llms(posts=()):
     names = {"ships": "ships", "partial": "partly built", "specified": "in the spec"}
     out += ["", "## Language", ""]
     for g, items in C.FEATURE_GROUPS:
-        out += [f"- [{n}]({SITE}/#language): {pt} ({g}; {names[st]})" for n, pt, st in items]
-    out += ["", "## Docs", "", f"- [Full page as Markdown]({SITE}/index.md): every mechanism with samples and status",
-            f"- [Why the name]({SITE}/#name): Draconyx, Draco's written laws and the axones",
+        out += [f"- [{n}]({SITE}/#language): {pt.removesuffix('.')} ({g}; {names[st]})." for n, pt, st in items]
+    out += ["", "## Docs", "", f"- [Full page as Markdown]({SITE}/index.md): every mechanism with samples and status.",
+            f"- [Why the name]({SITE}/#name): Draconyx, Draco's written laws and the axones.",
             f"- [{C.OPINIONS_TITLE}]({SITE}{C.OPINIONS_URL}): verbatim excerpts from six AI models asked about the "
-            f"spec through a service, without knowing who was asking ([Markdown]({SITE}{C.OPINIONS_URL}index.md))",
+            f"spec through a service, without knowing who was asking ([Markdown]({SITE}{C.OPINIONS_URL}index.md)).",
             f"- [{C.CHANGELOG_TITLE}]({SITE}{C.CHANGELOG_URL}): what changed in the language, the spec and the "
-            f"toolchain, dated, newest first ([Markdown]({SITE}{C.CHANGELOG_URL}index.md))",
+            f"toolchain, dated, newest first ([Markdown]({SITE}{C.CHANGELOG_URL}index.md)).",
             f"- [{C.BLOG_TITLE}]({SITE}{C.BLOG_URL}): {C.BLOG_LLMS} ([Markdown]({SITE}{C.BLOG_URL}index.md), "
-            f"[Atom feed]({SITE}{BLOG_FEED}))",
-            f"- [Email us]({C.CONTACT_URL}): design discussion, collaboration, model training or evaluation",
-            f"- [Launch updates]({C.LISTMONK_FORM_URL}): mailing list for the launch and new features (double opt-in)", ""]
+            f"[Atom feed]({SITE}{BLOG_FEED})).",
+            f"- [Email us]({C.CONTACT_URL}): design discussion, collaboration, model training or evaluation.",
+            f"- [Launch updates]({C.LISTMONK_FORM_URL}): mailing list for the launch and new features (double opt-in).", ""]
     if posts:
         out += ["## Blog", ""]
-        out += [f"- [{link_text(p['title'])}]({SITE}{p['url']}) ({p['date']}): {p['summary']} "
-                f"([Markdown]({SITE}{p['url']}index.md))" for p in posts] + [""]
+        out += [f"- [{link_text(p['title'])}]({SITE}{p['url']}) ({p['date']}): {p['summary'].removesuffix('.')} "
+                f"([Markdown]({SITE}{p['url']}index.md))." for p in posts] + [""]
     return "\n".join(out)
 
 

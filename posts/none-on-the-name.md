@@ -114,9 +114,7 @@ a panic.
 In Draconyx the mark is a `?` on the function's name:
 
 ```draconyx
-@doc """
-Looks up the age of `name`, which may be unknown.
-
+@doc """Looks up the age of `name`, which may be unknown.
   * name - the name of the person
 """
 find_age?(name: String) -> Int:
@@ -138,9 +136,7 @@ age = find_age?(name = "ada") ?? 0
 Or with a `match` that covers both cases. The head names the result, and inside the `ok` arm `age` holds the value:
 
 ```draconyx
-@doc """
-Describes in words how old `name` is.
-
+@doc """Describes in words how old `name` is.
   * name - the name of the person
 """
 describe(name: String) -> String:
@@ -179,9 +175,7 @@ And the word is the same wherever the language means "no value". A function that
 result type:
 
 ```draconyx
-@doc """
-Stops the task if `amount` is negative.
-
+@doc """Stops the task if `amount` is negative.
   * amount - the amount to check
 """
 check_amount(amount: Int) -> None:
