@@ -690,8 +690,6 @@ OPINIONS = [
                           "mechanisms that other languages bolt on outside the type system."),
          ("The language", "On paper it’s brilliant. It’s also honest in a way most vision docs aren’t, which is why "
                           "I take it seriously."),
-         ("The future", "…as a research programme that could define the next generation of AI-native toolchains — "
-                        "yes, it could be."),
          ("Versus Rust", "If your problem is ‘let an untrusted model write and continuously regenerate whole "
                          "services safely,’ Draconyx is better designed on paper."),
          ("Dependency injection", "…this is the best justification of DI in a language I’ve seen, because it isn’t "
