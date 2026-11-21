@@ -208,3 +208,11 @@ gap numbers, no process, no benchmark results. The page is linked from the top b
 the sources as `lastmod`) and the IndexNow key file `/<INDEXNOW_KEY>.txt`. The webmaster consoles' ownership
 proofs go in `VERIFY_META` (meta tags) or `VERIFY_FILES` (files at the site root) in `build.py`. Keep them: if a
 token disappears from the live site, the console drops the verification.
+
+The site's name is `SITE_NAME` in `build.py`: every indexable page carries it as `og:site_name`, and the home page
+(only there, as Google asks) carries it in JSON-LD structured data (`structured_data()`): a `WebSite` with
+`SITE_ALT_NAMES` as its `alternateName` (Google's fallback when the bare name is taken, and Draconyx is also a dinosaur
+genus), and the `Organization` behind it, with the same names, the Apple touch icon as its logo and `SAME_AS`, the
+project's public profiles. Add a profile to `SAME_AS` only once it is public and links back to the site. After a change,
+check the home page with the [Schema Markup Validator](https://validator.schema.org/) (Google's Rich Results Test does
+not show site names) and ask Search Console's URL Inspection to recrawl `/`.

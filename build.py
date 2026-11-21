@@ -13,6 +13,7 @@ ALTCHA widget, is served from the site itself (ALTCHA_JS), and so is the challen
 """
 import datetime
 import html
+import json
 import os
 import re
 import shutil
@@ -40,6 +41,14 @@ VERIFY_META = {
 }
 # Verification files served at the site root: {filename: exact content}, as each engine's console gives them.
 VERIFY_FILES = {}
+# The site's name, as search engines should show it: og:site_name on every indexable page, and the WebSite and
+# Organization structured data on the home page (structured_data()). Google reads the site name from the home page's
+# WebSite markup first (https://developers.google.com/search/docs/appearance/site-names); alternateName is its fallback
+# when the bare name is taken (Draconyx is also a dinosaur genus).
+SITE_NAME = "Draconyx"
+SITE_ALT_NAMES = ["Draconyx programming language", "draconyx.ai"]
+# Public profiles of the project, for the Organization's sameAs: only addresses that exist and are public.
+SAME_AS = ["https://github.com/draconyx-ai"]
 # Pages listed in sitemap.xml and submitted to IndexNow: the canonical HTML pages only. /index.md and
 # /llms.txt are alternate formats of the same page, linked from it, and stay crawlable. build_sitemap() adds the blog
 # and its published posts after these.
@@ -396,10 +405,10 @@ def build_html(posts=()):
     status = "".join(f"<dt>{e(k)}</dt><dd>{md(v)}</dd>" for k, v in C.STATUS)
     spec = f'<a class="btn" href="{e(C.SPEC_PDF)}">Read the spec (PDF)</a>' if C.SPEC_PDF else ""
 
-    return head(TITLE, "Draconyx is a programming language designed for its AI author: structured diagnostics with "
-                "edits, writes by definition name, laws checked by default, compile-time authority.", "/",
-                "Draconyx", f"{C.HERO['headline']} A programming language designed for its AI author.",
-                verify=True, css=HOME_BLOG_CSS if posts else "") + topbar("/") + f"""<main id="main">
+    description = ("Draconyx is a programming language designed for its AI author: structured diagnostics with edits, "
+                   "writes by definition name, laws checked by default, compile-time authority.")
+    return head(TITLE, description, "/", SITE_NAME, f"{C.HERO['headline']} A programming language designed for its AI author.",
+                verify=True, css=HOME_BLOG_CSS if posts else "", extra=structured_data(description)) + topbar("/") + f"""<main id="main">
 <div class="hero"><div class="wrap">
 <img class="logo" src="/assets/logo-1200.webp" srcset="/assets/logo-640.webp 640w, /assets/logo-1200.webp 1200w" sizes="(max-width:760px) 100vw, 720px" width="1200" height="800" alt="Draconyx: a dinosaur mascot above the Draconyx wordmark">
 <p class="eyebrow">{e(C.HERO['eyebrow'])}</p>
@@ -473,6 +482,23 @@ SHARE_IMAGE = "/assets/share-1200x630.png"
 SHARE_ALT = f"The Draconyx logo beside the headline: {C.HERO['headline']}"
 
 
+def structured_data(description):
+    """The home page's JSON-LD: the WebSite (the site name) and the Organization behind it (logo, public profiles), with
+    the same name and alternate names, as Google asks (https://developers.google.com/search/docs/appearance/
+    structured-data/organization). The logo is the 180 px Apple touch icon: opaque, square, above Google's 112 px
+    minimum. "</" is escaped so the text cannot close the script element."""
+    data = {"@context": "https://schema.org", "@graph": [
+        {"@type": "WebSite", "@id": f"{SITE}/#website", "name": SITE_NAME, "alternateName": SITE_ALT_NAMES,
+         "url": f"{SITE}/", "inLanguage": "en", "publisher": {"@id": f"{SITE}/#organization"}},
+        {"@type": "Organization", "@id": f"{SITE}/#organization", "name": SITE_NAME, "alternateName": SITE_ALT_NAMES,
+         "url": f"{SITE}/", "description": description,
+         "logo": {"@type": "ImageObject", "url": f"{SITE}/apple-touch-icon.png", "width": 180, "height": 180},
+         "sameAs": SAME_AS},
+    ]}
+    text = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    return f'<script type="application/ld+json">{text}</script>\n'
+
+
 def head(title, description, path, og_title=None, og_description=None, verify=False, noindex=False, css="",
          og_type="website", extra=""):
     """Everything up to the skip link: meta, icons, the Markdown alternate (<path>index.md), the inlined CSS.
@@ -487,6 +513,7 @@ def head(title, description, path, og_title=None, og_description=None, verify=Fa
     else:
         page_meta = f"""<link rel="alternate" type="text/markdown" href="{path}index.md" title="This page as Markdown">
 <link rel="canonical" href="{SITE}{path}">
+<meta property="og:site_name" content="{e(SITE_NAME)}">
 <meta property="og:title" content="{e(og_title)}">
 <meta property="og:description" content="{e(og_description)}">
 <meta property="og:url" content="{SITE}{path}">
