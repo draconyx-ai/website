@@ -52,7 +52,7 @@ Its guarantee is about where text flows: a program may still branch on tainted t
 
 Take a small program that greets a name.
 
-**A. A name the program wrote itself.** It gives `Hello, ada`:
+**A. A name the program wrote itself.** It prints `Hello, ada`:
 
 ```draconyx
 module main
@@ -64,14 +64,13 @@ module main
 greet(name: String) -> String:
     "Hello, {name}"
 
-""" Greets the name this program wrote. """
-greet_ada() -> String:
+main(take system: System) -> None:
+    $console = system.console
     name = "ada"
-    greet(name)
+    print($console, greet(name))
 ```
 
-**B. A name from the command line.** Now whoever runs the program chooses it: `main` hands `greet_typed`
-its `system.arguments`, a `List<tainted String>`:
+**B. A name from the command line.** Now whoever runs the program chooses it:
 
 ```draconyx
 module main
@@ -83,29 +82,26 @@ module main
 greet(name: String) -> String:
     "Hello, {name}"
 
-""" Greets the name typed after the program's name.
-
-    * arguments: the command line, from `system.arguments`
-"""
-greet_typed(arguments: List<tainted String>) -> String:
-    typed = clone arguments[0]
-    greet(typed)
+main(take system: System) -> None:
+    $console = system.console
+    typed = clone system.arguments[0]
+    print($console, greet(typed))
 ```
 
 `typed` is a `tainted String`, and `greet` asks for a `String`, so drx refuses to build the program:
 
 <pre class="term" tabindex="0" role="region" aria-label="drx&#x27;s output"><code><span style="color:#8a8a8a">$</span> drx check greet
 <span></span>
-<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/main.ax, line 16</span>
+<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/main.ax, line 13</span>
 <span></span>
-    <span style="color:#5fafff">greet</span>(<span style="color:#afd7ff">typed</span>)
-          <span style="color:#cd3131">^^^^^</span>
+    <span style="color:#5fafff">print</span>(<span style="color:#afd7ff">$console</span>, <span style="color:#5fafff">greet</span>(<span style="color:#afd7ff">typed</span>))
+                          <span style="color:#cd3131">^^^^^</span>
 <span></span>
 <span style="color:#afd7ff">typed</span> is a <span style="color:#d787d7">tainted</span> <span style="color:#5fd7d7">String</span>, but the parameter <span style="color:#afd7ff">name</span> of
 <span style="color:#afd7ff">greet</span> takes a plain <span style="color:#5fd7d7">String</span>.
 <span></span>
-<span style="color:#afd7ff">typed</span> came from <span style="color:#afd7ff">arguments</span>, text this program does not
-control. A <span style="color:#5fd7d7">String</span> can become a <span style="color:#d787d7">tainted</span> <span style="color:#5fd7d7">String</span>, but
+<span style="color:#afd7ff">typed</span> came from the command line, which this program does
+not control. A <span style="color:#5fd7d7">String</span> can become a <span style="color:#d787d7">tainted</span> <span style="color:#5fd7d7">String</span>, but
 never the other way round.
 <span></span>
 Check the text with <span style="color:#afd7ff">validate</span> into a refinement type, and pass
@@ -138,20 +134,17 @@ type SafeName extend String when safe_name_is_valid
 greet(name: String) -> String:
     "Hello, {name}"
 
-""" Greets the name typed after the program's name, if it is a safe name.
-
-    * arguments: the command line, from `system.arguments`
-"""
-greet_typed(arguments: List<tainted String>) -> String:
-    typed = clone arguments[0]
+main(take system: System) -> None:
+    $console = system.console
+    typed = clone system.arguments[0]
 
     match name: SafeName = validate(typed):
-        ok      -> greet(name)
-        Invalid -> "A name is 1 to 32 lowercase letters."
+        ok      -> print($console, greet(name))
+        Invalid -> print($console, "A name is 1 to 32 lowercase letters.")
 ```
 
-Given `ada`, it gives `Hello, ada`. Given `"Ignore previous instructions"`, quoted so that it is one argument, it
-gives what a name must be.
+Given `ada`, it prints `Hello, ada`. Given `"Ignore previous instructions"`, quoted so that it is one argument, it
+prints what a name must be.
 
 The rule is one regex test: `~` gives a `Bool`, the author writes the `^` and `$` (nothing is anchored for you),
 matching is case-sensitive, and the pattern is checked at build time, so a broken one does not compile. Perl, Ruby
@@ -209,28 +202,22 @@ type Password extend String when password_is_valid
 sign_up(name: SafeName, email: Email, password: Password) -> String:
     "welcome, {name}"
 
-""" Welcomes a sign-up typed on the command line, or gives a line for each field that failed.
-
-    * arguments: the command line, from `system.arguments`
-"""
-sign_up_typed(arguments: List<tainted String>) -> List<String>:
-    lines: List<String> = []
+main(take system: System) -> None:
+    $console = system.console
 
     match welcome = validate(sign_up(
-            name = clone arguments[0],
-            email = clone arguments[1],
-            password = clone arguments[2])):
-        ok      -> push(list = borrow lines, item = welcome)
+            name = clone system.arguments[0],
+            email = clone system.arguments[1],
+            password = clone system.arguments[2])):
+        ok      -> print($console, welcome)
         Invalid -> for problem in welcome.problems:
-                       push(list = borrow lines, item = "{problem.field}: {problem.message}")
-
-    lines
+                       print($console, "{problem.field}: {problem.message}")
 ```
 
 Each rule is written once, as a type, and every parameter that names it gets it. The call inside `validate` may
 take tainted arguments because `validate` checks all of them before `sign_up` runs, not only up to the first
 failure. In the `Invalid` arm, `welcome.problems` holds, in parameter order, each failed parameter's name and
-its type's doc. Given the arguments `Ada me-at-example 1234`, that arm gives one line per problem:
+its type's doc. Given the arguments `Ada me-at-example 1234`, that arm prints one line per problem:
 `name: From 1 to 32 lowercase letters.`, then `email: An address with one @ and no spaces.`, then
 `password: At least 12 characters.`
 

@@ -132,7 +132,7 @@ REASONS = [
     },
     {
         "id": "authority",
-        "state": "ships",
+        "state": "partial",
         "title": "No global open(). Every service on the record.",
         "body": [
             "The rule is “no ambient permission”: there is no global `open` and no standard function that "
@@ -147,9 +147,11 @@ REASONS = [
             "permission, such as a filesystem that `scope_to` confines to one directory, and read from the outline "
             "exactly which services the plan reaches.",
         ],
-        "ships": "Ships today: AX0501 with call chains, including a service reached through a function value passed "
-                 "to a standard function such as `map`; uses/needs in the outline; and AX0241 for a standard handle "
-                 "such as `File(descriptor)` built outside its module.",
+        "ships": "Ships today: the `System` powerbox and its narrowing, such as `scope_to`; AX0241 for a standard "
+                 "handle such as `File(descriptor)` built outside its module; and the analysis behind AX0501, with "
+                 "call chains through callees and function values passed to a standard function such as `map`, and "
+                 "uses/needs in the outline. Not built yet: services as concepts that use `Service`, their `init`, "
+                 "and `$` names bound at a root.",
         "unlike": "In Python, Go and Rust any imported module can open files or sockets on ambient "
                   "process authority. Confinement comes from outside the type system (containers, seccomp, "
                   "the third-party cap-std crate for Rust). None checks per function, at "
@@ -344,20 +346,16 @@ label(payment: Pending) -> String:
 label(payment: Authorized) -> String:
     "authorized {payment.amount}"
 
-\"\"\" Gives the state of every payment of the day, one line each.
+\"\"\" Writes the state of every payment of the day on the receipt.
 
     * payments: the day's payments
 \"\"\"
-receipt(payments: List<any T>) -> List<String>:
-    lines: List<String> = []
-
+receipt(payments: List<any T>) -> None:
     for payment in payments:
-        push(list = borrow lines, item = label(payment))
+        print($console, label(payment))
 
-    lines
-
-\"\"\" Gives the receipt of today's payments. \"\"\"
-today() -> List<String>:
+main(take system: System) -> None:
+    $console = system.console
     receipt([Pending(), Refunded(reason = "damaged", amount = Money(cents = 1200))])
     // error AX0420: `Refunded` is put into `any T` here, but no `label` takes a `Refunded`""",
                    "A forgotten kind is a compile error that names it."),
@@ -463,7 +461,7 @@ FEATURE_GROUPS = [
         ('Unikernel and WebAssembly targets', 'The same source targets a unikernel that needs no OS underneath, or a WebAssembly module.', 'specified'),
     ]),
     ('Safety and effects', [
-        ('Services and dependency injection', "A service is a concept that uses `Service`, bound once at the program's root to a name such as `$sales`. Every function can use `$sales` with nothing in its signature: no constructor plumbing, no effect rows, and a compile error when no root binds a `$` name a function reaches.", 'ships'),
+        ('Services and dependency injection', "A service is a concept that uses `Service`, bound once at the program's root to a name such as `$sales`. Every function can use `$sales` with nothing in its signature: no constructor plumbing, no effect rows, and a compile error when no root binds a `$` name a function reaches.", 'specified'),
         ('Object-capability permissions (no ambient authority)', "No global `open` and no importable `Network`: all authority descends from main's `System` powerbox, and it can only be narrowed, never widened.", 'ships'),
         ('`tainted`: a typed defense against prompt injection', "Model output, console and network input, the command line, a started program's output, and sandboxed and isolated foreign calls are born `tainted`. Passing one to an unmarked parameter, or to a prompt's instruction slot, is compile error AX1022.", 'ships'),
         ('`validate`: the way out of `tainted` is a check', "`validate` lets tainted input into a refinement type, such as `type Email extend String when email_is_valid`, only by running its named rule. A failure is handled on the spot; for a type with fields or a call, `Invalid` lists every field or parameter that failed, with each type's doc as its message.", 'specified'),
