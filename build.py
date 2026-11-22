@@ -91,8 +91,9 @@ def quote(text):
 # The language's keywords in the ruled syntax (no def or let; concepts; take; comments start with //).
 KEYWORDS = {"concept", "law", "checked", "example", "take", "borrow", "clone", "tainted", "endorse", "trust", "match",
             "type", "any", "if", "else", "for", "in", "return", "when", "otherwise", "fail", "use", "yield", "super", "extend", "const", "proven"}
-# A Draconyx line in pieces: a closed """ text, a """ text left open to the end of the line (a doc that goes on
-# below), a "string", or a // comment to the end of the line. Found left to right, so a // inside a string is text.
+# A Draconyx line in pieces: a closed """ text (a one-line doc), a """ left open to the end of the line (a doc that
+# goes on below, down to the line holding the closing """), a "string", or a // comment to the end of the line.
+# Found left to right, so a // inside a string is text.
 DRX_TOKENS = re.compile(r'("""[^\n]*?"""|"""[^\n]*$|"(?:[^"\\]|\\.)*"|//.*$)')
 
 
@@ -142,13 +143,13 @@ def drx_report(text):
 
 
 def highlight(kind, text):
-    """Tiny, safe highlighter. Draconyx: // comments, strings, @doc texts (one line, or over several lines),
-    decorators, keywords, AX codes. Shell and JSON: # comments, strings, AX codes. Escapes everything."""
+    """Tiny, safe highlighter. Draconyx: // comments, strings, docs (a \"\"\" text above a declaration, on one line
+    or from a \"\"\" line down to the closing \"\"\" line, all in the string colour), keywords, AX codes. Shell and
+    JSON: # comments, strings, AX codes. Escapes everything."""
     def plain(p):
         p = e(p)
         if kind == "draconyx":
-            p = re.sub(r"(?<!@)\b(" + "|".join(sorted(KEYWORDS)) + r")\b", r'<span class="k">\1</span>', p)
-            p = re.sub(r"(?<![\w@])(@[A-Za-z_]\w*)", r'<span class="k">\1</span>', p)
+            p = re.sub(r"\b(" + "|".join(sorted(KEYWORDS)) + r")\b", r'<span class="k">\1</span>', p)
         return re.sub(r"\b(AX\d{4})\b", r'<span class="ax">\1</span>', p)
 
     def note(c):

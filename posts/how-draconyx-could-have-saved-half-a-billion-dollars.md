@@ -97,13 +97,14 @@ anything check it, in the tests before launch or in the program that flies.
 In Draconyx the assumption is a rule on a type, written after `when`:
 
 ```draconyx
-@doc """Tells whether `number` fits in 16 signed bits: from -32768 to 32767.
-  * number - the number checked
+"""
+Tells whether `number` fits in 16 signed bits: from -32768 to 32767.
+    - number: the number checked
 """
 signed16_is_valid(number: Int) -> Bool:
     number >= -32768 and number <= 32767
 
-@doc """A whole number that fits in 16 signed bits."""
+"""A whole number that fits in 16 signed bits."""
 type Signed16 extend Int when signed16_is_valid
 ```
 
@@ -116,8 +117,9 @@ every target: `dev`, `test` and `release` alike. There is no monitoring level an
 Here is the Ariane 4 conversion, written the way it flew:
 
 ```draconyx
-@doc """Converts the horizontal bias to the 16 bits the flight data carries.
-  * bias - the horizontal bias the alignment computed
+"""
+Converts the horizontal bias to the 16 bits the flight data carries.
+    - bias: the horizontal bias the alignment computed
 """
 horizontal_bias_16(bias: Float) -> Signed16:
     to_int(value = bias)        // does not build: nothing proves the value fits in 16 bits
@@ -129,11 +131,12 @@ the compiler cannot read it, so it asks for the proof in the code. The version t
 bias does not fit:
 
 ```draconyx
-@doc """The horizontal bias does not fit in 16 signed bits."""
+"""The horizontal bias does not fit in 16 signed bits."""
 type BiasOutOfRange extend Error
 
-@doc """Gives `number` as a Signed16. Fails with BiasOutOfRange when it does not fit.
-  * number - the number to fit
+"""
+Gives `number` as a Signed16. Fails with BiasOutOfRange when it does not fit.
+    - number: the number to fit
 """
 fit_16_bits(number: Int) -> Signed16:
     if not signed16_is_valid(number):
@@ -142,8 +145,9 @@ fit_16_bits(number: Int) -> Signed16:
     fitted: Signed16 = number
     fitted
 
-@doc """Converts the horizontal bias to the 16 bits the flight data carries. Fails with BiasOutOfRange when it does not fit.
-  * bias - the horizontal bias the alignment computed
+"""
+Converts the horizontal bias to the 16 bits the flight data carries. Fails with BiasOutOfRange when it does not fit.
+    - bias: the horizontal bias the alignment computed
 """
 horizontal_bias_16(bias: Float) -> Signed16:
     match whole = checked_to_int?(value = bias):
@@ -195,29 +199,32 @@ Here is the conversion with the rocket's limit as a type, and the two laws. The 
 real constants of the flight software are not public.
 
 ```draconyx
-@doc """How much horizontal bias one step of the 16-bit word stands for."""
+"""How much horizontal bias one step of the 16-bit word stands for."""
 const bias_per_step: Float = 0.5
 
-@doc """The largest horizontal bias on this rocket's trajectory while the alignment runs."""
+"""The largest horizontal bias on this rocket's trajectory while the alignment runs."""
 const max_horizontal_bias: Float = 12000.0      // from the trajectory data of Ariane 4
 
-@doc """Tells whether this rocket can reach `bias` while the alignment runs.
-  * bias - the horizontal bias checked
+"""
+Tells whether this rocket can reach `bias` while the alignment runs.
+    - bias: the horizontal bias checked
 """
 flight_bias_is_valid(bias: Float) -> Bool:
     -max_horizontal_bias <= bias and bias <= max_horizontal_bias
 
-@doc """A horizontal bias inside this rocket's trajectory data."""
+"""A horizontal bias inside this rocket's trajectory data."""
 type FlightBias extend Float when flight_bias_is_valid
 
-@doc """Counts the steps of the 16-bit word that `bias` takes.
-  * bias - a horizontal bias inside the trajectory data
+"""
+Counts the steps of the 16-bit word that `bias` takes.
+    - bias: a horizontal bias inside the trajectory data
 """
 steps_of(bias: FlightBias) -> Int:
     to_int(bias / bias_per_step)
 
-@doc """Turns a count of steps into the 16-bit word. Holds the word at the nearest limit when the count does not fit.
-  * steps - the horizontal bias, counted in steps of the word
+"""
+Turns a count of steps into the 16-bit word. Holds the word at the nearest limit when the count does not fit.
+    - steps: the horizontal bias, counted in steps of the word
 """
 word_of(steps: Int) -> Signed16:
     if not signed16_is_valid(steps):
@@ -247,7 +254,7 @@ every machine, and `drx build --target release` proves Law 2. With the limit of 
 `max_horizontal_bias` becomes 60000.0 in the illustration, and `drx test` fails at the example, on the ground:
 
 ```
-Witness violation: word_of, example at line 33
+Witness violation: word_of, example at line 36
   word_of(steps_of(max_horizontal_bias)) = 32767
   expected                               = 120000
 ```
@@ -299,11 +306,11 @@ type's rule. A bias from C becomes a `FlightBias` only through that rule.
 address with `@`, written right after the pointer:
 
 ```draconyx
-@doc """Gives where the alignment routine, written in C, stored the horizontal bias it computed last."""
+"""Gives where the alignment routine, written in C, stored the horizontal bias it computed last."""
 extern "C" alignment_last_bias() -> Ptr<FlightBias>
     from library "alignment"
 
-@doc """Gives the horizontal bias the alignment routine computed last. The library keeps the bias in place while the program runs, and nothing else writes it."""
+"""Gives the horizontal bias the alignment routine computed last. The library keeps the bias in place while the program runs, and nothing else writes it."""
 last_bias() -> FlightBias:
     trust:
         alignment_last_bias()@      // the rule of FlightBias is checked as the bias is read

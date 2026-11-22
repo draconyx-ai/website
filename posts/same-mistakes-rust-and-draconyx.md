@@ -64,16 +64,17 @@ A parameter called `quantity`, used as `quantitty`.
 <p class="lang">Draconyx</p>
 <pre tabindex="0" role="region" aria-label="Draconyx: src/shop.ax"><code><span class="k">module</span> shop
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Works out what `quantity` items at `price` cost.</span>
-  * price - the price of one item
-  * quantity - how many items are bought
-<span class="s">""</span>"
+<span class="s">"""</span>
+<span class="s">Works out what `quantity` items at `price` cost.</span>
+<span class="s">    - price: the price of one item</span>
+<span class="s">    - quantity: how many items are bought</span>
+<span class="s">"""</span>
 total(price: Int, quantity: Int) -&gt; Int:
     price * quantitty</code></pre>
 <p class="cap">drx says:</p>
 <pre class="term" tabindex="0" role="region" aria-label="drx&#x27;s output"><code><span style="color:#8a8a8a">$</span> drx check shop
 <span></span>
-<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/shop.ax, line 8</span>
+<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/shop.ax, line 9</span>
 <span></span>
     <span style="color:#afd7ff">price</span> * <span style="color:#afd7ff">quantitty</span>
             <span style="color:#cd3131">^^^^^^^^^</span>
@@ -135,20 +136,21 @@ A price written as text where a number is expected.
 <p class="lang">Draconyx</p>
 <pre tabindex="0" role="region" aria-label="Draconyx: src/shop.ax"><code><span class="k">module</span> shop
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Works out what `quantity` items at `price` cost.</span>
-  * price - the price of one item
-  * quantity - how many items are bought
-<span class="s">""</span>"
+<span class="s">"""</span>
+<span class="s">Works out what `quantity` items at `price` cost.</span>
+<span class="s">    - price: the price of one item</span>
+<span class="s">    - quantity: how many items are bought</span>
+<span class="s">"""</span>
 total(price: Int, quantity: Int) -&gt; Int:
     price * quantity
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Works out the cost of three items at 12."""</span>
+<span class="s">"""Works out the cost of three items at 12."""</span>
 checkout() -&gt; Int:
     total(price = <span class="s">"12"</span>, quantity = 3)</code></pre>
 <p class="cap">drx says:</p>
 <pre class="term" tabindex="0" role="region" aria-label="drx&#x27;s output"><code><span style="color:#8a8a8a">$</span> drx check shop
 <span></span>
-<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/shop.ax, line 12</span>
+<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/shop.ax, line 13</span>
 <span></span>
     <span style="color:#5fafff">total</span>(<span style="color:#afd7ff">price</span> = <span style="color:#87d787">"12"</span>, <span style="color:#afd7ff">quantity</span> = <span style="color:#ff875f">3</span>)
                   <span style="color:#cd3131">^^^^</span>
@@ -243,37 +245,40 @@ cards.
 <p class="lang">Draconyx</p>
 <pre tabindex="0" role="region" aria-label="Draconyx: src/shop.ax"><code><span class="k">module</span> shop
 <span></span>
-<span class="k">@doc</span> <span class="s">"""A book the shop sells."""</span>
+<span class="s">"""A book the shop sells."""</span>
 <span class="k">type</span> Book:
     name: String
     price: Int
 <span></span>
-<span class="k">@doc</span> <span class="s">"""A gift card bought for someone."""</span>
+<span class="s">"""A gift card bought for someone."""</span>
 <span class="k">type</span> GiftCard:
     name: String
     price: Int
     recipient: String
 <span></span>
-<span class="k">@doc</span> <span class="s">"""A bookmark the shop sells."""</span>
+<span class="s">"""A bookmark the shop sells."""</span>
 <span class="k">type</span> Bookmark:
     name: String
     price: Int
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Writes a book's line on the receipt.</span>
-  * book - the book to write
-<span class="s">""</span>"
+<span class="s">"""</span>
+<span class="s">Writes a book's line on the receipt.</span>
+<span class="s">    - book: the book to write</span>
+<span class="s">"""</span>
 line(book: Book) -&gt; String:
     <span class="s">"{book.name}: {book.price}"</span>
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Writes a gift card's line on the receipt.</span>
-  * card - the gift card to write
-<span class="s">""</span>"
+<span class="s">"""</span>
+<span class="s">Writes a gift card's line on the receipt.</span>
+<span class="s">    - card: the gift card to write</span>
+<span class="s">"""</span>
 line(card: GiftCard) -&gt; String:
     <span class="s">"{card.name} for {card.recipient}: {card.price}"</span>
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Writes the receipt's lines for every item in `cart`.</span>
-  * cart - the items bought, of <span class="k">any</span> kind
-<span class="s">""</span>"
+<span class="s">"""</span>
+<span class="s">Writes the receipt's lines for every item in `cart`.</span>
+<span class="s">    - cart: the items bought, of any kind</span>
+<span class="s">"""</span>
 receipt(cart: List&lt;<span class="k">any</span> T&gt;) -&gt; List&lt;String&gt;:
     lines: List&lt;String&gt; = []
 <span></span>
@@ -282,14 +287,14 @@ receipt(cart: List&lt;<span class="k">any</span> T&gt;) -&gt; List&lt;String&gt;
 <span></span>
     lines
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Writes the receipt for a cart of a book, a gift card and a bookmark."""</span>
+<span class="s">"""Writes the receipt for a cart of a book, a gift card and a bookmark."""</span>
 checkout() -&gt; List&lt;String&gt;:
     receipt([Book(name = <span class="s">"Dune"</span>, price = 12), GiftCard(name = <span class="s">"Gift card"</span>, price = 25, recipient = <span class="s">"Ada"</span>),
              Bookmark(name = <span class="s">"Bookmark"</span>, price = 2)])</code></pre>
 <p class="cap">drx says:</p>
 <pre class="term" tabindex="0" role="region" aria-label="drx&#x27;s output"><code><span style="color:#8a8a8a">$</span> drx check shop
 <span></span>
-<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/shop.ax, line 45</span>
+<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/shop.ax, line 48</span>
 <span></span>
     <span style="color:#5fd7d7">Bookmark</span>(<span style="color:#afd7ff">name</span> = <span style="color:#87d787">"Bookmark"</span>, <span style="color:#afd7ff">price</span> = <span style="color:#ff875f">2</span>)])
     <span style="color:#cd3131">^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
@@ -297,13 +302,14 @@ checkout() -&gt; List&lt;String&gt;:
 This <span style="color:#5fd7d7">Bookmark</span> goes into a cart of <span style="color:#afd7ff">any</span> <span style="color:#5fd7d7">T</span>, and no <span style="color:#afd7ff">line</span> is
 written for <span style="color:#5fd7d7">Bookmark</span>.
 <span></span>
-<span style="color:#afd7ff">receipt</span> calls <span style="color:#afd7ff">line</span> on every item of the cart, on line 38,
+<span style="color:#afd7ff">receipt</span> calls <span style="color:#afd7ff">line</span> on every item of the cart, on line 41,
 so each kind that goes in needs a <span style="color:#afd7ff">line</span> of its own.
 <span></span>
 To fix it, write a <span style="color:#afd7ff">line</span> for <span style="color:#5fd7d7">Bookmark</span>:
 <span></span>
-    <span style="color:#d787d7">@doc</span> <span style="color:#87d787">"""Writes a bookmark's line on the receipt.</span>
-    <span style="color:#87d787">  * bookmark - the bookmark to write</span>
+    <span style="color:#87d787">"""</span>
+    <span style="color:#87d787">Writes a bookmark's line on the receipt.</span>
+    <span style="color:#87d787">    - bookmark: the bookmark to write</span>
     <span style="color:#87d787">"""</span>
     <span style="color:#5fafff">line</span>(<span style="color:#afd7ff">bookmark</span>: <span style="color:#5fd7d7">Bookmark</span>) -&gt; <span style="color:#5fd7d7">String</span>:
         <span style="color:#87d787">"{bookmark.name}: {bookmark.price}"</span>
@@ -372,13 +378,14 @@ A greeting sent twice, when sending takes it.
 <p class="lang">Draconyx</p>
 <pre tabindex="0" role="region" aria-label="Draconyx: src/mail.ax"><code><span class="k">module</span> mail
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Sends `message` and counts the bytes that went out.</span>
-  * message - the text to send
-<span class="s">""</span>"
+<span class="s">"""</span>
+<span class="s">Sends `message` and counts the bytes that went out.</span>
+<span class="s">    - message: the text to send</span>
+<span class="s">"""</span>
 send(<span class="k">take</span> message: String) -&gt; Int:
     len_bytes(message)
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Sends the same greeting twice."""</span>
+<span class="s">"""Sends the same greeting twice."""</span>
 notify() -&gt; Int:
     greeting = <span class="s">"Hello"</span>
     first = send(<span class="k">take</span> greeting)
@@ -387,19 +394,19 @@ notify() -&gt; Int:
 <p class="cap">drx says:</p>
 <pre class="term" tabindex="0" role="region" aria-label="drx&#x27;s output"><code><span style="color:#8a8a8a">$</span> drx check mail
 <span></span>
-<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/mail.ax, line 13</span>
+<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/mail.ax, line 14</span>
 <span></span>
     <span style="color:#afd7ff">second</span> = <span style="color:#5fafff">send</span>(<span style="color:#d787d7">take</span> <span style="color:#afd7ff">greeting</span>)
                   <span style="color:#cd3131">^^^^^^^^^^^^^</span>
 <span></span>
-<span style="color:#afd7ff">greeting</span> was given to <span style="color:#afd7ff">send</span> on line 12, so it cannot be
+<span style="color:#afd7ff">greeting</span> was given to <span style="color:#afd7ff">send</span> on line 13, so it cannot be
 used again here.
 <span></span>
 <span style="color:#afd7ff">send</span> takes its message with <span style="color:#d787d7">take</span>: after the first call,
 <span style="color:#afd7ff">send</span> owns <span style="color:#afd7ff">greeting</span> and this function no longer has it.
 <span></span>
 If <span style="color:#afd7ff">send</span> only reads the message, drop <span style="color:#d787d7">take</span> in three places:
-here, on line 12, and in the signature of <span style="color:#afd7ff">send</span>:
+here, on line 13, and in the signature of <span style="color:#afd7ff">send</span>:
 <span></span>
     <span style="color:#5fafff">send</span>(<span style="color:#afd7ff">message</span>: <span style="color:#5fd7d7">String</span>) -&gt; <span style="color:#5fd7d7">Int</span>:
 <span></span>
@@ -456,20 +463,21 @@ A call of `total` that forgets the quantity.
 <p class="lang">Draconyx</p>
 <pre tabindex="0" role="region" aria-label="Draconyx: src/shop.ax"><code><span class="k">module</span> shop
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Works out what `quantity` items at `price` cost.</span>
-  * price - the price of one item
-  * quantity - how many items are bought
-<span class="s">""</span>"
+<span class="s">"""</span>
+<span class="s">Works out what `quantity` items at `price` cost.</span>
+<span class="s">    - price: the price of one item</span>
+<span class="s">    - quantity: how many items are bought</span>
+<span class="s">"""</span>
 total(price: Int, quantity: Int) -&gt; Int:
     price * quantity
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Works out the cost of one item at 12."""</span>
+<span class="s">"""Works out the cost of one item at 12."""</span>
 checkout() -&gt; Int:
     total(price = 12)</code></pre>
 <p class="cap">drx says:</p>
 <pre class="term" tabindex="0" role="region" aria-label="drx&#x27;s output"><code><span style="color:#8a8a8a">$</span> drx check shop
 <span></span>
-<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/shop.ax, line 12</span>
+<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/shop.ax, line 13</span>
 <span></span>
     <span style="color:#5fafff">total</span>(<span style="color:#afd7ff">price</span> = <span style="color:#ff875f">12</span>)
     <span style="color:#cd3131">^^^^^</span>
@@ -522,16 +530,17 @@ A local name in camelCase, the habit of JavaScript and Java.
 <p class="lang">Draconyx</p>
 <pre tabindex="0" role="region" aria-label="Draconyx: src/shop.ax"><code><span class="k">module</span> shop
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Adds a 20% tax to `price`.</span>
-  * price - the price before tax
-<span class="s">""</span>"
+<span class="s">"""</span>
+<span class="s">Adds a 20% tax to `price`.</span>
+<span class="s">    - price: the price before tax</span>
+<span class="s">"""</span>
 with_tax(price: Int) -&gt; Int:
     totalPrice = price + price / 5
     totalPrice</code></pre>
 <p class="cap">drx says:</p>
 <pre class="term" tabindex="0" role="region" aria-label="drx&#x27;s output"><code><span style="color:#8a8a8a">$</span> drx check shop
 <span></span>
-<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/shop.ax, line 7</span>
+<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/shop.ax, line 8</span>
 <span></span>
     <span style="color:#afd7ff">totalPrice</span> = <span style="color:#afd7ff">price</span> + <span style="color:#afd7ff">price</span> / <span style="color:#ff875f">5</span>
     <span style="color:#cd3131">^^^^^^^^^^</span>
@@ -542,7 +551,7 @@ lower_snake case.
 The case tells values from types: a value is written
 <span style="color:#afd7ff">total_price</span>, a type <span style="color:#5fd7d7">TotalPrice</span>.
 <span></span>
-Rename it <span style="color:#afd7ff">total_price</span>, here and on line 8.
+Rename it <span style="color:#afd7ff">total_price</span>, here and on line 9.
 <span></span>
 <span style="color:#afd7ff">drx fix</span> makes this change for you.
 <span></span>
@@ -557,9 +566,10 @@ name as it is. drx refuses the name, and `drx fix` renames it on both lines:
 
 <pre tabindex="0" role="region" aria-label="Draconyx: src/shop.ax after drx fix"><code><span class="k">module</span> shop
 <span></span>
-<span class="k">@doc</span> <span class="s">"""Adds a 20% tax to `price`.</span>
-  * price - the price before tax
-<span class="s">""</span>"
+<span class="s">"""</span>
+<span class="s">Adds a 20% tax to `price`.</span>
+<span class="s">    - price: the price before tax</span>
+<span class="s">"""</span>
 with_tax(price: Int) -&gt; Int:
     total_price = price + price / 5
     total_price</code></pre>
@@ -651,9 +661,9 @@ short ones for its closing lines; this is the first. drx prints one line per dia
 <span class="t-w">  </span><span class="t-nt">"message"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">"`quantitty` is not a name this function knows."</span><span class="t-p">,</span>
 <span class="t-w">  </span><span class="t-nt">"primary_span"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">{</span>
 <span class="t-w">    </span><span class="t-nt">"file"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">"src/shop.ax"</span><span class="t-p">,</span>
-<span class="t-w">    </span><span class="t-nt">"start"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">8</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">13</span><span class="t-p">],</span>
-<span class="t-w">    </span><span class="t-nt">"end"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">8</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">22</span><span class="t-p">],</span>
-<span class="t-w">    </span><span class="t-nt">"bytes"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">202</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">211</span><span class="t-p">]</span>
+<span class="t-w">    </span><span class="t-nt">"start"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">9</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">13</span><span class="t-p">],</span>
+<span class="t-w">    </span><span class="t-nt">"end"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">9</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">22</span><span class="t-p">],</span>
+<span class="t-w">    </span><span class="t-nt">"bytes"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">200</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">209</span><span class="t-p">]</span>
 <span class="t-w">  </span><span class="t-p">},</span>
 <span class="t-w">  </span><span class="t-nt">"secondary_spans"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[],</span>
 <span class="t-w">  </span><span class="t-nt">"explanation"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">"`total` has the parameters `price` and `quantity`, and nothing else in reach is called `quantitty`."</span><span class="t-p">,</span>
@@ -661,9 +671,9 @@ short ones for its closing lines; this is the first. drx prints one line per dia
 <span class="t-w">    </span><span class="t-p">{</span>
 <span class="t-w">      </span><span class="t-nt">"span"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">{</span>
 <span class="t-w">        </span><span class="t-nt">"file"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">"src/shop.ax"</span><span class="t-p">,</span>
-<span class="t-w">        </span><span class="t-nt">"start"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">8</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">13</span><span class="t-p">],</span>
-<span class="t-w">        </span><span class="t-nt">"end"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">8</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">22</span><span class="t-p">],</span>
-<span class="t-w">        </span><span class="t-nt">"bytes"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">202</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">211</span><span class="t-p">]</span>
+<span class="t-w">        </span><span class="t-nt">"start"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">9</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">13</span><span class="t-p">],</span>
+<span class="t-w">        </span><span class="t-nt">"end"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">9</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">22</span><span class="t-p">],</span>
+<span class="t-w">        </span><span class="t-nt">"bytes"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">200</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">209</span><span class="t-p">]</span>
 <span class="t-w">      </span><span class="t-p">},</span>
 <span class="t-w">      </span><span class="t-nt">"replacement"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">"quantity"</span><span class="t-p">,</span>
 <span class="t-w">      </span><span class="t-nt">"applicability"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">"maybe"</span><span class="t-p">,</span>
@@ -673,9 +683,9 @@ short ones for its closing lines; this is the first. drx prints one line per dia
 <span class="t-w">    </span><span class="t-p">{</span>
 <span class="t-w">      </span><span class="t-nt">"span"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">{</span>
 <span class="t-w">        </span><span class="t-nt">"file"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">"src/shop.ax"</span><span class="t-p">,</span>
-<span class="t-w">        </span><span class="t-nt">"start"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">8</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">13</span><span class="t-p">],</span>
-<span class="t-w">        </span><span class="t-nt">"end"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">8</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">22</span><span class="t-p">],</span>
-<span class="t-w">        </span><span class="t-nt">"bytes"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">202</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">211</span><span class="t-p">]</span>
+<span class="t-w">        </span><span class="t-nt">"start"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">9</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">13</span><span class="t-p">],</span>
+<span class="t-w">        </span><span class="t-nt">"end"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">9</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">22</span><span class="t-p">],</span>
+<span class="t-w">        </span><span class="t-nt">"bytes"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-mi">200</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">209</span><span class="t-p">]</span>
 <span class="t-w">      </span><span class="t-p">},</span>
 <span class="t-w">      </span><span class="t-nt">"replacement"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">"quantize"</span><span class="t-p">,</span>
 <span class="t-w">      </span><span class="t-nt">"also"</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span>
@@ -727,13 +737,14 @@ function called, and the name that held it can no longer be read.
 <span></span>
 For example:
 <span></span>
-    <span style="color:#d787d7">@doc</span> <span style="color:#87d787">"""Sends `message` and counts the bytes that went out.</span>
-    <span style="color:#87d787">  * message - the text to send</span>
+    <span style="color:#87d787">"""</span>
+    <span style="color:#87d787">Sends `message` and counts the bytes that went out.</span>
+    <span style="color:#87d787">    - message: the text to send</span>
     <span style="color:#87d787">"""</span>
     <span style="color:#5fafff">send</span>(<span style="color:#d787d7">take</span> <span style="color:#afd7ff">message</span>: <span style="color:#5fd7d7">String</span>) -&gt; <span style="color:#5fd7d7">Int</span>:
         <span style="color:#5fafff">len_bytes</span>(<span style="color:#afd7ff">message</span>)
 <span></span>
-    <span style="color:#d787d7">@doc</span> <span style="color:#87d787">"""Sends the same greeting twice."""</span>
+    <span style="color:#87d787">"""Sends the same greeting twice."""</span>
     <span style="color:#5fafff">notify</span>() -&gt; <span style="color:#5fd7d7">Int</span>:
         <span style="color:#afd7ff">greeting</span> = <span style="color:#87d787">"Hello"</span>
         <span style="color:#afd7ff">first</span> = <span style="color:#5fafff">send</span>(<span style="color:#d787d7">take</span> <span style="color:#afd7ff">greeting</span>)
@@ -744,13 +755,14 @@ For example:
 To fix it, pass the value bare when the function only reads it, and drop
 <span style="color:#d787d7">take</span> from its parameter too:
 <span></span>
-    <span style="color:#d787d7">@doc</span> <span style="color:#87d787">"""Sends `message` and counts the bytes that went out.</span>
-    <span style="color:#87d787">  * message - the text to send</span>
+    <span style="color:#87d787">"""</span>
+    <span style="color:#87d787">Sends `message` and counts the bytes that went out.</span>
+    <span style="color:#87d787">    - message: the text to send</span>
     <span style="color:#87d787">"""</span>
     <span style="color:#5fafff">send</span>(<span style="color:#afd7ff">message</span>: <span style="color:#5fd7d7">String</span>) -&gt; <span style="color:#5fd7d7">Int</span>:
         <span style="color:#5fafff">len_bytes</span>(<span style="color:#afd7ff">message</span>)
 <span></span>
-    <span style="color:#d787d7">@doc</span> <span style="color:#87d787">"""Sends the same greeting twice."""</span>
+    <span style="color:#87d787">"""Sends the same greeting twice."""</span>
     <span style="color:#5fafff">notify</span>() -&gt; <span style="color:#5fd7d7">Int</span>:
         <span style="color:#afd7ff">greeting</span> = <span style="color:#87d787">"Hello"</span>
         <span style="color:#afd7ff">first</span> = <span style="color:#5fafff">send</span>(<span style="color:#afd7ff">greeting</span>)

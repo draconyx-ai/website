@@ -57,8 +57,9 @@ Take a small program that greets a name.
 ```draconyx
 module main
 
-@doc """Greets a name this program trusts.
-  * name - the name to greet
+"""
+Greets a name this program trusts.
+    - name: the name to greet
 """
 greet(name: String) -> String:
     "Hello, {name}"
@@ -74,8 +75,9 @@ main(take system: System) -> None:
 ```draconyx
 module main
 
-@doc """Greets a name this program trusts.
-  * name - the name to greet
+"""
+Greets a name this program trusts.
+    - name: the name to greet
 """
 greet(name: String) -> String:
     "Hello, {name}"
@@ -90,7 +92,7 @@ main(take system: System) -> None:
 
 <pre class="term" tabindex="0" role="region" aria-label="drx&#x27;s output"><code><span style="color:#8a8a8a">$</span> drx check greet
 <span></span>
-<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/main.ax, line 12</span>
+<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/main.ax, line 13</span>
 <span></span>
     <span style="color:#5fd7d7">Console</span>.<span style="color:#5fafff">print</span>(<span style="color:#5fafff">greet</span>(<span style="color:#afd7ff">typed</span>))
                         <span style="color:#cd3131">^^^^^</span>
@@ -115,17 +117,19 @@ carry the mark one step further.
 ```draconyx
 module main
 
-@doc """Tells whether text is a safe name: 1 to 32 lowercase letters.
-  * text - the text to test
+"""
+Tells whether text is a safe name: 1 to 32 lowercase letters.
+    - text: the text to test
 """
 safe_name_is_valid(text: String) -> Bool:
     text ~ re/^[a-z]{1,32}$/
 
-@doc """From 1 to 32 lowercase letters."""
+"""From 1 to 32 lowercase letters."""
 type SafeName extend String when safe_name_is_valid
 
-@doc """Greets a name this program trusts.
-  * name - the name to greet
+"""
+Greets a name this program trusts.
+    - name: the name to greet
 """
 greet(name: String) -> String:
     "Hello, {name}"
@@ -168,28 +172,31 @@ module main
 
 // safe_name_is_valid and SafeName as in step C.
 
-@doc """Tells whether text is a valid email address: one @ and no spaces.
-  * text - the text to test
+"""
+Tells whether text is a valid email address: one @ and no spaces.
+    - text: the text to test
 """
 email_is_valid(text: String) -> Bool:
     text ~ re/^[^@\s]+@[^@\s]+$/
 
-@doc """Tells whether text is a strong password: at least 12 characters.
-  * text - the text to test
+"""
+Tells whether text is a strong password: at least 12 characters.
+    - text: the text to test
 """
 password_is_valid(text: String) -> Bool:
     count_graphemes(text) >= 12
 
-@doc """An address with one @ and no spaces."""
+"""An address with one @ and no spaces."""
 type Email extend String when email_is_valid
 
-@doc """At least 12 characters."""
+"""At least 12 characters."""
 type Password extend String when password_is_valid
 
-@doc """Welcomes a sign-up whose every field passed its check.
-  * name - the user's name
-  * email - the user's email address
-  * password - the user's password
+"""
+Welcomes a sign-up whose every field passed its check.
+    - name: the user's name
+    - email: the user's email address
+    - password: the user's password
 """
 sign_up(name: SafeName, email: Email, password: Password) -> String:
     "welcome, {name}"
@@ -221,8 +228,9 @@ Sometimes a program would rather clean a name than refuse it: keep the lowercase
 cleaner is shown here on plain text, with a law that states what it is for:
 
 ```draconyx
-@doc """Keeps the first 32 lowercase letters of `text`, falling back to "guest" if none.
-  * text - the text to clean
+"""
+Keeps the first 32 lowercase letters of `text`, falling back to "guest" if none.
+    - text: the text to clean
 """
 clean_name(text: String) -> String:
     bytes = to_bytes(text)
