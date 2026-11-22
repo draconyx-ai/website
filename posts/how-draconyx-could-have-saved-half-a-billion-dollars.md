@@ -120,7 +120,7 @@ Here is the Ariane 4 conversion, written the way it flew:
   * bias - the horizontal bias the alignment computed
 """
 horizontal_bias_16(bias: Float) -> Signed16:
-    to_int(value = bias)        // Does not build: nothing proves the value fits in 16 bits.
+    to_int(value = bias)        // does not build: nothing proves the value fits in 16 bits
 ```
 
 It does not compile. `to_int` gives an `Int`, and nothing on the way proves that this `Int` is between -32768 and
@@ -199,7 +199,7 @@ real constants of the flight software are not public.
 const bias_per_step: Float = 0.5
 
 @doc """The largest horizontal bias on this rocket's trajectory while the alignment runs."""
-const max_horizontal_bias: Float = 12000.0      // From the trajectory data of Ariane 4.
+const max_horizontal_bias: Float = 12000.0      // from the trajectory data of Ariane 4
 
 @doc """Tells whether this rocket can reach `bias` while the alignment runs.
   * bias - the horizontal bias checked
@@ -225,7 +225,7 @@ word_of(steps: Int) -> Signed16:
             return 32767
         return -32768
 
-    word: Signed16 = steps              // Proven: the rule's own check is just above.
+    word: Signed16 = steps              // proven: the rule's own check is just above
     word
 example word_of(steps_of(max_horizontal_bias)) == steps_of(max_horizontal_bias)
 
@@ -306,7 +306,7 @@ extern "C" alignment_last_bias() -> Ptr<FlightBias>
 @doc """Gives the horizontal bias the alignment routine computed last. The library keeps the bias in place while the program runs, and nothing else writes it."""
 last_bias() -> FlightBias:
     trust:
-        alignment_last_bias()@      // The rule of FlightBias is checked as the bias is read.
+        alignment_last_bias()@      // the rule of FlightBias is checked as the bias is read
 ```
 
 Outside `trust:`, the `@` does not build. A bias that breaks the rule stops the program at that line, as an `Int`

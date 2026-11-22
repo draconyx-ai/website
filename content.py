@@ -201,7 +201,7 @@ REASONS = [
   * email - the email, as received
 \"\"\"
 hijacked(email: tainted String) -> Prompt:
-    prompt(instruction = email, data = [])  // AX1022: `instruction` is an unmarked String.
+    prompt(instruction = email, data = [])  // AX1022: `instruction` is an unmarked String
 
 @doc \"\"\"Builds a prompt that asks for a summary, with the email kept as data.
   * email - the email to summarize
@@ -247,7 +247,7 @@ concept Monoid<T>:
   * values - the values, in any order
 \"\"\"
 median(values: List<Float>) -> Float:
-    todo()  // verdict UNIMPLEMENTED, not a failure.
+    todo()  // verdict UNIMPLEMENTED, not a failure
 
 example median(values = [1.0, 3.0, 2.0]) == 2.0""",
                    "A concept with two checked laws, and an example on a function whose body is `todo()`."),
@@ -284,9 +284,9 @@ send(borrow conn: Connection, request: Request) -> None
   * ping - the request to send
 \"\"\"
 ping_once(address: String, ping: Request) -> None:
-    conn = ^open(url = address, timeout = seconds(5))    // a failure goes up to the caller.
-    ^send(borrow conn, request = ping)                    // mutation is spelled here.
-    close(take conn)                                      // consumption is spelled here.
+    conn = ^open(url = address, timeout = seconds(5))    // a failure goes up to the caller
+    ^send(borrow conn, request = ping)                    // mutation is spelled here
+    close(take conn)                                      // consumption is spelled here
     close(take conn)                                      // AX0312: use of moved value `conn`""",
                    "What happens to each argument, and which calls can fail, read off the call lines."),
         "cites": ["05-syntax-conventions:3-4", "04-core-language:290-311", "04-core-language:1992-2004", "04-core-language:2030-2046", "04-core-language:2127-2162", "07-memory-model:376-413"],
