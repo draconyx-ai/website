@@ -59,7 +59,7 @@ module main
 
 """ Greets a name this program trusts.
 
-    - name: the name to greet
+    * name: the name to greet
 """
 greet(name: String) -> String:
     "Hello, {name}"
@@ -77,7 +77,7 @@ module main
 
 """ Greets a name this program trusts.
 
-    - name: the name to greet
+    * name: the name to greet
 """
 greet(name: String) -> String:
     "Hello, {name}"
@@ -119,7 +119,7 @@ module main
 
 """ Tells whether text is a safe name: 1 to 32 lowercase letters.
 
-    - text: the text to test
+    * text: the text to test
 """
 safe_name_is_valid(text: String) -> Bool:
     text ~ re/^[a-z]{1,32}$/
@@ -129,7 +129,7 @@ type SafeName extend String when safe_name_is_valid
 
 """ Greets a name this program trusts.
 
-    - name: the name to greet
+    * name: the name to greet
 """
 greet(name: String) -> String:
     "Hello, {name}"
@@ -174,14 +174,14 @@ module main
 
 """ Tells whether text is a valid email address: one @ and no spaces.
 
-    - text: the text to test
+    * text: the text to test
 """
 email_is_valid(text: String) -> Bool:
     text ~ re/^[^@\s]+@[^@\s]+$/
 
 """ Tells whether text is a strong password: at least 12 characters.
 
-    - text: the text to test
+    * text: the text to test
 """
 password_is_valid(text: String) -> Bool:
     count_graphemes(text) >= 12
@@ -194,9 +194,9 @@ type Password extend String when password_is_valid
 
 """ Welcomes a sign-up whose every field passed its check.
 
-    - name: the user's name
-    - email: the user's email address
-    - password: the user's password
+    * name: the user's name
+    * email: the user's email address
+    * password: the user's password
 """
 sign_up(name: SafeName, email: Email, password: Password) -> String:
     "welcome, {name}"
@@ -230,7 +230,7 @@ cleaner is shown here on plain text, with a law that states what it is for:
 ```draconyx
 """ Keeps the first 32 lowercase letters of `text`, falling back to "guest" if none.
 
-    - text: the text to clean
+    * text: the text to clean
 """
 clean_name(text: String) -> String:
     bytes = to_bytes(text)

@@ -99,7 +99,7 @@ In Draconyx the assumption is a rule on a type, written after `when`:
 ```draconyx
 """ Tells whether `number` fits in 16 signed bits: from -32768 to 32767.
 
-    - number: the number checked
+    * number: the number checked
 """
 signed16_is_valid(number: Int) -> Bool:
     number >= -32768 and number <= 32767
@@ -119,7 +119,7 @@ Here is the Ariane 4 conversion, written the way it flew:
 ```draconyx
 """ Converts the horizontal bias to the 16 bits the flight data carries.
 
-    - bias: the horizontal bias the alignment computed
+    * bias: the horizontal bias the alignment computed
 """
 horizontal_bias_16(bias: Float) -> Signed16:
     to_int(value = bias)        // does not build: nothing proves the value fits in 16 bits
@@ -136,7 +136,7 @@ type BiasOutOfRange extend Error
 
 """ Gives `number` as a Signed16. Fails with BiasOutOfRange when it does not fit.
 
-    - number: the number to fit
+    * number: the number to fit
 """
 fit_16_bits(number: Int) -> Signed16:
     if not signed16_is_valid(number):
@@ -147,7 +147,7 @@ fit_16_bits(number: Int) -> Signed16:
 
 """ Converts the horizontal bias to the 16 bits the flight data carries. Fails with BiasOutOfRange when it does not fit.
 
-    - bias: the horizontal bias the alignment computed
+    * bias: the horizontal bias the alignment computed
 """
 horizontal_bias_16(bias: Float) -> Signed16:
     match whole = checked_to_int?(value = bias):
@@ -207,7 +207,7 @@ const max_horizontal_bias: Float = 12000.0      // from the trajectory data of A
 
 """ Tells whether this rocket can reach `bias` while the alignment runs.
 
-    - bias: the horizontal bias checked
+    * bias: the horizontal bias checked
 """
 flight_bias_is_valid(bias: Float) -> Bool:
     -max_horizontal_bias <= bias and bias <= max_horizontal_bias
@@ -217,14 +217,14 @@ type FlightBias extend Float when flight_bias_is_valid
 
 """ Counts the steps of the 16-bit word that `bias` takes.
 
-    - bias: a horizontal bias inside the trajectory data
+    * bias: a horizontal bias inside the trajectory data
 """
 steps_of(bias: FlightBias) -> Int:
     to_int(bias / bias_per_step)
 
 """ Turns a count of steps into the 16-bit word. Holds the word at the nearest limit when the count does not fit.
 
-    - steps: the horizontal bias, counted in steps of the word
+    * steps: the horizontal bias, counted in steps of the word
 """
 word_of(steps: Int) -> Signed16:
     if not signed16_is_valid(steps):

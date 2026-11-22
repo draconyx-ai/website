@@ -66,8 +66,8 @@ A parameter called `quantity`, used as `quantitty`.
 <span></span>
 <span class="s">""" Works out what `quantity` items at `price` cost.</span>
 <span></span>
-<span class="s">    - price: the price of one item</span>
-<span class="s">    - quantity: how many items are bought</span>
+<span class="s">    * price: the price of one item</span>
+<span class="s">    * quantity: how many items are bought</span>
 <span class="s">"""</span>
 total(price: Int, quantity: Int) -&gt; Int:
     price * quantitty</code></pre>
@@ -138,8 +138,8 @@ A price written as text where a number is expected.
 <span></span>
 <span class="s">""" Works out what `quantity` items at `price` cost.</span>
 <span></span>
-<span class="s">    - price: the price of one item</span>
-<span class="s">    - quantity: how many items are bought</span>
+<span class="s">    * price: the price of one item</span>
+<span class="s">    * quantity: how many items are bought</span>
 <span class="s">"""</span>
 total(price: Int, quantity: Int) -&gt; Int:
     price * quantity
@@ -263,21 +263,21 @@ cards.
 <span></span>
 <span class="s">""" Writes a book's line on the receipt.</span>
 <span></span>
-<span class="s">    - book: the book to write</span>
+<span class="s">    * book: the book to write</span>
 <span class="s">"""</span>
 line(book: Book) -&gt; String:
     <span class="s">"{book.name}: {book.price}"</span>
 <span></span>
 <span class="s">""" Writes a gift card's line on the receipt.</span>
 <span></span>
-<span class="s">    - card: the gift card to write</span>
+<span class="s">    * card: the gift card to write</span>
 <span class="s">"""</span>
 line(card: GiftCard) -&gt; String:
     <span class="s">"{card.name} for {card.recipient}: {card.price}"</span>
 <span></span>
 <span class="s">""" Writes the receipt's lines for every item in `cart`.</span>
 <span></span>
-<span class="s">    - cart: the items bought, of any kind</span>
+<span class="s">    * cart: the items bought, of any kind</span>
 <span class="s">"""</span>
 receipt(cart: List&lt;<span class="k">any</span> T&gt;) -&gt; List&lt;String&gt;:
     lines: List&lt;String&gt; = []
@@ -309,7 +309,7 @@ To fix it, write a <span style="color:#afd7ff">line</span> for <span style="colo
 <span></span>
     <span style="color:#87d787">""" Writes a bookmark's line on the receipt.</span>
 <span></span>
-    <span style="color:#87d787">    - bookmark: the bookmark to write</span>
+    <span style="color:#87d787">    * bookmark: the bookmark to write</span>
     <span style="color:#87d787">"""</span>
     <span style="color:#5fafff">line</span>(<span style="color:#afd7ff">bookmark</span>: <span style="color:#5fd7d7">Bookmark</span>) -&gt; <span style="color:#5fd7d7">String</span>:
         <span style="color:#87d787">"{bookmark.name}: {bookmark.price}"</span>
@@ -380,7 +380,7 @@ A greeting sent twice, when sending takes it.
 <span></span>
 <span class="s">""" Sends `message` and counts the bytes that went out.</span>
 <span></span>
-<span class="s">    - message: the text to send</span>
+<span class="s">    * message: the text to send</span>
 <span class="s">"""</span>
 send(<span class="k">take</span> message: String) -&gt; Int:
     len_bytes(message)
@@ -465,8 +465,8 @@ A call of `total` that forgets the quantity.
 <span></span>
 <span class="s">""" Works out what `quantity` items at `price` cost.</span>
 <span></span>
-<span class="s">    - price: the price of one item</span>
-<span class="s">    - quantity: how many items are bought</span>
+<span class="s">    * price: the price of one item</span>
+<span class="s">    * quantity: how many items are bought</span>
 <span class="s">"""</span>
 total(price: Int, quantity: Int) -&gt; Int:
     price * quantity
@@ -532,7 +532,7 @@ A local name in camelCase, the habit of JavaScript and Java.
 <span></span>
 <span class="s">""" Adds a 20% tax to `price`.</span>
 <span></span>
-<span class="s">    - price: the price before tax</span>
+<span class="s">    * price: the price before tax</span>
 <span class="s">"""</span>
 with_tax(price: Int) -&gt; Int:
     totalPrice = price + price / 5
@@ -568,7 +568,7 @@ name as it is. drx refuses the name, and `drx fix` renames it on both lines:
 <span></span>
 <span class="s">""" Adds a 20% tax to `price`.</span>
 <span></span>
-<span class="s">    - price: the price before tax</span>
+<span class="s">    * price: the price before tax</span>
 <span class="s">"""</span>
 with_tax(price: Int) -&gt; Int:
     total_price = price + price / 5
@@ -739,7 +739,7 @@ For example:
 <span></span>
     <span style="color:#87d787">""" Sends `message` and counts the bytes that went out.</span>
 <span></span>
-    <span style="color:#87d787">    - message: the text to send</span>
+    <span style="color:#87d787">    * message: the text to send</span>
     <span style="color:#87d787">"""</span>
     <span style="color:#5fafff">send</span>(<span style="color:#d787d7">take</span> <span style="color:#afd7ff">message</span>: <span style="color:#5fd7d7">String</span>) -&gt; <span style="color:#5fd7d7">Int</span>:
         <span style="color:#5fafff">len_bytes</span>(<span style="color:#afd7ff">message</span>)
@@ -757,7 +757,7 @@ To fix it, pass the value bare when the function only reads it, and drop
 <span></span>
     <span style="color:#87d787">""" Sends `message` and counts the bytes that went out.</span>
 <span></span>
-    <span style="color:#87d787">    - message: the text to send</span>
+    <span style="color:#87d787">    * message: the text to send</span>
     <span style="color:#87d787">"""</span>
     <span style="color:#5fafff">send</span>(<span style="color:#afd7ff">message</span>: <span style="color:#5fd7d7">String</span>) -&gt; <span style="color:#5fd7d7">Int</span>:
         <span style="color:#5fafff">len_bytes</span>(<span style="color:#afd7ff">message</span>)

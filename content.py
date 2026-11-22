@@ -120,7 +120,7 @@ REASONS = [
  "data": {"kind": "conflict", "detail": {"base": "deadbeef",
    "current_tree": "def6ed83...", "addresses": ["inventory.reprice"],
    "current": [{"address": "shop.inventory.reprice",
-     "text": "\\"\\"\\" Raises `price` by `pct` percent.\\n\\n    - price: the price to raise\\n    - pct: the percentage to raise it by\\n\\"\\"\\"\\nreprice(price: Int, pct: Int) -> Int:\\n    price + price * pct / 100\\n"}]}}}
+     "text": "\\"\\"\\" Raises `price` by `pct` percent.\\n\\n    * price: the price to raise\\n    * pct: the percentage to raise it by\\n\\"\\"\\"\\nreprice(price: Int, pct: Int) -> Int:\\n    price + price * pct / 100\\n"}]}}}
 
 # a write that fails the check: same shape as success, nothing written
 {"tree": "def6ed83...", "applied": false, "new_errors": 1,
@@ -199,14 +199,14 @@ REASONS = [
                   "such as CodeQL and Semgrep.",
         "sample": ("draconyx", """\"\"\" Builds a prompt that wrongly makes the email its instruction.
 
-    - email: the email, as received
+    * email: the email, as received
 \"\"\"
 hijacked(email: tainted String) -> Prompt:
     prompt(instruction = email, data = [])  // AX1022: `instruction` is an unmarked String
 
 \"\"\" Builds a prompt that asks for a summary, with the email kept as data.
 
-    - email: the email to summarize
+    * email: the email to summarize
 \"\"\"
 summarize(take email: tainted String) -> Prompt:
     prompt(instruction = "Summarize the message.", data = [take email])""",
@@ -247,7 +247,7 @@ concept Monoid<T>:
 
 \"\"\" Finds the middle value of `values` once they are sorted.
 
-    - values: the values, in any order
+    * values: the values, in any order
 \"\"\"
 median(values: List<Float>) -> Float:
     todo()  // verdict UNIMPLEMENTED, not a failure
@@ -284,8 +284,8 @@ send(borrow conn: Connection, request: Request) -> None
 
 \"\"\" Opens a connection to `address`, sends `ping` once and closes it.
 
-    - address: the address to connect to
-    - ping: the request to send
+    * address: the address to connect to
+    * ping: the request to send
 \"\"\"
 ping_once(address: String, ping: Request) -> None:
     conn = ^open(url = address, timeout = seconds(5))    // a failure goes up to the caller
@@ -330,21 +330,21 @@ type Refunded:
 
 \"\"\" Writes a pending payment's state on the receipt.
 
-    - payment: the pending payment
+    * payment: the pending payment
 \"\"\"
 label(payment: Pending) -> String:
     "pending"
 
 \"\"\" Writes an authorized payment's state on the receipt.
 
-    - payment: the authorized payment
+    * payment: the authorized payment
 \"\"\"
 label(payment: Authorized) -> String:
     "authorized {payment.amount}"
 
 \"\"\" Writes the state of every payment of the day on the receipt.
 
-    - payments: the day's payments
+    * payments: the day's payments
 \"\"\"
 receipt(payments: List<any T>) -> None:
     for payment in payments:

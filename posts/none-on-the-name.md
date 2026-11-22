@@ -116,7 +116,7 @@ In Draconyx the mark is a `?` on the function's name:
 ```draconyx
 """ Looks up the age of `name`, which may be unknown.
 
-    - name: the name of the person
+    * name: the name of the person
 """
 find_age?(name: String) -> Int:
     if name == "ada":
@@ -139,7 +139,7 @@ Or with a `match` that covers both cases. The head names the result, and inside 
 ```draconyx
 """ Describes in words how old `name` is.
 
-    - name: the name of the person
+    * name: the name of the person
 """
 describe(name: String) -> String:
     match age = find_age?(name):
@@ -179,7 +179,7 @@ result type:
 ```draconyx
 """ Stops the task if `amount` is negative.
 
-    - amount: the amount to check
+    * amount: the amount to check
 """
 check_amount(amount: Int) -> None:
     assert(amount >= 0)
