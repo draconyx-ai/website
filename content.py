@@ -184,7 +184,7 @@ REASONS = [
             "type is expected is compile error AX1022, and every parameter that steers what the program does "
             "is such a position: a prompt's instruction, SQL identifiers, permission-minting arguments.",
             "The only way out is `validate`, into a refinement type: the same type with a named rule, as in "
-            "`type Email = String when email_is_valid`. So every place untrusted text becomes trusted is one call you "
+            "`type Email extend String when email_is_valid`. So every place untrusted text becomes trusted is one call you "
             "can grep for. How it checks the value is under Safety and effects, in the `validate` card.",
         ],
         "ships": "Ships today: AX1022 at every argument, field, return, binding and collection element; taint "
@@ -260,8 +260,9 @@ example median(values = [1.0, 3.0, 2.0]) == 2.0""",
         "body": [
             "Named arguments are mandatory whenever a declared function with two or more arguments is called by its "
             "name; an unlabelled one is AX0256 unless it is a name matching its label, and the error lists the "
-            "callee's labels. Ownership is spelled the same at both ends of a "
-            "call: unmarked is read-only, `borrow` is exclusive mutation, `take` consumes. A wrong verb is AX0306, "
+            "callee's labels. Ownership is spelled at both ends of a call: unmarked is read-only, `borrow` is "
+            "exclusive mutation, `take` consumes, and a function written with `auto` takes whichever verb the "
+            "caller spells. A wrong verb is AX0306, "
             "a consumption left unspelled is AX0321, and using a value after it moved is AX0312.",
             "Called by its name, a declared function can't have its arguments swapped by position, a mislabelled "
             "argument shows on the call line, and a mutation or consumption the argument list doesn't spell won't "
@@ -451,13 +452,13 @@ FEATURE_GROUPS = [
         ('Services and dependency injection', 'A function uses a service without anyone passing it in. You get no constructor plumbing, no effect rows, and a compile error when nothing above a function supplies a service it uses.', 'ships'),
         ('Object-capability permissions (no ambient authority)', "No global `open` and no importable `Network`: the only way code gets authority is to be handed it. Starting from main's `System` powerbox, it can only be narrowed, never widened.", 'ships'),
         ('`tainted`: a typed defense against prompt injection', "Model output, console and network input, the command line, a started program's output, and sandboxed and isolated foreign calls are born `tainted`. Passing one to an unmarked parameter, or to a prompt's instruction slot, is compile error AX1022.", 'ships'),
-        ('`validate`: the way out of `tainted` is a check', "`validate` lets tainted input into a refinement type, such as `type Email = String when email_is_valid`, only by running its named rule. A failure is handled on the spot; for a type with fields or a call, `Invalid` lists every field or parameter that failed, with each type's doc as its message.", 'specified'),
+        ('`validate`: the way out of `tainted` is a check', "`validate` lets tainted input into a refinement type, such as `type Email extend String when email_is_valid`, only by running its named rule. A failure is handled on the spot; for a type with fields or a call, `Invalid` lists every field or parameter that failed, with each type's doc as its message.", 'specified'),
         ('`trust` blocks: unsafe code, held to seven powers', "Draconyx has no `unsafe`. `trust` unlocks exactly seven operations the compiler cannot check, such as calling a trusted function or making a raw pointer, and nothing else: inside a `trust:` block, ownership and borrow checks still run. `drx audit trust` lists every trusted block with its module, location and code hash, and the doc of the function around it says what it vouches for.", 'ships'),
         ('With blocks: one keyword for receiver, destructuring and scoped release', "One `with` covers Python's context managers, Rust's RAII and multi-value destructuring, even at the end of a pipeline.", 'ships'),
     ]),
     ('AI and numerics', [
         ('Shapes and named axes in the type', "A tensor's dtype, axis names and sizes belong to its type, so a tensor passed where a signature declares another shape fails at compile time, before any array is allocated.", 'ships'),
-        ('grad and vmap as typed function transforms', 'The standard library declares autodiff and auto-batching as plain functions over functions, and a call type-checks today; running them is not built yet. `drx tune` and `drx bench` search, measure and pin a schedule.', 'partial'),
+        ('grad and vmap as typed function transforms', 'Autodiff and auto-batching are plain functions over functions, and `drx tune` and `drx bench` search, measure and pin a schedule.', 'partial'),
         ('`jit`: captured and fused array code', '`jit` is a function transform in the same family as `grad` and `vmap`: it captures a computation as a lazy array graph and fuses it, and it composes with both.', 'specified'),
         ('Hygienic, typed dialects (macros, elab, comptime)', 'Dialects extend the syntax with Racket-grade hygiene and type-directed elaboration, without textual macros.', 'ships'),
     ]),

@@ -122,7 +122,7 @@ safe_name_is_valid(text: String) -> Bool:
     text ~ re/^[a-z]{1,32}$/
 
 @doc """From 1 to 32 lowercase letters."""
-type SafeName = String when safe_name_is_valid
+type SafeName extend String when safe_name_is_valid
 
 @doc """Greets a name this program trusts.
   * name - the name to greet
@@ -181,10 +181,10 @@ password_is_valid(text: String) -> Bool:
     count_graphemes(text) >= 12
 
 @doc """An address with one @ and no spaces."""
-type Email = String when email_is_valid
+type Email extend String when email_is_valid
 
 @doc """At least 12 characters."""
-type Password = String when password_is_valid
+type Password extend String when password_is_valid
 
 @doc """Welcomes a sign-up whose every field passed its check.
   * name - the user's name
@@ -253,7 +253,7 @@ First the refinement type itself:
 
 | Language | A refinement type |
 |---|---|
-| **Draconyx** | **`type Email = String when email_is_valid`: a named rule, one form, the doc is the message.** |
+| **Draconyx** | **`type Email extend String when email_is_valid`: a named rule, one form, the doc is the message.** |
 | Rust | A newtype `struct Email(String)` with a checking constructor; not a `String`. |
 | Zig | None; a struct wrapper with a checking function. |
 | C++ | A wrapper class with a checking constructor; not a `std::string`. |
