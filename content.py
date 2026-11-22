@@ -155,8 +155,7 @@ REASONS = [
                  "the services it opens.",
         "unlike": "In Python, Go and Rust the standard library reaches the clock, the console and the environment "
                   "on its own, as Go's `time.Now()` and `fmt.Println`, Python's `print` and Rust's `std::env::var` "
-                  "do, so a call into it never shows what it touches. Confinement comes from outside the language: "
-                  "containers, seccomp, or the third-party cap-std crate for Rust.",
+                  "do, so a call into it never shows what it touches.",
         "sample": ("drx", """$ drx check plan
 
 
@@ -187,7 +186,7 @@ REASONS = [
             "`tainted` is a type qualifier. Model completions, console input, network reads and process "
             "arguments are born tainted at their standard-library signatures. A tainted value where a plain "
             "type is expected is compile error AX1022, and every parameter that steers what the program does "
-            "is such a position: a prompt's instruction, SQL identifiers, permission-minting arguments.",
+            "is such a position: a prompt's instruction, SQL identifiers, the folder a file system is narrowed to.",
             "The only way out is `validate`, into a refinement type: the same type with a named rule, as in "
             "`type Email extend String when email_is_valid`. So every place untrusted text becomes trusted is one call you "
             "can grep for. How it checks the value is under Safety and effects, in the `validate` card.",
