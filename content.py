@@ -359,8 +359,9 @@ receipt(payments: List<any T>) -> None:
 
 main() -> None:
     $console: TerminalConsole = init()
+
     receipt([Pending(), Refunded(reason = "damaged", amount = Money(cents = 1200))])
-    // error AX0420: `Refunded` is put into `any T` here, but no `label` takes a `Refunded`""",
+    // Error AX0420 on the line above: `Refunded` is put into `any T`, but no `label` takes a `Refunded`.""",
                    "A forgotten kind is a compile error that names it."),
         "cites": ["04-core-language:612-650", "11-type-system:133-138", "11-type-system:591-657", "11-type-system:1216-1297"],
     },

@@ -230,6 +230,7 @@ word_of(steps: Int) -> Signed16:
     if not signed16_is_valid(steps):
         if steps > 0:
             return 32767
+
         return -32768
 
     word: Signed16 = steps              // proven: the rule's own check is just above
@@ -254,7 +255,7 @@ every machine, and `drx build --target release` proves Law 2. With the limit of 
 `max_horizontal_bias` becomes 60000.0 in the illustration, and `drx test` fails at the example, on the ground:
 
 ```
-Witness violation: word_of, example at line 36
+Witness violation: word_of, example at line 37
   word_of(steps_of(max_horizontal_bias)) = 32767
   expected                               = 120000
 ```
