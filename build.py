@@ -90,7 +90,7 @@ def quote(text):
 
 # The language's keywords in the ruled syntax (no def or let; concepts; take; comments start with //).
 KEYWORDS = {"concept", "law", "checked", "example", "take", "borrow", "clone", "tainted", "endorse", "trust", "match",
-            "type", "any", "if", "else", "for", "in", "return", "when", "otherwise", "fail", "use", "yield", "super", "extend"}
+            "type", "any", "if", "else", "for", "in", "return", "when", "otherwise", "fail", "use", "yield", "super", "extend", "const", "proven"}
 # A Draconyx line in pieces: a closed """ text, a """ text left open to the end of the line (a doc that goes on
 # below), a "string", or a // comment to the end of the line. Found left to right, so a // inside a string is text.
 DRX_TOKENS = re.compile(r'("""[^\n]*?"""|"""[^\n]*$|"(?:[^"\\]|\\.)*"|//.*$)')
