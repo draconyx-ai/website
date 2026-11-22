@@ -140,8 +140,9 @@ greet(name: String) -> String:
 
 main(args: List<tainted String>) -> None:
     typed = clone args[0]
+    name: SafeName = validate(typed)
 
-    match name: SafeName = validate(typed):
+    match name:
         ok      -> print(greet(name))
         Invalid -> print("A name is 1 to 32 lowercase letters.")
 ```
@@ -208,10 +209,12 @@ sign_up(name: SafeName, email: Email, password: Password) -> String:
     "welcome, {name}"
 
 main(args: List<tainted String>) -> None:
-    match welcome = validate(sign_up(
-            name = clone args[0],
-            email = clone args[1],
-            password = clone args[2])):
+    welcome = validate(sign_up(
+        name = clone args[0],
+        email = clone args[1],
+        password = clone args[2]))
+
+    match welcome:
         ok      -> print(welcome)
         Invalid -> for problem in welcome.problems:
                        print("{problem.field}: {problem.message}")
@@ -247,9 +250,12 @@ clean_name(text: String) -> String:
 
     match len(kept):
         0         -> "guest"
-        otherwise -> match text = into_string(take kept):
-                         ok        -> text
-                         otherwise -> "guest"
+        otherwise ->
+            text = into_string(take kept)
+
+            match text:
+                ok        -> text
+                otherwise -> "guest"
 
 law cleaned_is_safe(raw: String):
     safe_name_is_valid(clean_name(raw)) == true
