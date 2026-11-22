@@ -340,19 +340,47 @@ checks at run time, only on the path a run takes, and no check can tell a good r
 `/(.*)/s` lets everything through, as would a Draconyx rule that is always true. Ruby's `untaint` cleared the mark
 with no check at all, and Ruby 2.7 switched taint tracking off.
 
-## Why this is better
+## Why Draconyx does it better
 
-**Skipping the check does not compile.** The six channels are marked at their source, not by convention. Ecto, Bean
-Validation and `validator` check well, but only when called, and Perl stops a tainted value only when a run reaches
-the dangerous call. In Draconyx no tainted value is passed to a plain position without a `validate`, on any path.
+Each part of this post showed one piece: the three steps, the form and the law. Together they give Draconyx what
+none of the approaches above has in one place.
 
-**The way out is a check, not a promise.** Ruby's old `untaint` and Java's suppressed warning take the programmer's
-word. `validate` runs the type's rule on the value, and the rule is code, so a law can test it, or prove it.
+**Untrusted text is marked where it arrives.** A completion, a console read, a network read, the command line, a
+sandboxed or isolated foreign call and another program's output are `tainted` at their standard-library source, with
+nothing to annotate. No one has to remember which inputs are dangerous: code added next year, by a person or a model,
+gets the mark on the first line that reads from outside.
 
-**One form, one word to audit.** A refinement type is its base type with a named rule, with nothing to unwrap, and the
-type's doc is the message. Every place untrusted text becomes trusted is a `validate` that names its type, found with
-one search, by a reviewer or by a model repairing the code.
+**Forgetting the check does not build.** A tainted value where plain text is expected is AX1022, at every argument,
+field, return, binding and collection element, and on every path through the code, not only on the paths a test or a
+run happens to take. The mark is part of the type, so it costs nothing at run time. Step B shows it: the program that
+greets a name from the command line is never built, so it never runs.
+
+**The only way out is a check.** `validate` turns `tainted` text into a plain type only by running the type's rule on
+it, and a `validate` into a plain `String` is refused, because no rule would check the value. Unlike Ruby's old
+`untaint`, it takes no one's word for it. When the rule fails, the `Invalid` arm runs right there, so the failure is
+handled on the spot.
+
+**The error says what happened and what to do.** Step B's report points at `typed` on its line, says it came from the
+command line, which the program does not control, and gives two fixes: check it with `validate`, or mark the
+parameter `tainted` to carry the mark one step further. A person sees the reason at a glance, and a model repairing
+the code gets the code AX1022, the place and the fix in the same report.
+
+**One rule, written once, found with one search.** A refinement type such as `SafeName` is its base type with a named
+rule: it is still a `String`, so nothing has to unwrap it, and its doc is the message for a value that fails. Each
+rule is written once, as a type, and every parameter that names the type gets it. Every place untrusted text becomes
+trusted is a `validate` that names its type, so a reviewer, or a model, finds them all with one search.
+
+**A form reports every problem at once.** `validate` over a call checks every argument before the function runs, not
+only up to the first failure, and lists each failed parameter with its type's doc, in parameter order. The user who
+got two fields wrong hears about both, and each message is the doc already written on its type.
+
+**The rule itself is tested.** A check is only as good as its rule, and a rule that is always true lets everything
+through. A rule is pure code, so a law can put it to work: `cleaned_is_safe` holds only if whatever `clean_name`
+returns passes `safe_name_is_valid`, and `drx test` tries it on generated inputs and shrinks any failure to the
+smallest it finds. Written `proven`, the law must be proved for every input, or a release build fails. The guard that
+keeps outside text out is held to the same evidence as the rest of the program.
 
 Draconyx did not invent the parts: Perl's checked untaint, taint in a type checker from CQual and the Checker
-Framework, Ada's subtype predicates and Ecto's whole-form check all came first. Draconyx puts them in the language,
-with the sources marked from the start.
+Framework, Ada's subtype predicates and Ecto's whole-form check all came first. What Draconyx adds is all of them in
+the language at once, with the sources marked from the start, so the check is part of building the program, not a
+habit.
