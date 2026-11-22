@@ -113,14 +113,14 @@ REASONS = [
                   "SSR) are add-ons with no tree-hash precondition, no type check before the bytes land and no "
                   "impact report.",
         "sample": ("shell", """$ drx rpc . put-def '{"address": "inventory.reprice",
-    "base": "deadbeef", "text": "\\"\\"\\"...\\"\\"\\"\\nreprice(...) -> Int: ..."}'
+    "base": "deadbeef", "text": "\\"\\"\\" ... \\"\\"\\"\\nreprice(...) -> Int: ..."}'
 
 # the workspace moved since `base`: refused, with the current text
 {"code": -32000, "message": "the workspace has moved since `base`",
  "data": {"kind": "conflict", "detail": {"base": "deadbeef",
    "current_tree": "def6ed83...", "addresses": ["inventory.reprice"],
    "current": [{"address": "shop.inventory.reprice",
-     "text": "\\"\\"\\"\\nRaises `price` by `pct` percent.\\n    - price: the price to raise\\n    - pct: the percentage to raise it by\\n\\"\\"\\"\\nreprice(price: Int, pct: Int) -> Int:\\n    price + price * pct / 100\\n"}]}}}
+     "text": "\\"\\"\\" Raises `price` by `pct` percent.\\n\\n    - price: the price to raise\\n    - pct: the percentage to raise it by\\n\\"\\"\\"\\nreprice(price: Int, pct: Int) -> Int:\\n    price + price * pct / 100\\n"}]}}}
 
 # a write that fails the check: same shape as success, nothing written
 {"tree": "def6ed83...", "applied": false, "new_errors": 1,
@@ -197,15 +197,15 @@ REASONS = [
                   "`@CompileTimeConstant` let a checker demand program-written text at a chosen sink, but nothing "
                   "marks where outside text comes from. Other defences are runtime libraries or separate analysers "
                   "such as CodeQL and Semgrep.",
-        "sample": ("draconyx", """\"\"\"
-Builds a prompt that wrongly makes the email its instruction.
+        "sample": ("draconyx", """\"\"\" Builds a prompt that wrongly makes the email its instruction.
+
     - email: the email, as received
 \"\"\"
 hijacked(email: tainted String) -> Prompt:
     prompt(instruction = email, data = [])  // AX1022: `instruction` is an unmarked String
 
-\"\"\"
-Builds a prompt that asks for a summary, with the email kept as data.
+\"\"\" Builds a prompt that asks for a summary, with the email kept as data.
+
     - email: the email to summarize
 \"\"\"
 summarize(take email: tainted String) -> Prompt:
@@ -236,7 +236,7 @@ summarize(take email: tainted String) -> Prompt:
                   "the compiler never sees them. Property testing is a third-party library (Hypothesis, "
                   "proptest) or, in Go, stdlib testing/quick and fuzzing, and someone must restate each law as a "
                   "test by hand.",
-        "sample": ("draconyx", """\"\"\"Values with an `add` that can be regrouped and a `zero` that changes nothing.\"\"\"
+        "sample": ("draconyx", """\"\"\" Values with an `add` that can be regrouped and a `zero` that changes nothing. \"\"\"
 concept Monoid<T>:
     add(left: T, right: T) -> T
     zero() -> T
@@ -245,8 +245,8 @@ concept Monoid<T>:
     law identity(value: T) checked:
         add(left = value, right = zero()) == value
 
-\"\"\"
-Finds the middle value of `values` once they are sorted.
+\"\"\" Finds the middle value of `values` once they are sorted.
+
     - values: the values, in any order
 \"\"\"
 median(values: List<Float>) -> Float:
@@ -282,8 +282,8 @@ example median(values = [1.0, 3.0, 2.0]) == 2.0""",
 close(take conn: Connection) -> None
 send(borrow conn: Connection, request: Request) -> None
 
-\"\"\"
-Opens a connection to `address`, sends `ping` once and closes it.
+\"\"\" Opens a connection to `address`, sends `ping` once and closes it.
+
     - address: the address to connect to
     - ping: the request to send
 \"\"\"
@@ -316,34 +316,34 @@ ping_once(address: String, ping: Request) -> None:
                   "Go hands you `err` and hopes you check it. Rust comes closest, but `catch_unwind` can catch a panic "
                   "on the spot, and an unreachable arm is only a warn-by-default lint. In Draconyx a redundant arm is "
                   "a hard error.",
-        "sample": ("draconyx", """\"\"\"A payment the bank has not answered yet.\"\"\"
+        "sample": ("draconyx", """\"\"\" A payment the bank has not answered yet. \"\"\"
 type Pending
 
-\"\"\"A payment the bank has set aside.\"\"\"
+\"\"\" A payment the bank has set aside. \"\"\"
 type Authorized:
     amount: Money
 
-\"\"\"A payment given back to the customer.\"\"\"
+\"\"\" A payment given back to the customer. \"\"\"
 type Refunded:
     reason: String
     amount: Money
 
-\"\"\"
-Writes a pending payment's state on the receipt.
+\"\"\" Writes a pending payment's state on the receipt.
+
     - payment: the pending payment
 \"\"\"
 label(payment: Pending) -> String:
     "pending"
 
-\"\"\"
-Writes an authorized payment's state on the receipt.
+\"\"\" Writes an authorized payment's state on the receipt.
+
     - payment: the authorized payment
 \"\"\"
 label(payment: Authorized) -> String:
     "authorized {payment.amount}"
 
-\"\"\"
-Writes the state of every payment of the day on the receipt.
+\"\"\" Writes the state of every payment of the day on the receipt.
+
     - payments: the day's payments
 \"\"\"
 receipt(payments: List<any T>) -> None:

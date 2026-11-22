@@ -97,14 +97,14 @@ anything check it, in the tests before launch or in the program that flies.
 In Draconyx the assumption is a rule on a type, written after `when`:
 
 ```draconyx
-"""
-Tells whether `number` fits in 16 signed bits: from -32768 to 32767.
+""" Tells whether `number` fits in 16 signed bits: from -32768 to 32767.
+
     - number: the number checked
 """
 signed16_is_valid(number: Int) -> Bool:
     number >= -32768 and number <= 32767
 
-"""A whole number that fits in 16 signed bits."""
+""" A whole number that fits in 16 signed bits. """
 type Signed16 extend Int when signed16_is_valid
 ```
 
@@ -117,8 +117,8 @@ every target: `dev`, `test` and `release` alike. There is no monitoring level an
 Here is the Ariane 4 conversion, written the way it flew:
 
 ```draconyx
-"""
-Converts the horizontal bias to the 16 bits the flight data carries.
+""" Converts the horizontal bias to the 16 bits the flight data carries.
+
     - bias: the horizontal bias the alignment computed
 """
 horizontal_bias_16(bias: Float) -> Signed16:
@@ -131,11 +131,11 @@ the compiler cannot read it, so it asks for the proof in the code. The version t
 bias does not fit:
 
 ```draconyx
-"""The horizontal bias does not fit in 16 signed bits."""
+""" The horizontal bias does not fit in 16 signed bits. """
 type BiasOutOfRange extend Error
 
-"""
-Gives `number` as a Signed16. Fails with BiasOutOfRange when it does not fit.
+""" Gives `number` as a Signed16. Fails with BiasOutOfRange when it does not fit.
+
     - number: the number to fit
 """
 fit_16_bits(number: Int) -> Signed16:
@@ -145,8 +145,8 @@ fit_16_bits(number: Int) -> Signed16:
     fitted: Signed16 = number
     fitted
 
-"""
-Converts the horizontal bias to the 16 bits the flight data carries. Fails with BiasOutOfRange when it does not fit.
+""" Converts the horizontal bias to the 16 bits the flight data carries. Fails with BiasOutOfRange when it does not fit.
+
     - bias: the horizontal bias the alignment computed
 """
 horizontal_bias_16(bias: Float) -> Signed16:
@@ -199,31 +199,31 @@ Here is the conversion with the rocket's limit as a type, and the two laws. The 
 real constants of the flight software are not public.
 
 ```draconyx
-"""How much horizontal bias one step of the 16-bit word stands for."""
+""" How much horizontal bias one step of the 16-bit word stands for. """
 const bias_per_step: Float = 0.5
 
-"""The largest horizontal bias on this rocket's trajectory while the alignment runs."""
+""" The largest horizontal bias on this rocket's trajectory while the alignment runs. """
 const max_horizontal_bias: Float = 12000.0      // from the trajectory data of Ariane 4
 
-"""
-Tells whether this rocket can reach `bias` while the alignment runs.
+""" Tells whether this rocket can reach `bias` while the alignment runs.
+
     - bias: the horizontal bias checked
 """
 flight_bias_is_valid(bias: Float) -> Bool:
     -max_horizontal_bias <= bias and bias <= max_horizontal_bias
 
-"""A horizontal bias inside this rocket's trajectory data."""
+""" A horizontal bias inside this rocket's trajectory data. """
 type FlightBias extend Float when flight_bias_is_valid
 
-"""
-Counts the steps of the 16-bit word that `bias` takes.
+""" Counts the steps of the 16-bit word that `bias` takes.
+
     - bias: a horizontal bias inside the trajectory data
 """
 steps_of(bias: FlightBias) -> Int:
     to_int(bias / bias_per_step)
 
-"""
-Turns a count of steps into the 16-bit word. Holds the word at the nearest limit when the count does not fit.
+""" Turns a count of steps into the 16-bit word. Holds the word at the nearest limit when the count does not fit.
+
     - steps: the horizontal bias, counted in steps of the word
 """
 word_of(steps: Int) -> Signed16:
@@ -306,11 +306,11 @@ type's rule. A bias from C becomes a `FlightBias` only through that rule.
 address with `@`, written right after the pointer:
 
 ```draconyx
-"""Gives where the alignment routine, written in C, stored the horizontal bias it computed last."""
+""" Gives where the alignment routine, written in C, stored the horizontal bias it computed last. """
 extern "C" alignment_last_bias() -> Ptr<FlightBias>
     from library "alignment"
 
-"""Gives the horizontal bias the alignment routine computed last. The library keeps the bias in place while the program runs, and nothing else writes it."""
+""" Gives the horizontal bias the alignment routine computed last. The library keeps the bias in place while the program runs, and nothing else writes it. """
 last_bias() -> FlightBias:
     trust:
         alignment_last_bias()@      // the rule of FlightBias is checked as the bias is read

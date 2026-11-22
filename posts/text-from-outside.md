@@ -57,8 +57,8 @@ Take a small program that greets a name.
 ```draconyx
 module main
 
-"""
-Greets a name this program trusts.
+""" Greets a name this program trusts.
+
     - name: the name to greet
 """
 greet(name: String) -> String:
@@ -75,8 +75,8 @@ main(take system: System) -> None:
 ```draconyx
 module main
 
-"""
-Greets a name this program trusts.
+""" Greets a name this program trusts.
+
     - name: the name to greet
 """
 greet(name: String) -> String:
@@ -117,18 +117,18 @@ carry the mark one step further.
 ```draconyx
 module main
 
-"""
-Tells whether text is a safe name: 1 to 32 lowercase letters.
+""" Tells whether text is a safe name: 1 to 32 lowercase letters.
+
     - text: the text to test
 """
 safe_name_is_valid(text: String) -> Bool:
     text ~ re/^[a-z]{1,32}$/
 
-"""From 1 to 32 lowercase letters."""
+""" From 1 to 32 lowercase letters. """
 type SafeName extend String when safe_name_is_valid
 
-"""
-Greets a name this program trusts.
+""" Greets a name this program trusts.
+
     - name: the name to greet
 """
 greet(name: String) -> String:
@@ -172,28 +172,28 @@ module main
 
 // safe_name_is_valid and SafeName as in step C.
 
-"""
-Tells whether text is a valid email address: one @ and no spaces.
+""" Tells whether text is a valid email address: one @ and no spaces.
+
     - text: the text to test
 """
 email_is_valid(text: String) -> Bool:
     text ~ re/^[^@\s]+@[^@\s]+$/
 
-"""
-Tells whether text is a strong password: at least 12 characters.
+""" Tells whether text is a strong password: at least 12 characters.
+
     - text: the text to test
 """
 password_is_valid(text: String) -> Bool:
     count_graphemes(text) >= 12
 
-"""An address with one @ and no spaces."""
+""" An address with one @ and no spaces. """
 type Email extend String when email_is_valid
 
-"""At least 12 characters."""
+""" At least 12 characters. """
 type Password extend String when password_is_valid
 
-"""
-Welcomes a sign-up whose every field passed its check.
+""" Welcomes a sign-up whose every field passed its check.
+
     - name: the user's name
     - email: the user's email address
     - password: the user's password
@@ -228,8 +228,8 @@ Sometimes a program would rather clean a name than refuse it: keep the lowercase
 cleaner is shown here on plain text, with a law that states what it is for:
 
 ```draconyx
-"""
-Keeps the first 32 lowercase letters of `text`, falling back to "guest" if none.
+""" Keeps the first 32 lowercase letters of `text`, falling back to "guest" if none.
+
     - text: the text to clean
 """
 clean_name(text: String) -> String:
