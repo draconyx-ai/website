@@ -221,15 +221,15 @@ summarize(take email: tainted String) -> Prompt:
             "minimal counter-example and records it in a regression file that later runs replay first. "
             "A violation fails the run, and a release build refuses to build until every checked law passes. "
             "Skipping a law takes an explicit `trust`, and the test run reports each trusted law as unverified.",
-            "Dispatch picks implementations by the laws a type keeps, so a false law would be a silent "
-            "miscompilation. Laws decide membership instead: a type that breaks one is no member of the concept, "
-            "and the report names every site that rested on it. An obligation the toolchain could not evaluate is reported as a “coverage shortfall” "
+            "A type is a member of a concept when it has the concept's functions; laws say how those functions "
+            "must behave. A violation names the values that break the law and every place in the package that "
+            "relies on it. An obligation the toolchain could not evaluate is reported as a “coverage shortfall” "
             "naming its cause, never as a pass, and fails the run unless `--allow-unsupported` is given; a "
             "`todo()` body gets its own `UNIMPLEMENTED` verdict instead of a fake failure.",
         ],
-        "ships": "Ships today: `drx check` checks laws to decide membership, `drx test` and `drx verify` run every "
-                 "obligation, a release build with a failing law builds nothing, and the violation report names each "
-                 "site resting on the law and offers exactly two repairs.",
+        "ships": "Ships today: `drx test` and `drx verify` run every checked law, example and test and report the "
+                 "values that break a law, a release build proves the laws marked `proven` or refuses to build, and "
+                 "the violation report names each place resting on the law and offers exactly two repairs.",
         "unlike": "Python, Rust and Go state laws like Ord/Hash consistency only in documentation; "
                   "the compiler never sees them. Property testing is a third-party library (Hypothesis, "
                   "proptest) or, in Go, stdlib testing/quick and fuzzing, and someone must restate each law as a "
@@ -422,9 +422,9 @@ LOOP = [
 # The whole language: (group title, [(name, pitch, status)]). status: ships | partial | specified.
 FEATURE_GROUPS = [
     ('Types and algebra', [
-        ('Concepts: named, but never declared', "Write the functions and the type has the concept, as long as it keeps the concept's laws. No impl blocks, and no two modules can give one type two meanings.", 'ships'),
+        ('Concepts: named, but never declared', "Write the functions and the type has the concept. No impl blocks, and no two modules can give one type two meanings.", 'ships'),
         ('Algebraic laws as code, property-tested by default', 'In C++ and Rust, associativity is a line in the docs. In Draconyx it is a `law` line in a concept, and a type that breaks it fails `drx test` with a shrunk counter-example.', 'ships'),
-        ('Dispatch on algebra', 'Write the parallel reduction once. The compiler picks it only for types that keep the laws that make it correct.', 'ships'),
+        ('Dispatch on what a type can do', 'Write one function with an arm for each concept. The compiler picks the arm by the functions a type has, and checks that the arms cover every type the function takes.', 'ships'),
         ('Generics that infer the hard parts', 'Variance and const-generic shapes are worked out by the compiler, not annotated by the model.', 'ships'),
         ('Calling itself unchanged is a build error', "A function that calls itself with its parameters unchanged, by its name or through its operator (`left - right` inside `sub`), is a build error on any path, even when another path ends. Recursion with changed values is allowed. Rust, Swift and Clang (with `-Wall`) warn only when every path calls itself; Java never warns.", 'partial'),
     ]),
@@ -457,7 +457,7 @@ FEATURE_GROUPS = [
     ]),
     ('AI and numerics', [
         ('Shapes and named axes in the type', "A tensor's dtype, axis names and sizes belong to its type, so a tensor passed where a signature declares another shape fails at compile time, before any array is allocated.", 'ships'),
-        ('grad and vmap as typed function transforms, with schedules certified by laws', 'Autodiff and auto-batching are plain functions over functions, and schedule rewrites are gated by laws instead of being trusted.', 'ships'),
+        ('grad and vmap as typed function transforms', 'The standard library declares autodiff and auto-batching as plain functions over functions, and a call type-checks today; running them is not built yet. `drx tune` and `drx bench` search, measure and pin a schedule.', 'partial'),
         ('`jit`: captured and fused array code', '`jit` is a function transform in the same family as `grad` and `vmap`: it captures a computation as a lazy array graph and fuses it, and it composes with both.', 'specified'),
         ('Hygienic, typed dialects (macros, elab, comptime)', 'Dialects extend the syntax with Racket-grade hygiene and type-directed elaboration, without textual macros.', 'ships'),
     ]),
@@ -476,7 +476,6 @@ VERSUS = [
     ('Missing and redundant match arms both rejected, on every match.', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'yes', 'no', 'part', 'no']),
     ('Deterministic agent protocol: same source tree, byte-identical answers.', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
     ('Ownership and borrows checked at compile time, with no tracing garbage collector and no lifetime annotations.', ['yes', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'part', 'no', 'no', 'no', 'part']),
-    ('Generic code dispatches on the algebraic laws a type satisfies, with arm totality checked.', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
 ]
 # The fine print for every "part"/"yes" a competitor gets, so nobody has to take our word for it.
 VERSUS_NOTES = {
