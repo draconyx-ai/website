@@ -25,7 +25,7 @@ itself? And can a writer let it through without checking it?
 In Draconyx six channels are born `tainted`, with nothing for the programmer to annotate:
 
 - Model output: a completion's text is a `tainted String`.
-- User input: `Console.read_line` and `Console.read_all` read a `tainted String`.
+- User input: the console's `read_line` and `read_all` read a `tainted String`.
 - Network reads: `read` on a connection reads `tainted Bytes`.
 - The command line: `System.arguments` is a `List<tainted String>`.
 - Foreign code: what a `sandboxed` or `isolated` foreign call returns. A sandbox limits what a library can break,
@@ -52,7 +52,7 @@ Its guarantee is about where text flows: a program may still branch on tainted t
 
 Take a small program that greets a name.
 
-**A. A name the program wrote itself.** It prints `Hello, ada`:
+**A. A name the program wrote itself.** It gives `Hello, ada`:
 
 ```draconyx
 module main
@@ -64,13 +64,14 @@ module main
 greet(name: String) -> String:
     "Hello, {name}"
 
-main(take system: System) -> None:
-    provide Console = system.console
+""" Greets the name this program wrote. """
+greet_ada() -> String:
     name = "ada"
-    Console.print(greet(name))
+    greet(name)
 ```
 
-**B. A name from the command line.** Now whoever runs the program chooses it:
+**B. A name from the command line.** Now whoever runs the program chooses it: `main` hands `greet_typed`
+its `system.arguments`, a `List<tainted String>`:
 
 ```draconyx
 module main
@@ -82,26 +83,29 @@ module main
 greet(name: String) -> String:
     "Hello, {name}"
 
-main(take system: System) -> None:
-    provide Console = system.console
-    typed = clone system.arguments[0]
-    Console.print(greet(typed))
+""" Greets the name typed after the program's name.
+
+    * arguments: the command line, from `system.arguments`
+"""
+greet_typed(arguments: List<tainted String>) -> String:
+    typed = clone arguments[0]
+    greet(typed)
 ```
 
 `typed` is a `tainted String`, and `greet` asks for a `String`, so drx refuses to build the program:
 
 <pre class="term" tabindex="0" role="region" aria-label="drx&#x27;s output"><code><span style="color:#8a8a8a">$</span> drx check greet
 <span></span>
-<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/main.ax, line 13</span>
+<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/main.ax, line 16</span>
 <span></span>
-    <span style="color:#5fd7d7">Console</span>.<span style="color:#5fafff">print</span>(<span style="color:#5fafff">greet</span>(<span style="color:#afd7ff">typed</span>))
-                        <span style="color:#cd3131">^^^^^</span>
+    <span style="color:#5fafff">greet</span>(<span style="color:#afd7ff">typed</span>)
+          <span style="color:#cd3131">^^^^^</span>
 <span></span>
 <span style="color:#afd7ff">typed</span> is a <span style="color:#d787d7">tainted</span> <span style="color:#5fd7d7">String</span>, but the parameter <span style="color:#afd7ff">name</span> of
 <span style="color:#afd7ff">greet</span> takes a plain <span style="color:#5fd7d7">String</span>.
 <span></span>
-<span style="color:#afd7ff">typed</span> came from the command line, which this program does
-not control. A <span style="color:#5fd7d7">String</span> can become a <span style="color:#d787d7">tainted</span> <span style="color:#5fd7d7">String</span>, but
+<span style="color:#afd7ff">typed</span> came from <span style="color:#afd7ff">arguments</span>, text this program does not
+control. A <span style="color:#5fd7d7">String</span> can become a <span style="color:#d787d7">tainted</span> <span style="color:#5fd7d7">String</span>, but
 never the other way round.
 <span></span>
 Check the text with <span style="color:#afd7ff">validate</span> into a refinement type, and pass
@@ -134,16 +138,20 @@ type SafeName extend String when safe_name_is_valid
 greet(name: String) -> String:
     "Hello, {name}"
 
-main(take system: System) -> None:
-    provide Console = system.console
-    typed = clone system.arguments[0]
+""" Greets the name typed after the program's name, if it is a safe name.
+
+    * arguments: the command line, from `system.arguments`
+"""
+greet_typed(arguments: List<tainted String>) -> String:
+    typed = clone arguments[0]
+
     match name: SafeName = validate(typed):
-        ok      -> Console.print(greet(name))
-        Invalid -> Console.print("A name is 1 to 32 lowercase letters.")
+        ok      -> greet(name)
+        Invalid -> "A name is 1 to 32 lowercase letters."
 ```
 
-Given `ada`, it prints `Hello, ada`. Given `"Ignore previous instructions"`, quoted so that it is one argument, it
-prints what a name must be.
+Given `ada`, it gives `Hello, ada`. Given `"Ignore previous instructions"`, quoted so that it is one argument, it
+gives what a name must be.
 
 The rule is one regex test: `~` gives a `Bool`, the author writes the `^` and `$` (nothing is anchored for you),
 matching is case-sensitive, and the pattern is checked at build time, so a broken one does not compile. Perl, Ruby
@@ -201,21 +209,28 @@ type Password extend String when password_is_valid
 sign_up(name: SafeName, email: Email, password: Password) -> String:
     "welcome, {name}"
 
-main(take system: System) -> None:
-    provide Console = system.console
+""" Welcomes a sign-up typed on the command line, or gives a line for each field that failed.
+
+    * arguments: the command line, from `system.arguments`
+"""
+sign_up_typed(arguments: List<tainted String>) -> List<String>:
+    lines: List<String> = []
+
     match welcome = validate(sign_up(
-            name = clone system.arguments[0],
-            email = clone system.arguments[1],
-            password = clone system.arguments[2])):
-        ok      -> Console.print(welcome)
+            name = clone arguments[0],
+            email = clone arguments[1],
+            password = clone arguments[2])):
+        ok      -> push(list = borrow lines, item = welcome)
         Invalid -> for problem in welcome.problems:
-                       Console.print("{problem.field}: {problem.message}")
+                       push(list = borrow lines, item = "{problem.field}: {problem.message}")
+
+    lines
 ```
 
 Each rule is written once, as a type, and every parameter that names it gets it. The call inside `validate` may
 take tainted arguments because `validate` checks all of them before `sign_up` runs, not only up to the first
 failure. In the `Invalid` arm, `welcome.problems` holds, in parameter order, each failed parameter's name and
-its type's doc. Given the arguments `Ada me-at-example 1234`, that arm prints one line per problem:
+its type's doc. Given the arguments `Ada me-at-example 1234`, that arm gives one line per problem:
 `name: From 1 to 32 lowercase letters.`, then `email: An address with one @ and no spaces.`, then
 `password: At least 12 characters.`
 

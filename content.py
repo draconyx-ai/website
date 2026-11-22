@@ -137,10 +137,13 @@ REASONS = [
         "body": [
             "The rule is “no ambient permission”: there is no global `open` and no standard function that "
             "reaches the world on its own authority. Every permission descends from the `System` powerbox handed "
-            "to `main`, and code holds one only when it is handed one.",
-            "The compiler works out which services each definition reaches, through callees and function "
-            "values. A service reached with no provider is compile error AX0501, naming the whole call chain, and "
-            "`drx outline` prints each definition's uses and needs. A host can hand an AI-written plan a narrowed "
+            "to `main`, and no code can mint one of its own.",
+            "A service is a concept that uses `Service`. A root, `main` or a test, binds one to a name it "
+            "chooses, as in `$sales: FileLedger = init(\"sales.log\")`, and every function may then use `$sales` "
+            "with nothing in its signature. The compiler works out which services each definition reaches, through "
+            "callees and function values, and checks each function against every root that reaches it. A `$` name "
+            "that no root binds is compile error AX0501, naming the whole call chain, and `drx outline` prints each "
+            "definition's uses and needs. A host can hand an AI-written plan a narrowed "
             "permission, such as a filesystem that `scope_to` confines to one directory, and read from the outline "
             "exactly which services the plan reaches.",
         ],
@@ -154,24 +157,23 @@ REASONS = [
         "sample": ("drx", """$ drx check plan
 
 
-┃ ERROR  src/main.ax, line 15
+┃ ERROR  src/main.ax, line 17
 ┃
 ┃     main(take system: System) -> None:
 ┃     ^^^^
 ┃
-┃ `main` reaches the service `Network`, but nothing provides it.
+┃ `main` reaches `$sales`, but does not bind it.
 ┃
-┃ `main` calls `run_generated_plan` on line 16, which calls
-┃ `upload` on line 13, which uses `Network` on line 7. No scope
-┃ on that path has a `provide Network`.
+┃ `main` calls `run_generated_plan` on line 18, which calls
+┃ `sell` on line 15, which uses `$sales` on line 10.
 ┃
-┃ Add `provide Network = ...` in `main`, or wrap the call in
-┃ `provide locally: Network = ... in: ...`.
+┃ Bind it in `main`, as in
+┃ `$sales: FileLedger = init("sales.log")`.
 ┃
 ┃ (AX0501. For more, run: drx explain AX0501)
 
 
-1 error in 1 file. The package was not built.""", "How drx reports it."),
+1 error in 1 file. The package was not built.""", "The report for a `$` name that no root binds."),
         "cites": ["12-services-di-permissions:278-322", "12-services-di-permissions:122-145", "12-services-di-permissions:184-195", "12-services-di-permissions:401-414", "09-modules:441-500", "26-agent-interface:316-340"],
     },
     {
@@ -342,15 +344,20 @@ label(payment: Pending) -> String:
 label(payment: Authorized) -> String:
     "authorized {payment.amount}"
 
-\"\"\" Writes the state of every payment of the day on the receipt.
+\"\"\" Gives the state of every payment of the day, one line each.
 
     * payments: the day's payments
 \"\"\"
-receipt(payments: List<any T>) -> None:
-    for payment in payments:
-        print(label(payment))
+receipt(payments: List<any T>) -> List<String>:
+    lines: List<String> = []
 
-main() -> None:
+    for payment in payments:
+        push(list = borrow lines, item = label(payment))
+
+    lines
+
+\"\"\" Gives the receipt of today's payments. \"\"\"
+today() -> List<String>:
     receipt([Pending(), Refunded(reason = "damaged", amount = Money(cents = 1200))])
     // error AX0420: `Refunded` is put into `any T` here, but no `label` takes a `Refunded`""",
                    "A forgotten kind is a compile error that names it."),
@@ -456,8 +463,8 @@ FEATURE_GROUPS = [
         ('Unikernel and WebAssembly targets', 'The same source targets a unikernel that needs no OS underneath, or a WebAssembly module.', 'specified'),
     ]),
     ('Safety and effects', [
-        ('Services and dependency injection', 'A function uses a service without anyone passing it in. You get no constructor plumbing, no effect rows, and a compile error when nothing above a function supplies a service it uses.', 'ships'),
-        ('Object-capability permissions (no ambient authority)', "No global `open` and no importable `Network`: the only way code gets authority is to be handed it. Starting from main's `System` powerbox, it can only be narrowed, never widened.", 'ships'),
+        ('Services and dependency injection', "A service is a concept that uses `Service`, bound once at the program's root to a name such as `$sales`. Every function can use `$sales` with nothing in its signature: no constructor plumbing, no effect rows, and a compile error when no root binds a `$` name a function reaches.", 'ships'),
+        ('Object-capability permissions (no ambient authority)', "No global `open` and no importable `Network`: all authority descends from main's `System` powerbox, and it can only be narrowed, never widened.", 'ships'),
         ('`tainted`: a typed defense against prompt injection', "Model output, console and network input, the command line, a started program's output, and sandboxed and isolated foreign calls are born `tainted`. Passing one to an unmarked parameter, or to a prompt's instruction slot, is compile error AX1022.", 'ships'),
         ('`validate`: the way out of `tainted` is a check', "`validate` lets tainted input into a refinement type, such as `type Email extend String when email_is_valid`, only by running its named rule. A failure is handled on the spot; for a type with fields or a call, `Invalid` lists every field or parameter that failed, with each type's doc as its message.", 'specified'),
         ('`trust` blocks: unsafe code, held to seven powers', "Draconyx has no `unsafe`. `trust` unlocks exactly seven operations the compiler cannot check, such as calling a trusted function, making a raw pointer or reading through one with `pointer@`, and nothing else: inside a `trust:` block, ownership and borrow checks still run. `drx audit trust` lists every trusted block with its module, location and code hash, and the doc of the function around it says what it vouches for.", 'ships'),
