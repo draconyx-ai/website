@@ -65,10 +65,8 @@ greet(name: String) -> String:
     "Hello, {name}"
 
 main() -> None:
-    $console: TerminalConsole = init()
-
     name = "ada"
-    print($console, greet(name))
+    print(greet(name))
 ```
 
 **B. A name from the command line.** Now whoever runs the program chooses it:
@@ -84,20 +82,18 @@ greet(name: String) -> String:
     "Hello, {name}"
 
 main(args: List<tainted String>) -> None:
-    $console: TerminalConsole = init()
-
     typed = clone args[0]
-    print($console, greet(typed))
+    print(greet(typed))
 ```
 
 `typed` is a `tainted String`, and `greet` asks for a `String`, so drx refuses to build the program:
 
 <pre class="term" tabindex="0" role="region" aria-label="drx&#x27;s output"><code><span style="color:#8a8a8a">$</span> drx check greet
 <span></span>
-<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/main.ax, line 14</span>
+<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/main.ax, line 12</span>
 <span></span>
-    <span style="color:#5fafff">print</span>(<span style="color:#afd7ff">$console</span>, <span style="color:#5fafff">greet</span>(<span style="color:#afd7ff">typed</span>))
-                          <span style="color:#cd3131">^^^^^</span>
+    <span style="color:#5fafff">print</span>(<span style="color:#5fafff">greet</span>(<span style="color:#afd7ff">typed</span>))
+                <span style="color:#cd3131">^^^^^</span>
 <span></span>
 <span style="color:#afd7ff">typed</span> is a <span style="color:#d787d7">tainted</span> <span style="color:#5fd7d7">String</span>, but the parameter <span style="color:#afd7ff">name</span> of
 <span style="color:#afd7ff">greet</span> takes a plain <span style="color:#5fd7d7">String</span>.
@@ -137,13 +133,11 @@ greet(name: String) -> String:
     "Hello, {name}"
 
 main(args: List<tainted String>) -> None:
-    $console: TerminalConsole = init()
-
     typed = clone args[0]
 
     match name: SafeName = validate(typed):
-        ok      -> print($console, greet(name))
-        Invalid -> print($console, "A name is 1 to 32 lowercase letters.")
+        ok      -> print(greet(name))
+        Invalid -> print("A name is 1 to 32 lowercase letters.")
 ```
 
 Given `ada`, it prints `Hello, ada`. Given `"Ignore previous instructions"`, quoted so that it is one argument, it
@@ -158,7 +152,7 @@ and Elixir spell the test `=~`, AWK and PostgreSQL `~`.
 `SafeName` builds only when the code proves the rule, with a value known at build time or with `safe_name_is_valid`
 checked just before; nothing checks it while the program runs. Given away with `take` where a `String` is expected, it is held as a `String` and still runs `SafeName`'s functions; lent with `borrow`
 where a `String` is expected, it does not compile, because the borrower could change the text and break the rule.
-The type's doc is the message for a value that fails. The rule must be pure: it uses no service
+The type's doc is the message for a value that fails. The rule must be pure: it reaches no global
 and changes nothing but its own new data, so it sees the text and nothing else.
 
 `validate` is the way from `tainted T` to a plain type. Here it runs `safe_name_is_valid` on the text actually typed: if
@@ -206,15 +200,13 @@ sign_up(name: SafeName, email: Email, password: Password) -> String:
     "welcome, {name}"
 
 main(args: List<tainted String>) -> None:
-    $console: TerminalConsole = init()
-
     match welcome = validate(sign_up(
             name = clone args[0],
             email = clone args[1],
             password = clone args[2])):
-        ok      -> print($console, welcome)
+        ok      -> print(welcome)
         Invalid -> for problem in welcome.problems:
-                       print($console, "{problem.field}: {problem.message}")
+                       print("{problem.field}: {problem.message}")
 ```
 
 Each rule is written once, as a type, and every parameter that names it gets it. The call inside `validate` may

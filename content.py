@@ -36,7 +36,7 @@ HERO = {
     "subhead": (
         "Python, Rust and Go were designed for a human at a keyboard. Draconyx was designed for the "
         "model in the loop: errors that come back as data, edits addressed by name and checked before they land, "
-        "laws that are checked, not trusted, and every service a function uses printed in its outline."
+        "laws that are checked, not trusted, and every global a function reaches printed in its outline."
     ),
 }
 
@@ -133,49 +133,47 @@ REASONS = [
     {
         "id": "authority",
         "state": "partial",
-        "title": "Open what you use. Link nothing else.",
+        "title": "An unset global is a build error.",
         "body": [
-            "A program opens each service it uses, as in `$clock: SystemClock = init()`, and a service it never "
-            "opens is not linked into it. Before `main` starts, only the scheduler and the allocator run. No "
-            "standard function reaches a service on its own: one that needs a clock or a socket takes it as an "
-            "argument. A library binds no `$` names and has no entry point; it gets its services through its "
-            "type's `init`, passed in by the program or opened inside that `init`, and it asks for a concept, not "
-            "a product, as in `init(database: any SqlDatabase)`.",
-            "A service is a concept that uses `Service`. A root, `main` or a test, binds one to a name it "
-            "chooses, as in `$sales: FileLedger = init(\"sales.log\")`, and every function may then use `$sales` "
-            "with nothing in its signature. The compiler works out which services each definition reaches, through "
-            "callees and function values, and checks each function against every root that reaches it. A `$` name "
-            "that no root binds is compile error AX0501, naming the whole call chain, and `drx outline` prints the "
-            "services each definition uses.",
+            "A `$` name is a global variable, declared in a module. The standard library's console and clock come "
+            "with their value, so `print(\"Sold.\")` and `now()` work with nothing set up. A global such as std's "
+            "`$logger: any Log` comes with none: the program binds it once, by its path, as in "
+            "`log.$logger: FileLog = FileLog(path = \"shop.log\")`, and any function then reaches it with nothing "
+            "passed. A library asks for what it needs as a concept, as in a field `database: any SqlDatabase`.",
+            "The compiler works out which globals each definition reaches, through callees and function values. A "
+            "global with no value that code reaches and no root binds, where a root is `main` or a test, is compile "
+            "error AX0501, naming the whole call chain, and `drx outline` prints the globals each definition "
+            "reaches.",
         ],
         "ships": "Ships today: the analysis behind AX0501, with call chains through callees and function values "
-                 "passed to a standard function such as `map`, and the services each definition uses in the "
-                 "outline. Not built yet: services as concepts that use `Service`, their `init`, `$` names bound at "
-                 "a root, standard functions that take their services as arguments, and a program that links only "
-                 "the services it opens.",
-        "unlike": "In Python, Go and Rust the standard library reaches the clock, the console and the environment "
-                  "on its own, as Go's `time.Now()` and `fmt.Println`, Python's `print` and Rust's `std::env::var` "
-                  "do, so a call into it never shows what it touches.",
+                 "passed to a standard function such as `map`, and the globals each definition reaches in the "
+                 "outline. Not built yet: globals declared in a module, with a value or without, a binding by the "
+                 "global's path, and the standard library's console and clock as globals.",
+        "unlike": "In Python, Go and Rust a global that nobody set is found only when the code runs: Python's "
+                  "module-level `None`, Go's nil package variable and Rust's empty `OnceLock` fail at the first "
+                  "use, and no compiler lists the globals a function reaches.",
         "sample": ("drx", """$ drx check plan
 
 
-┃ ERROR  src/main.ax, line 17
+┃ ERROR  src/main.ax, line 10
 ┃
 ┃     main() -> None:
 ┃     ^^^^
 ┃
-┃ `main` reaches `$sales`, but does not bind it.
+┃ `main` reaches the global `shop.$sales`, but it has no
+┃ value and no root binds it.
 ┃
-┃ `main` calls `run_generated_plan` on line 18, which calls
-┃ `sell` on line 15, which uses `$sales` on line 10.
+┃ `main` calls `run_generated_plan` on line 11, which calls
+┃ `sell` on line 8, which uses `$sales` on line 19 of
+┃ src/shop.ax.
 ┃
 ┃ Bind it in `main`, as in
-┃ `$sales: FileLedger = init("sales.log")`.
+┃ `shop.$sales: FileLedger = FileLedger(path = "sales.log")`.
 ┃
 ┃ (AX0501. For more, run: drx explain AX0501)
 
 
-1 error in 1 file. The package was not built.""", "The report for a `$` name that no root binds."),
+1 error in 1 file. The package was not built.""", "The report for a global with no value that no root binds."),
         "cites": ["12-services-di-permissions:278-322", "12-services-di-permissions:122-145", "12-services-di-permissions:184-195", "12-services-di-permissions:401-414", "09-modules:441-500", "26-agent-interface:316-340"],
     },
     {
@@ -355,11 +353,9 @@ label(payment: Authorized) -> String:
 \"\"\"
 receipt(payments: List<any T>) -> None:
     for payment in payments:
-        print($console, label(payment))
+        print(label(payment))
 
 main() -> None:
-    $console: TerminalConsole = init()
-
     receipt([Pending(), Refunded(reason = "damaged", amount = Money(cents = 1200))])
     // Error AX0420 on the line above: `Refunded` is put into `any T`, but no `label` takes a `Refunded`.""",
                    "A forgotten kind is a compile error that names it."),
@@ -458,7 +454,7 @@ FEATURE_GROUPS = [
         ('Move-only channels and a fair, replayable `select`', 'Every message exists in exactly one place at a time, and `select` timeouts run on a Clock you can fast-forward in tests.', 'ships'),
         ('Actors and let-it-crash supervision', 'Erlang-style actors under supervision trees that restart what crashed, with no exceptions anywhere.', 'ships'),
         ('Remote values that cannot hide the network', 'In Draconyx a network call never looks like a local call: `remote` is in the type, and reading a remote value as if it were local is a compile error.', 'ships'),
-        ('Bundled distributed runtime', "Cluster membership and failure detection are in the standard library: a program opens a `ClusterNode` with the discovery it chooses, such as `LanMulticast`, a DNS name or a list of seeds, and CRDTs are ordinary types: no ZooKeeper, no Consul, no sidecar.", 'partial'),
+        ('Bundled distributed runtime', "Cluster membership and failure detection are in the standard library: a program starts a `ClusterNode` with the discovery it chooses, such as `LanMulticast`, a DNS name or a list of seeds, and CRDTs are ordinary types: no ZooKeeper, no Consul, no sidecar.", 'partial'),
         ('Raft consensus as an ordinary type', '`Replicated<T, n>` keeps a value on a quorum of `n` nodes with linearizable reads and writes, inside the program: no external coordinator.', 'specified'),
         ('Live code swap in development, with checked state migration', 'In development, a running program loads a new version of a module beside the old one. The swap point is proven safe, state is handed over as a linear move, and migrations are functions the compiler checks. Release builds restart instead; the unikernel never swaps.', 'partial'),
         ('Native binaries', '`drx build` produces a native executable through the Rust bootstrap compiler\'s own code generator. The spec names one back end for the language, LLVM: `dev` and `test` builds run it without the optimizer, `release` and `proof` with it.', 'ships'),
@@ -466,8 +462,6 @@ FEATURE_GROUPS = [
         ('Unikernel and WebAssembly targets', 'The same source targets a unikernel that needs no OS underneath, or a WebAssembly module.', 'specified'),
     ]),
     ('Safety and effects', [
-        ('Services and dependency injection', "A service is a concept that uses `Service`, bound once at the program's root to a name such as `$sales`. Every function can use `$sales` with nothing in its signature: no constructor plumbing, no effect rows, and a compile error when no root binds a `$` name a function reaches.", 'specified'),
-        ('A standard library with no ambient services', "No standard function reaches a service on its own: one that needs a clock, a console or a socket takes it as an argument. A library binds no `$` names and gets its services through its type's `init`, and a program links only the services it opens.", 'specified'),
         ('`tainted`: a typed defense against prompt injection', "Model output, console and network input, the command line, a started program's output, and sandboxed and isolated foreign calls are born `tainted`. Passing one to an unmarked parameter, or to a prompt's instruction slot, is compile error AX1022.", 'ships'),
         ('`validate`: the way out of `tainted` is a check', "`validate` lets tainted input into a refinement type, such as `type Email extend String when email_is_valid`, only by running its named rule. A failure is handled on the spot; for a type with fields or a call, `Invalid` lists every field or parameter that failed, with each type's doc as its message.", 'specified'),
         ('`trust` blocks: unsafe code, held to seven powers', "Draconyx has no `unsafe`. `trust` unlocks exactly seven operations the compiler cannot check, such as calling a trusted function, making a raw pointer or reading through one with `pointer@`, and nothing else: inside a `trust:` block, ownership and borrow checks still run. `drx audit trust` lists every trusted block with its module, location and code hash, and the doc of the function around it says what it vouches for.", 'ships'),
@@ -486,7 +480,7 @@ VERSUS_LANGS = ['Draconyx', 'Python', 'Java', 'Kotlin', 'C#', 'C++', 'Rust', 'Go
 VERSUS = [
     ('Every error has a code and an explain entry, with JSON repair edits from the compiler itself.', ['yes', 'no', 'part', 'part', 'part', 'part', 'part', 'no', 'part', 'no', 'no', 'part', 'no']),
     ("Edits addressed by definition name, type-checked before they're written.", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
-    ('Compiler-computed map of the services each function reaches, through the whole call chain.', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
+    ('Compiler-computed map of the globals each function reaches, through the whole call chain.', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
     ('Model output typed untrusted at its standard-library source.', ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
     ("Algebraic laws property-tested by default by the compiler's own test command.", ['yes', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no', 'no']),
     ('Named arguments required at every multi-argument call of a declared function by its name.', ['yes', 'part', 'no', 'no', 'no', 'no', 'no', 'no', 'part', 'no', 'no', 'no', 'part']),
@@ -629,7 +623,7 @@ NOT_FOUND_LINE = "The address you asked for does not exist on draconyx.ai."
 NOT_FOUND_HOME = "Back to draconyx.ai"
 
 # Second opinions: what AI models said about the spec. Six models were given the specification (and the site)
-# between 29 October and 2 November 2026 (the dates of the saved answers) and asked the four questions below. The
+# between 29 October and 2 November 2026 (the dates of the saved answers) and asked the questions below. The
 # questions went through a service that calls the models, so none knew who was asking (the spec itself carries the
 # author's name; the models did not know the asker was him). DeepSeek and Muse Spark
 # answered twice, on two revisions of the spec. The full answers are kept by the author. Every quote is verbatim: "…" marks a cut, [Draconyx] stands where an answer used the earlier working
@@ -639,7 +633,7 @@ NOT_FOUND_HOME = "Back to draconyx.ai"
 OPINIONS_URL = "/what-models-think/"
 OPINIONS_TITLE = "What AI models think of Draconyx"
 OPINIONS_HEADLINE = "What the models think"
-OPINIONS_LEDE = ("We gave the Draconyx specification to six AI models and asked them the same four questions. "
+OPINIONS_LEDE = ("We gave the Draconyx specification to six AI models and asked them the same questions. "
                  "None knew who was asking.")
 OPINIONS_METHOD = (
     "The questions went through a service that calls each model. Asked between "
@@ -652,7 +646,6 @@ OPINIONS_QUESTIONS = [
     "What do you think of this programming language?",
     "Is it the future?",
     "On paper, is it better than Rust?",
-    "Is dependency injection built into the language a good idea?",
 ]
 OPINIONS = [
     {"id": "deepseek", "name": "DeepSeek", "maker": "DeepSeek", "note": "read two revisions of the spec",
@@ -667,19 +660,14 @@ OPINIONS = [
                         "deserves. If it doesn't, it's still the most important language design document of the "
                         "2020s, and its ideas will shape whatever comes next."),
          ("Versus Rust", "The question is not whether Draconyx is better than Rust on paper — it is."),
-         ("Dependency injection", "Draconyx's design is, I think, the best balance I've seen."),
      ]},
     {"id": "gemini", "name": "Gemini", "maker": "Google",
-     "headline": "Embedding Dependency Injection directly into the language is a brilliant evolution of effect "
-                 "systems.",
+     "headline": "On paper, [Draconyx] takes direct aim at Rust's steepest learning curves.",
      "quotes": [
          ("The language", "By replacing prose documentation with compiler-verified algebraic laws and treating LLM "
                           "invocations as secure, isolated services, it natively treats AI as both the primary "
                           "developer and a first-class component of the software."),
          ("The future", "…the current shift toward AI-generated systems gives [Draconyx] a unique wedge."),
-         ("Versus Rust", "On paper, [Draconyx] takes direct aim at Rust's steepest learning curves."),
-         ("Dependency injection", "This makes executing untrusted or hallucinated AI-generated code fundamentally "
-                                  "safer by default."),
      ]},
     {"id": "grok", "name": "Grok", "maker": "xAI",
      "headline": "This is one of the most ambitious, coherent language designs I’ve seen in years.",
@@ -692,9 +680,6 @@ OPINIONS = [
          ("Versus Rust", "Rust’s trait contracts are documentation. Here they gate algorithm selection and "
                          "optimizations and are verified… That is a genuine step beyond what Rust (or any "
                          "mainstream language) does."),
-         ("Dependency injection", "The design also makes the model itself just another service (with taint, "
-                                  "budgets, and recorded transcripts). That is the right abstraction if models are "
-                                  "going to be first-class components of programs."),
      ]},
     {"id": "kimi", "name": "Kimi K3", "maker": "Moonshot AI",
      "headline": "This is a 522-page act of unusually disciplined ambition: the best-conceived ‘AI-native language’ "
@@ -708,8 +693,6 @@ OPINIONS = [
          ("Versus Rust", "This is arguably a better surface syntax than Rust’s `&T`/`&mut T`/move-by-default, "
                          "because a reader can tell from the call alone whether a value is consumed, mutated, or "
                          "shared — no signature lookup needed."),
-         ("Dependency injection", "…no ambient `open()` anywhere is a property every language should have and "
-                                  "almost none do."),
      ]},
     {"id": "muse-spark", "name": "Muse Spark", "maker": "Meta", "note": "read two revisions of the spec",
      "headline": "Draconyx is the most intellectually serious ‘universal language’ attempt since Rust…",
@@ -720,8 +703,6 @@ OPINIONS = [
                           "I take it seriously."),
          ("Versus Rust", "If your problem is ‘let an untrusted model write and continuously regenerate whole "
                          "services safely,’ Draconyx is better designed on paper."),
-         ("Dependency injection", "…this is the best justification of DI in a language I’ve seen, because it isn’t "
-                                  "framework DI."),
      ]},
     {"id": "qwen", "name": "Qwen", "maker": "Alibaba",
      "headline": "It is a masterpiece of language design on paper.",
@@ -735,7 +716,6 @@ OPINIONS = [
                         "total dominance."),
          ("Versus Rust", "On paper, yes, in several critical dimensions. In practice, Rust has a massive head "
                          "start."),
-         ("Dependency injection", "Yes, emphatically, if it is done exactly as [Draconyx] specifies."),
      ]},
 ]
 

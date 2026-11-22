@@ -715,7 +715,7 @@ def build_opinions_html():
 
 <section id="setup" class="setup"><div class="wrap">
 <p class="kicker">The setup</p>
-<h2>Same four questions for every model</h2>
+<h2>The same questions for every model</h2>
 <ol class="asks">{asks}</ol>
 <p class="note">{e(C.OPINIONS_METHOD)}</p>
 </div></section>
@@ -1213,7 +1213,7 @@ def build_md(posts=()):
 
 
 def build_opinions_md():
-    lines = [f"# {C.OPINIONS_HEADLINE}", "", f"> {C.OPINIONS_LEDE}", "", "The four questions:", ""]
+    lines = [f"# {C.OPINIONS_HEADLINE}", "", f"> {C.OPINIONS_LEDE}", "", "The questions:", ""]
     lines += [f"{i}. {q}" for i, q in enumerate(C.OPINIONS_QUESTIONS, 1)]
     lines += ["", C.OPINIONS_METHOD, ""]
     for o in C.OPINIONS:
