@@ -45,8 +45,8 @@ PROBLEM = [
     "language model does not read documentation and then write correct code: it generates, observes and "
     "repairs, hundreds of times, unattended.",
     "Python, Rust and Go hand that agent error text or half-structured JSON, make it patch files "
-    "by string match, route it through tooling built around an editor cursor, and run its code where any import "
-    "can open a socket. Every fix for that lives outside the language: a flag, a server, a sandbox. In Draconyx, "
+    "by string match, and route it through tooling built around an editor cursor. Every fix for that lives "
+    "outside the language: a flag, a server, a sandbox. In Draconyx, "
     "the agent's interface is in the spec.",
     "Draconyx flips it. What the AI author needs is the language: \u201cnot leniency but a fast, precise, "
     "machine-readable verdict.\u201d The compiler never calls a model, and its agent daemon is a "
@@ -133,35 +133,36 @@ REASONS = [
     {
         "id": "authority",
         "state": "partial",
-        "title": "No global open(). Every service on the record.",
+        "title": "Open what you use. Link nothing else.",
         "body": [
-            "The rule is “no ambient permission”: there is no global `open` and no standard function that "
-            "reaches the world on its own authority. Every permission descends from the `System` powerbox handed "
-            "to `main`, and no code can mint one of its own.",
+            "A program opens each service it uses, as in `$clock: SystemClock = init()`, and a service it never "
+            "opens is not linked into it. Before `main` starts, only the scheduler and the allocator run. No "
+            "standard function reaches a service on its own: one that needs a clock or a socket takes it as an "
+            "argument. A library binds no `$` names and has no entry point; it gets its services through its "
+            "type's `init`, passed in by the program or opened inside that `init`, and it asks for a concept, not "
+            "a product, as in `init(database: any SqlDatabase)`.",
             "A service is a concept that uses `Service`. A root, `main` or a test, binds one to a name it "
             "chooses, as in `$sales: FileLedger = init(\"sales.log\")`, and every function may then use `$sales` "
             "with nothing in its signature. The compiler works out which services each definition reaches, through "
             "callees and function values, and checks each function against every root that reaches it. A `$` name "
-            "that no root binds is compile error AX0501, naming the whole call chain, and `drx outline` prints each "
-            "definition's uses and needs. A host can hand an AI-written plan a narrowed "
-            "permission, such as a filesystem that `scope_to` confines to one directory, and read from the outline "
-            "exactly which services the plan reaches.",
+            "that no root binds is compile error AX0501, naming the whole call chain, and `drx outline` prints the "
+            "services each definition uses.",
         ],
-        "ships": "Ships today: the `System` powerbox and its narrowing, such as `scope_to`; AX0241 for a standard "
-                 "handle such as `File(descriptor)` built outside its module; and the analysis behind AX0501, with "
-                 "call chains through callees and function values passed to a standard function such as `map`, and "
-                 "uses/needs in the outline. Not built yet: services as concepts that use `Service`, their `init`, "
-                 "and `$` names bound at a root.",
-        "unlike": "In Python, Go and Rust any imported module can open files or sockets on ambient "
-                  "process authority. Confinement comes from outside the type system (containers, seccomp, "
-                  "the third-party cap-std crate for Rust). None checks per function, at "
-                  "compile time, what a function can reach.",
+        "ships": "Ships today: the analysis behind AX0501, with call chains through callees and function values "
+                 "passed to a standard function such as `map`, and the services each definition uses in the "
+                 "outline. Not built yet: services as concepts that use `Service`, their `init`, `$` names bound at "
+                 "a root, standard functions that take their services as arguments, and a program that links only "
+                 "the services it opens.",
+        "unlike": "In Python, Go and Rust the standard library reaches the clock, the console and the environment "
+                  "on its own, as Go's `time.Now()` and `fmt.Println`, Python's `print` and Rust's `std::env::var` "
+                  "do, so a call into it never shows what it touches. Confinement comes from outside the language: "
+                  "containers, seccomp, or the third-party cap-std crate for Rust.",
         "sample": ("drx", """$ drx check plan
 
 
 ┃ ERROR  src/main.ax, line 17
 ┃
-┃     main(take system: System) -> None:
+┃     main() -> None:
 ┃     ^^^^
 ┃
 ┃ `main` reaches `$sales`, but does not bind it.
@@ -357,8 +358,8 @@ receipt(payments: List<any T>) -> None:
     for payment in payments:
         print($console, label(payment))
 
-main(take system: System) -> None:
-    $console = system.console
+main() -> None:
+    $console: TerminalConsole = init()
     receipt([Pending(), Refunded(reason = "damaged", amount = Money(cents = 1200))])
     // error AX0420: `Refunded` is put into `any T` here, but no `label` takes a `Refunded`""",
                    "A forgotten kind is a compile error that names it."),
@@ -457,7 +458,7 @@ FEATURE_GROUPS = [
         ('Move-only channels and a fair, replayable `select`', 'Every message exists in exactly one place at a time, and `select` timeouts run on a Clock you can fast-forward in tests.', 'ships'),
         ('Actors and let-it-crash supervision', 'Erlang-style actors under supervision trees that restart what crashed, with no exceptions anywhere.', 'ships'),
         ('Remote values that cannot hide the network', 'In Draconyx a network call never looks like a local call: `remote` is in the type, and reading a remote value as if it were local is a compile error.', 'ships'),
-        ('Bundled distributed runtime', 'Cluster membership and failure detection come with every binary, and CRDTs are ordinary types: no ZooKeeper, no Consul, no sidecar.', 'ships'),
+        ('Bundled distributed runtime', "Cluster membership and failure detection are in the standard library: a program opens a `ClusterNode` with the discovery it chooses, such as `LanMulticast`, a DNS name or a list of seeds, and CRDTs are ordinary types: no ZooKeeper, no Consul, no sidecar.", 'partial'),
         ('Raft consensus as an ordinary type', '`Replicated<T, n>` keeps a value on a quorum of `n` nodes with linearizable reads and writes, inside the program: no external coordinator.', 'specified'),
         ('Live code swap in development, with checked state migration', 'In development, a running program loads a new version of a module beside the old one. The swap point is proven safe, state is handed over as a linear move, and migrations are functions the compiler checks. Release builds restart instead; the unikernel never swaps.', 'partial'),
         ('Native binaries', '`drx build` produces a native executable through the Rust bootstrap compiler\'s own code generator. The spec names one back end for the language, LLVM: `dev` and `test` builds run it without the optimizer, `release` and `proof` with it.', 'ships'),
@@ -466,7 +467,7 @@ FEATURE_GROUPS = [
     ]),
     ('Safety and effects', [
         ('Services and dependency injection', "A service is a concept that uses `Service`, bound once at the program's root to a name such as `$sales`. Every function can use `$sales` with nothing in its signature: no constructor plumbing, no effect rows, and a compile error when no root binds a `$` name a function reaches.", 'specified'),
-        ('Object-capability permissions (no ambient authority)', "No global `open` and no importable `Network`: all authority descends from main's `System` powerbox, and it can only be narrowed, never widened.", 'ships'),
+        ('A standard library with no ambient services', "No standard function reaches a service on its own: one that needs a clock, a console or a socket takes it as an argument. A library binds no `$` names and gets its services through its type's `init`, and a program links only the services it opens.", 'specified'),
         ('`tainted`: a typed defense against prompt injection', "Model output, console and network input, the command line, a started program's output, and sandboxed and isolated foreign calls are born `tainted`. Passing one to an unmarked parameter, or to a prompt's instruction slot, is compile error AX1022.", 'ships'),
         ('`validate`: the way out of `tainted` is a check', "`validate` lets tainted input into a refinement type, such as `type Email extend String when email_is_valid`, only by running its named rule. A failure is handled on the spot; for a type with fields or a call, `Invalid` lists every field or parameter that failed, with each type's doc as its message.", 'specified'),
         ('`trust` blocks: unsafe code, held to seven powers', "Draconyx has no `unsafe`. `trust` unlocks exactly seven operations the compiler cannot check, such as calling a trusted function, making a raw pointer or reading through one with `pointer@`, and nothing else: inside a `trust:` block, ownership and borrow checks still run. `drx audit trust` lists every trusted block with its module, location and code hash, and the doc of the function around it says what it vouches for.", 'ships'),

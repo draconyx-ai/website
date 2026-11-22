@@ -27,7 +27,7 @@ In Draconyx six channels are born `tainted`, with nothing for the programmer to 
 - Model output: a completion's text is a `tainted String`.
 - User input: the console's `read_line` and `read_all` read a `tainted String`.
 - Network reads: `read` on a connection reads `tainted Bytes`.
-- The command line: `System.arguments` is a `List<tainted String>`.
+- The command line: `main`'s parameter `args` is a `List<tainted String>`.
 - Foreign code: what a `sandboxed` or `isolated` foreign call returns. A sandbox limits what a library can break,
   not what it can answer.
 - Other programs: what a program started by this one prints is `tainted`.
@@ -64,8 +64,8 @@ module main
 greet(name: String) -> String:
     "Hello, {name}"
 
-main(take system: System) -> None:
-    $console = system.console
+main() -> None:
+    $console: TerminalConsole = init()
     name = "ada"
     print($console, greet(name))
 ```
@@ -82,9 +82,9 @@ module main
 greet(name: String) -> String:
     "Hello, {name}"
 
-main(take system: System) -> None:
-    $console = system.console
-    typed = clone system.arguments[0]
+main(args: List<tainted String>) -> None:
+    $console: TerminalConsole = init()
+    typed = clone args[0]
     print($console, greet(typed))
 ```
 
@@ -134,9 +134,9 @@ type SafeName extend String when safe_name_is_valid
 greet(name: String) -> String:
     "Hello, {name}"
 
-main(take system: System) -> None:
-    $console = system.console
-    typed = clone system.arguments[0]
+main(args: List<tainted String>) -> None:
+    $console: TerminalConsole = init()
+    typed = clone args[0]
 
     match name: SafeName = validate(typed):
         ok      -> print($console, greet(name))
@@ -155,8 +155,8 @@ and Elixir spell the test `=~`, AWK and PostgreSQL `~`.
 `SafeName` builds only when the code proves the rule, with a value known at build time or with `safe_name_is_valid`
 checked just before; nothing checks it while the program runs. Given away with `take` where a `String` is expected, it is held as a `String` and still runs `SafeName`'s functions; lent with `borrow`
 where a `String` is expected, it does not compile, because the borrower could change the text and break the rule.
-The type's doc is the message for a value that fails. The rule must be pure: it uses no service, holds
-no permission and changes nothing but its own new data, so it sees the text and nothing else.
+The type's doc is the message for a value that fails. The rule must be pure: it uses no service
+and changes nothing but its own new data, so it sees the text and nothing else.
 
 `validate` is the way from `tainted T` to a plain type. Here it runs `safe_name_is_valid` on the text actually typed: if
 the rule holds, the `ok` arm runs and `name` is a `SafeName`, no longer tainted; if not, the `Invalid` arm runs,
@@ -202,13 +202,13 @@ type Password extend String when password_is_valid
 sign_up(name: SafeName, email: Email, password: Password) -> String:
     "welcome, {name}"
 
-main(take system: System) -> None:
-    $console = system.console
+main(args: List<tainted String>) -> None:
+    $console: TerminalConsole = init()
 
     match welcome = validate(sign_up(
-            name = clone system.arguments[0],
-            email = clone system.arguments[1],
-            password = clone system.arguments[2])):
+            name = clone args[0],
+            email = clone args[1],
+            password = clone args[2])):
         ok      -> print($console, welcome)
         Invalid -> for problem in welcome.problems:
                        print($console, "{problem.field}: {problem.message}")
