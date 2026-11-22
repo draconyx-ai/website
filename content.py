@@ -274,7 +274,8 @@ example median(values = [1.0, 3.0, 2.0]) == 2.0""",
             "compile, so an agent reads what happens to each argument from the call alone. The exception is a "
             "pipeline: a stage may borrow the value piped into it and mutate it without `borrow` being written, "
             "though it consumes a named value only when `take` is.",
-            "A function's signature carries its name, its parameter names and types, and their ownership. So `write(borrow shelf: Shelf, title: String)` "
+            "A function's signature is its name, its parameter names and types, their ownership and its return "
+            "type. So `write(borrow shelf: Shelf, title: String)` "
             "and `write(borrow printer: Printer, title: String)` live side by side, in one module or two, and each "
             "call picks by what it spells: no numbered names, and no guessing by position.",
         ],
@@ -438,7 +439,7 @@ LOOP = [
 FEATURE_GROUPS = [
     ('Types and algebra', [
         ('Concepts: named, but never declared', "Write the functions and the type has the concept. No impl blocks, and no two modules can give one type two meanings.", 'ships'),
-        ('Signatures: arguments by name, not by position', "A signature carries a function's name, its parameter names and types, and their ownership. A call names its arguments, so it reads like the declaration, two arguments can't be swapped unnoticed, and functions of one name need no numbered variants.", 'partial'),
+        ('Signatures: arguments by name, not by position', "A signature is a function's name, its parameter names and types, their ownership and its return type. A call names its arguments, so it reads like the declaration, two arguments can't be swapped unnoticed, and functions of one name need no numbered variants.", 'partial'),
         ('Algebraic laws as code, property-tested by default', 'In C++ and Rust, associativity is a line in the docs. In Draconyx it is a `law` line in a concept, and a type that breaks it fails `drx test` with a shrunk counter-example.', 'ships'),
         ('Dispatch on what a type can do', 'Write one function with an arm for each concept. The compiler picks the arm by the functions a type has, and checks that the arms cover every type the function takes.', 'ships'),
         ('Generics that infer the hard parts', 'Variance and const-generic shapes are worked out by the compiler, not annotated by the model.', 'ships'),
