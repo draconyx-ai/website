@@ -57,6 +57,8 @@ Take a small program that greets a name.
 ```draconyx
 module main
 
+use console.print
+
 """ Greets a name this program trusts.
 
     * name: the name to greet
@@ -74,6 +76,8 @@ main() -> None:
 ```draconyx
 module main
 
+use console.print
+
 """ Greets a name this program trusts.
 
     * name: the name to greet
@@ -90,7 +94,7 @@ main(args: List<tainted String>) -> None:
 
 <pre class="term" tabindex="0" role="region" aria-label="drx&#x27;s output"><code><span style="color:#8a8a8a">$</span> drx check greet
 <span></span>
-<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/main.ax, line 12</span>
+<span></span><span class="bar" style="border-left-color:#cd3131"><span style="color:#ffffff;background:#cd3131;font-weight:700"> ERROR </span>  <span style="color:#ffffff;font-weight:700">src/main.ax, line 14</span>
 <span></span>
     <span style="color:#5fafff">print</span>(<span style="color:#5fafff">greet</span>(<span style="color:#afd7ff">typed</span>))
                 <span style="color:#cd3131">^^^^^</span>
@@ -114,6 +118,8 @@ carry the mark one step further.
 
 ```draconyx
 module main
+
+use console.print
 
 """ Tells whether text is a safe name: 1 to 32 lowercase letters.
 
@@ -167,6 +173,8 @@ parameter names a refinement type:
 
 ```draconyx
 module main
+
+use console.print
 
 // The rule safe_name_is_valid and the type SafeName are as in step C.
 

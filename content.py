@@ -136,7 +136,7 @@ REASONS = [
         "title": "An unset global is a build error.",
         "body": [
             "A `$` name is a global variable, declared in a module. The standard library's console and clock come "
-            "with their value, so `print(\"Sold.\")` and `now()` work with nothing set up. A global such as std's "
+            "with their value, so `print(\"Sold.\")` and `now()` need no binding. A global such as std's "
             "`$logger: any Log` comes with none: the program binds it once, by its path, as in "
             "`log.$logger: FileLog = FileLog(path = \"shop.log\")`, and any function then reaches it with nothing "
             "passed. A library asks for what it needs as a concept, as in a field `database: any SqlDatabase`.",
@@ -321,7 +321,9 @@ ping_once(address: String, ping: Request) -> None:
                   "Go hands you `err` and hopes you check it. Rust comes closest, but `catch_unwind` can catch a panic "
                   "on the spot, and an unreachable arm is only a warn-by-default lint. In Draconyx a redundant arm is "
                   "a hard error.",
-        "sample": ("draconyx", """\"\"\" A payment the bank has not answered yet. \"\"\"
+        "sample": ("draconyx", """use console.print
+
+\"\"\" A payment the bank has not answered yet. \"\"\"
 type Pending
 
 \"\"\" A payment the bank has set aside. \"\"\"
