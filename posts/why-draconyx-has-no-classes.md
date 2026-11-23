@@ -3,7 +3,6 @@ title: "Why Draconyx has no classes"
 date: 2026-11-22
 summary: "Should a sale save itself, or should a repository or a database save it? A class-based language makes every function answer a second question on top of which module it goes in: which object owns it. C++, Java and even Rust, through its impl blocks, ask it. Draconyx keeps structure in types and behaviour in free functions whose calls name every argument, so no argument is the owner and the question does not come up."
 tags: design, types
-draft: true
 ---
 
 A shop sells a book, and the sale must be written down. Which line saves it?
