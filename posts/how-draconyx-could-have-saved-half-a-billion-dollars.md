@@ -304,7 +304,7 @@ library: only an `in_process` one, which shares the program's memory, may pass o
 type's rule. A bias from C becomes a `FlightBias` only through that rule.
 
 **An address from C is read inside `trust:`, and the rule is checked at the read.** The program reads the value at an
-address with `@`, written right after the pointer:
+address with `@`, written right before the pointer:
 
 ```draconyx
 """ Gives where the alignment routine, written in C, stored the horizontal bias it computed last. """
@@ -314,7 +314,7 @@ extern "C" alignment_last_bias() -> Ptr<FlightBias>
 """ Gives the horizontal bias the alignment routine computed last. The library keeps the bias in place while the program runs, and nothing else writes it. """
 last_bias() -> FlightBias:
     trust:
-        alignment_last_bias()@      // the rule of FlightBias is checked as the bias is read
+        @alignment_last_bias()      // the rule of FlightBias is checked as the bias is read
 ```
 
 Outside `trust:`, the `@` does not build. A bias that breaks the rule stops the program at that line, as an `Int`
